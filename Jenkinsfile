@@ -77,7 +77,7 @@ pipeline {
                 dockerfile {
                     filename 'ci/docker/python/linux/Dockerfile'
                     label 'linux && docker'
-                    additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+                    additionalBuildArgs "--build-arg USER_ID=\$(id -u) --build-arg GROUP_ID=\$(id -g) --build-arg PIP_EXTRA_INDEX_URL"
                 }
             }
             stages{
@@ -286,7 +286,6 @@ pipeline {
         }
         stage('Testing all Package') {
             matrix{
-                agent none
                 axes{
                     axis {
                         name "PLATFORM"
@@ -303,15 +302,15 @@ pipeline {
                         )
                     }
                 }
+                agent {
+                    dockerfile {
+                        filename "ci/docker/python/${PLATFORM}/Dockerfile"
+                        label "${PLATFORM} && docker"
+                        additionalBuildArgs "--build-arg PYTHON_VERSION=${PYTHON_VERSION} --build-arg PIP_EXTRA_INDEX_URL"
+                    }
+                }
                 stages{
                     stage("Testing Package sdist"){
-                        agent {
-                            dockerfile {
-                                filename "ci/docker/python/${PLATFORM}/Dockerfile"
-                                label "${PLATFORM} && docker"
-                                additionalBuildArgs "--build-arg PYTHON_VERSION=${PYTHON_VERSION}"
-                            }
-                        }
                         steps{
                             unstash "PYTHON_PACKAGES"
                             script{
@@ -351,13 +350,6 @@ pipeline {
                         }
                     }
                     stage("Testing Package Wheel"){
-                        agent {
-                            dockerfile {
-                                filename "ci/docker/python/${PLATFORM}/Dockerfile"
-                                label "${PLATFORM} && docker"
-                                additionalBuildArgs "--build-arg PYTHON_VERSION=${PYTHON_VERSION}"
-                            }
-                        }
                         steps{
                             unstash "PYTHON_PACKAGES"
                             script{
