@@ -1,0 +1,8 @@
+bandit
+coverage
+flake8
+mypy
+pep517
+pylint
+pytest
+tox
