@@ -1,4 +1,2 @@
 lxml
-pytest
 requests
-tox
