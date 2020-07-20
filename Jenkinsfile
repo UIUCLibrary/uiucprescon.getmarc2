@@ -105,36 +105,36 @@ pipeline {
 
                             }
                         }
-//                         stage("Run Bandit Static Analysis") {
-//                             steps{
-//                                 catchError(buildResult: 'SUCCESS', message: 'Bandit found issues', stageResult: 'UNSTABLE') {
-//                                     sh(
-//                                         label: "Running bandit",
-//                                         script: "bandit --format json --output reports/bandit-report.json --recursive uiucprescon || bandit -f html --recursive uiucprescon --output reports/bandit-report.html"
-//                                     )
-//                                 }
-//                             }
-//                             post {
-//                                 unstable{
-//                                     script{
-//                                         if(fileExists('reports/bandit-report.html')){
-//                                             publishHTML([
-//                                                 allowMissing: false,
-//                                                 alwaysLinkToLastBuild: false,
-//                                                 keepAll: false,
-//                                                 reportDir: 'reports',
-//                                                 reportFiles: 'bandit-report.html',
-//                                                 reportName: 'Bandit Report', reportTitles: ''
-//                                                 ])
-//                                         }
-//                                     }
-//                                 }
-//                                 always {
-//                                     archiveArtifacts "reports/bandit-report.json"
-//                                     stash includes: "reports/bandit-report.json", name: 'BANDIT_REPORT'
-//                                 }
-//                             }
-//                         }
+                        stage("Run Bandit Static Analysis") {
+                            steps{
+                                catchError(buildResult: 'SUCCESS', message: 'Bandit found issues', stageResult: 'UNSTABLE') {
+                                    sh(
+                                        label: "Running bandit",
+                                        script: "bandit --format json --output reports/bandit-report.json --recursive uiucprescon || bandit -f html --recursive uiucprescon --output reports/bandit-report.html"
+                                    )
+                                }
+                            }
+                            post {
+                                unstable{
+                                    script{
+                                        if(fileExists('reports/bandit-report.html')){
+                                            publishHTML([
+                                                allowMissing: false,
+                                                alwaysLinkToLastBuild: false,
+                                                keepAll: false,
+                                                reportDir: 'reports',
+                                                reportFiles: 'bandit-report.html',
+                                                reportName: 'Bandit Report', reportTitles: ''
+                                                ])
+                                        }
+                                    }
+                                }
+                                always {
+                                    archiveArtifacts "reports/bandit-report.json"
+                                    stash includes: "reports/bandit-report.json", name: 'BANDIT_REPORT'
+                                }
+                            }
+                        }
                         stage("Run Pylint Static Analysis") {
                             steps{
                                 withEnv(['PYLINTHOME=.']) {
