@@ -180,32 +180,33 @@ pipeline {
                             }
                         }
                     }
-//                     post{
-//                         always{
-//                             sh "coverage combine && coverage xml -o reports/coverage.xml && coverage html -d reports/coverage"
-//                             publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "reports/coverage", reportFiles: 'index.html', reportName: 'Coverage', reportTitles: ''])
-//                             publishCoverage adapters: [
-//                                             coberturaAdapter('reports/coverage.xml')
-//                                             ],
-//                                         sourceFileResolver: sourceFiles('STORE_ALL_BUILD')
-//                             stash includes: "reports/coverage.xml", name: 'COVERAGE_REPORT'
-//                         }
-//                         cleanup{
-//                             cleanWs(
-//                                 deleteDirs: true,
-//                                 patterns: [
-//                                     [pattern: "dist/", type: 'INCLUDE'],
-//                                     [pattern: 'build/', type: 'INCLUDE'],
-//                                     [pattern: '.pytest_cache/', type: 'INCLUDE'],
-//                                     [pattern: '.mypy_cache/', type: 'INCLUDE'],
-//                                     [pattern: '.tox/', type: 'INCLUDE'],
-//                                     [pattern: 'uiucprescon.packager.egg-info/', type: 'INCLUDE'],
-//                                     [pattern: 'reports/', type: 'INCLUDE'],
-//                                     [pattern: 'logs/', type: 'INCLUDE']
-//                                     ]
-//                             )
-//                         }
-//                     }
+                    post{
+                        always{
+                            sh "coverage combine && coverage xml -o reports/coverage.xml && coverage html -d reports/coverage"
+                            publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "reports/coverage", reportFiles: 'index.html', reportName: 'Coverage', reportTitles: ''])
+                            publishCoverage adapters: [
+                                            coberturaAdapter('reports/coverage.xml')
+                                            ],
+                                        sourceFileResolver: sourceFiles('STORE_ALL_BUILD')
+                            stash includes: "reports/coverage.xml", name: 'COVERAGE_REPORT'
+                        }
+                        cleanup{
+                            cleanWs(
+                                deleteDirs: true,
+                                patterns: [
+                                    [pattern: "dist/", type: 'INCLUDE'],
+                                    [pattern: 'build/', type: 'INCLUDE'],
+                                    [pattern: '.pytest_cache/', type: 'INCLUDE'],
+                                    [pattern: '.mypy_cache/', type: 'INCLUDE'],
+                                    [pattern: '.tox/', type: 'INCLUDE'],
+                                    [pattern: 'uiucprescon1.stats', type: 'INCLUDE'],
+                                    [pattern: 'uiucprescon.packager.egg-info/', type: 'INCLUDE'],
+                                    [pattern: 'reports/', type: 'INCLUDE'],
+                                    [pattern: 'logs/', type: 'INCLUDE']
+                                    ]
+                            )
+                        }
+                    }
                 }
             }
             post{
