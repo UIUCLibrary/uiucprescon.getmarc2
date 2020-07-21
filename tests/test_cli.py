@@ -54,6 +54,7 @@ class MockResponse:
     def text(self):
         return _sample_record
 
+
 def test_get_bibid_record(capsys, monkeypatch):
 
     def mock_get(*args, **kwargs):
@@ -67,15 +68,17 @@ def test_get_bibid_record(capsys, monkeypatch):
     parsed_args = cli.get_arg_parse().parse_args(cli_args)
     monkeypatch.setattr(requests, "request", mock_get)
     cli.run(parsed_args)
-    output = ET.fromstring(capsys.readouterr().out)
+    printed_data = bytes(capsys.readouterr().out, encoding="utf-8")
+    output = ET.fromstring(printed_data)
 
-    for e in output.iter("datafield"):
+    for e in output.iter("{http://www.loc.gov/MARC21/slim}datafield"):
         if e.attrib['tag'] != "035":
             continue
-        subfield = next(e.iter("subfield"))
+        subfield = next(e.iter("{http://www.loc.gov/MARC21/slim}subfield"))
         if subfield.text == "(UIUdb)5539966":
             return
     assert False, "(UIUdb)5539966 not found in record"
+
 
 def test_write_output_file(monkeypatch):
     cli_args = [

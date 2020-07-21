@@ -2,7 +2,8 @@
 
 import argparse
 from lxml import etree  # nosec
-from uiucprescon.getalmarc2.records import RecordServer
+from uiucprescon.getalmarc2.records import RecordServer, is_validate_xml, \
+    ValidationException
 
 
 def get_arg_parse():
@@ -42,7 +43,9 @@ def run(args=None) -> None:
         ),
         encoding="utf-8"
     )
-    if args.output:
+    if is_validate_xml(xml_result) is False:
+        raise ValidationException("invalid xml file")
+    if args.output is not None:
         with open(args.output, "w") as xml_file:
             xml_file.write(xml_result)
     else:
