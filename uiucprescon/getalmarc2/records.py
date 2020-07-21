@@ -8,7 +8,7 @@ class RecordServer:
         self._domain = domain
         self._api_key = alma_api_key
 
-    def bibid_record(self, bib_id: str) -> bytes:
+    def bibid_record(self, bib_id: str) -> str:
         api_route = "almaws/v1/bibs"
         url = f"{self._domain}/{api_route}?mms_id=99{bib_id}12205899&apikey={self._api_key}"
         response = requests.request("GET", url)
