@@ -6,7 +6,7 @@ from uiucprescon.getalmarc2.records import RecordServer
 
 
 def get_arg_parse():
-    """Get the CLI parser factory
+    """Get the CLI parser factory.
 
     Returns: parser
 

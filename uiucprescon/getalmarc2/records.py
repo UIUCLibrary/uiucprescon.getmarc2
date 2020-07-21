@@ -12,7 +12,7 @@ class RecordServer:
         self._api_key = alma_api_key
 
     def bibid_record(self, bib_id: str) -> str:
-        """Request a MARC xml record of a given bib id
+        """Request a MARC xml record of a given bib id.
 
         Args:
             bib_id: UIUC bib id
