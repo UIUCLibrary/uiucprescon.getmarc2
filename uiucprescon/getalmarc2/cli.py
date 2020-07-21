@@ -34,7 +34,7 @@ def run(args=None):
     )
     if args.output:
         print("writing to ")
-        with open(args.output, "w") as f:
-            f.write(xml_result)
+        with open(args.output, "w") as xml_file:
+            xml_file.write(xml_result)
     else:
         print(xml_result)
