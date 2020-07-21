@@ -1,3 +1,5 @@
+"""Module for records."""
+
 import requests
 from lxml import etree
 
