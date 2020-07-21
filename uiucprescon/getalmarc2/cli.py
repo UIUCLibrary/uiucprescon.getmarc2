@@ -1,7 +1,7 @@
 """Module for handling command line runner."""
 
 import argparse
-from lxml import etree
+from lxml import etree  #nosec
 from uiucprescon.getalmarc2.records import RecordServer
 
 
