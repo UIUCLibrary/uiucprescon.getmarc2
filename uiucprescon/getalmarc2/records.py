@@ -12,6 +12,14 @@ class RecordServer:
         self._api_key = alma_api_key
 
     def bibid_record(self, bib_id: str) -> str:
+        """Request a MARC xml record of a given bib id
+
+        Args:
+            bib_id: UIUC bib id
+
+        Returns: XML data as a string
+
+        """
         api_route = "almaws/v1/bibs"
         url = f"{self._domain}/{api_route}?mms_id=99{bib_id}12205899&apikey={self._api_key}"
         response = requests.request("GET", url)
