@@ -15,7 +15,7 @@ def test_uiuc_bibid_in_record(sample_record):
             return
     assert False, "(UIUdb)5539966 not found in record"
 
-`
+
 def test_validate():
     sample_record = """<record xmlns="http://www.loc.gov/MARC21/slim" 
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
