@@ -1,8 +1,9 @@
 """Entry point for running as a Python executable module.
 
 Example:
+    This can be run as executable module::
 
-    $ python -m uiucprescon.getalmarc2
+        $ python -m uiucprescon.getalmarc2
 
 """
 

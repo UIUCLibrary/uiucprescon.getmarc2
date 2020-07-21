@@ -21,7 +21,7 @@ def get_arg_parse():
 
 
 def run(args=None) -> None:
-    """Main entry point.
+    """Run the main entry point for the command line script.
 
     Args:
         args: Command line arguments

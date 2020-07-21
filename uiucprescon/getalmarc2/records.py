@@ -7,7 +7,13 @@ from lxml import etree  # nosec
 class RecordServer:
     """Used for managing the connection with the server API."""
 
-    def __init__(self, domain, alma_api_key) -> None:
+    def __init__(self, domain: str, alma_api_key: str) -> None:
+        """Manage the API server.
+
+        Args:
+            domain: server domain used by the api
+            alma_api_key: API key as a string
+        """
         self._domain = domain
         self._api_key = alma_api_key
 
@@ -45,7 +51,7 @@ def get_from_bibid(bibid: str, server: RecordServer) -> str:
         bibid: UIUC bibid
         server: a valid server connection to the ALMA API server
 
-    Returns:
+    Returns: MARC XML as a string
 
     """
     return str(server.bibid_record(bibid))
