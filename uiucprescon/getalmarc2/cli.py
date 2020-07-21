@@ -1,6 +1,6 @@
 import argparse
-from uiucprescon.getalmarc2.records import RecordServer
 from lxml import etree
+from uiucprescon.getalmarc2.records import RecordServer
 
 
 def get_arg_parse():
