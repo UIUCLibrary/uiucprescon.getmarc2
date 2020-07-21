@@ -14,13 +14,12 @@ def get_arg_parse():
 
 
 def run(args=None) -> None:
-    """Main entry point
+    """Main entry point.
 
     Args:
         args: Command line arguments
 
     """
-
     args = args or get_arg_parse().parse_args()
 
     server = RecordServer(
