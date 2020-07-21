@@ -336,6 +336,11 @@ pipeline {
             options{
                 lock("uiucprescon.getmarc2-sonarscanner")
             }
+            when{
+                equals expected: true, actual: params.USE_SONARQUBE
+                beforeAgent true
+                beforeOptions true
+            }
             steps{
                 checkout scm
                 sh "git fetch --all"
