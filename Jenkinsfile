@@ -180,7 +180,7 @@ pipeline {
                                     sh(
                                         label: "Run pydocstyle",
                                         script: '''mkdir -p reports
-                                                   pydocstyle tyko > reports/pydocstyle-report.txt
+                                                   pydocstyle uiucprescon > reports/pydocstyle-report.txt
                                                    '''
                                     )
                                 }
