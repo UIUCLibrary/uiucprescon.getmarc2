@@ -6,7 +6,9 @@ setup(
     tests_require=['pytest'],
     namespace_packages=["uiucprescon"],
     setup_requires=['pytest-runner'],
-    include_package_data=True,
+    package_data={
+        "uiucprescon.getalmarc2": ["MARC21slim.xsd"]
+    },
     install_requires=["lxml", "requests"],
 
 )
