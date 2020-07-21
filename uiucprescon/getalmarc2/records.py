@@ -20,8 +20,10 @@ class RecordServer:
     def _get_record(self, request_data: str) -> str:
         raw_data = bytes(request_data, encoding="utf-8")
         data = etree.fromstring(raw_data)
-        d = next(data.iter("record"))
-        return str(etree.tostring(d, encoding="utf-8"), encoding="utf-8")
+        return str(
+            etree.tostring(next(data.iter("record")),
+                           encoding="utf-8"),
+            encoding="utf-8")
 
 
 def get_from_bibid(bibid: str, server: RecordServer) -> str:
