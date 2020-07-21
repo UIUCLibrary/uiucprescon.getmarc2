@@ -6,6 +6,7 @@ setup(
     tests_require=['pytest'],
     namespace_packages=["uiucprescon"],
     setup_requires=['pytest-runner'],
+    include_package_data=True,
     install_requires=["lxml", "requests"],
 
 )

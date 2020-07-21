@@ -1,0 +1,18 @@
+# License file
+# include LICENSE
+
+# README and the files it references
+include README.md
+
+# Running requirements
+include requirements.txt
+
+# Tox configuration setting
+include tox.ini
+
+# Pytest configuration setting
+recursive-include tests *.py
+
+# Documentation
+recursive-include docs/ *
+
