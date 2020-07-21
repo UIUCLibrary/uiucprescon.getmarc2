@@ -17,7 +17,8 @@ class RecordServer:
         my_record = self._get_record(request_data)
         return my_record
 
-    def _get_record(self, request_data: str) -> str:
+    @staticmethod
+    def _get_record(request_data: str) -> str:
         raw_data = bytes(request_data, encoding="utf-8")
         data = etree.fromstring(raw_data)
         return str(
