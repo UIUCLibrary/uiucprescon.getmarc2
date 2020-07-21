@@ -14,8 +14,8 @@ class RecordServer:
             domain: server domain used by the api
             alma_api_key: API key as a string
         """
-        self._domain = domain
-        self._api_key = alma_api_key
+        self.domain = domain
+        self.api_key = alma_api_key
 
     def bibid_record(self, bib_id: str) -> str:
         """Request a MARC xml record of a given bib id.
@@ -27,7 +27,7 @@ class RecordServer:
 
         """
         api_route = "almaws/v1/bibs"
-        url = f"{self._domain}/{api_route}?mms_id=99{bib_id}12205899&apikey={self._api_key}"  # noqa: E501 pylint: disable=line-too-long
+        url = f"{self.domain}/{api_route}?mms_id=99{bib_id}12205899&apikey={self.api_key}"  # noqa: E501 pylint: disable=line-too-long
         response = requests.request("GET", url)
 
         request_data = response.text
