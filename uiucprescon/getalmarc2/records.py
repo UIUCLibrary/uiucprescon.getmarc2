@@ -1,7 +1,7 @@
 """Module for records."""
 
 import requests
-from lxml import etree  #nosec
+from lxml import etree  # nosec
 
 
 class RecordServer:
