@@ -1,3 +1,5 @@
+from unittest.mock import mock_open, patch
+
 from uiucprescon.getalmarc2 import cli
 from xml.etree import ElementTree as ET
 import pytest
@@ -74,3 +76,21 @@ def test_get_bibid_record(capsys, monkeypatch):
         if subfield.text == "(UIUdb)5539966":
             return
     assert False, "(UIUdb)5539966 not found in record"
+
+def test_write_output_file(monkeypatch):
+    cli_args = [
+        "--bibid", "5539966",
+        "--alma-apikey", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "-o", "5539966.xml",
+    ]
+
+    def mock_get(*args, **kwargs):
+        return MockResponse()
+
+    parsed_args = cli.get_arg_parse().parse_args(cli_args)
+    monkeypatch.setattr(requests, "request", mock_get)
+    m = mock_open()
+    with patch('builtins.open', m):
+        cli.run(parsed_args)
+    m.assert_called_once_with('5539966.xml', 'w')
+
