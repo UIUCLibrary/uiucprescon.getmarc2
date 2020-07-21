@@ -3,6 +3,7 @@ coverage
 flake8
 mypy
 pep517
+pydocstyle
 pylint
 pytest
 sphinx
