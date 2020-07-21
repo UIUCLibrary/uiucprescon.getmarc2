@@ -31,4 +31,13 @@ class RecordServer:
 
 
 def get_from_bibid(bibid: str, server: RecordServer) -> str:
+    """Get the xml from a UIUC bib id.
+
+    Args:
+        bibid: UIUC bibid
+        server: a valid server connection to the ALMA API server
+
+    Returns:
+
+    """
     return str(server.bibid_record(bibid))
