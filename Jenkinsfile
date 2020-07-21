@@ -35,6 +35,17 @@
 // ]
 
 
+def get_sonarqube_unresolved_issues(report_task_file){
+    script{
+        if (! fileExists(report_task_file)){
+            error "File not found ${report_task_file}"
+        }
+        def props = readProperties  file: report_task_file
+        def response = httpRequest url : props['serverUrl'] + "/api/issues/search?componentKeys=" + props['projectKey'] + "&resolved=no"
+        def outstandingIssues = readJSON text: response.content
+        return outstandingIssues
+    }
+}
 pipeline {
     agent none
     parameters {
@@ -310,37 +321,37 @@ pipeline {
             }
             steps{
                 checkout scm
-//                 sh "git fetch --all"
-//                 unstash "COVERAGE_REPORT"
-//                 unstash "PYTEST_REPORT"
-//                 unstash "BANDIT_REPORT"
-//                 unstash "PYLINT_REPORT"
-//                 unstash "FLAKE8_REPORT"
-//                 script{
-//                     withSonarQubeEnv(installationName:"sonarcloud", credentialsId: 'sonarcloud-uiucprescon.images') {
-//                         unstash "DIST-INFO"
-//                         def props = readProperties(interpolate: true, file: "uiucprescon.images.dist-info/METADATA")
-//                         if (env.CHANGE_ID){
-//                             sh(
-//                                 label: "Running Sonar Scanner",
-//                                 script:"sonar-scanner -Dsonar.projectVersion=${props.Version} -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.pullrequest.key=${env.CHANGE_ID} -Dsonar.pullrequest.base=${env.CHANGE_TARGET}"
-//                                 )
-//                         } else {
-//                             sh(
-//                                 label: "Running Sonar Scanner",
-//                                 script: "sonar-scanner -Dsonar.projectVersion=${props.Version} -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.branch.name=${env.BRANCH_NAME}"
-//                                 )
-//                         }
-//                     }
-//                     timeout(time: 1, unit: 'HOURS') {
-//                         def sonarqube_result = waitForQualityGate(abortPipeline: false)
-//                         if (sonarqube_result.status != 'OK') {
-//                             unstable "SonarQube quality gate: ${sonarqube_result.status}"
-//                         }
-//                         def outstandingIssues = get_sonarqube_unresolved_issues(".scannerwork/report-task.txt")
-//                         writeJSON file: 'reports/sonar-report.json', json: outstandingIssues
-//                     }
-//                 }
+                sh "git fetch --all"
+                unstash "COVERAGE_REPORT"
+                unstash "PYTEST_REPORT"
+                unstash "BANDIT_REPORT"
+                unstash "PYLINT_REPORT"
+                unstash "FLAKE8_REPORT"
+                script{
+                    withSonarQubeEnv(installationName:"sonarcloud", credentialsId: 'sonarcloud-uiucprescon.getmarc2') {
+                        unstash "DIST-INFO"
+                        def props = readProperties(interpolate: false, file: "uiucprescon.getmarc2.dist-info/METADATA")
+                        if (env.CHANGE_ID){
+                            sh(
+                                label: "Running Sonar Scanner",
+                                script:"sonar-scanner -Dsonar.projectVersion=${props.Version} -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.pullrequest.key=${env.CHANGE_ID} -Dsonar.pullrequest.base=${env.CHANGE_TARGET}"
+                                )
+                        } else {
+                            sh(
+                                label: "Running Sonar Scanner",
+                                script: "sonar-scanner -Dsonar.projectVersion=${props.Version} -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.branch.name=${env.BRANCH_NAME}"
+                                )
+                        }
+                    }
+                    timeout(time: 1, unit: 'HOURS') {
+                        def sonarqube_result = waitForQualityGate(abortPipeline: false)
+                        if (sonarqube_result.status != 'OK') {
+                            unstable "SonarQube quality gate: ${sonarqube_result.status}"
+                        }
+                        def outstandingIssues = get_sonarqube_unresolved_issues(".scannerwork/report-task.txt")
+                        writeJSON file: 'reports/sonar-report.json', json: outstandingIssues
+                    }
+                }
             }
             post {
                 always{
