@@ -5,6 +5,7 @@ from lxml import etree
 
 
 class RecordServer:
+    """Used for managing the connection with the server API."""
 
     def __init__(self, domain, alma_api_key) -> None:
         self._domain = domain
