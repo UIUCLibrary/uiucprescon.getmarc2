@@ -98,7 +98,7 @@ pipeline {
                         publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
                         unstash "DIST-INFO"
                         script{
-                            def props = readProperties interpolate: true, file: "uiucprescon.getmarc2.dist-info/METADATA"
+                            def props = readProperties interpolate: false, file: "uiucprescon.getmarc2.dist-info/METADATA"
                             def DOC_ZIP_FILENAME = "${env.PKG_NAME}-${env.PKG_VERSION}.doc.zip"
                             zip archive: true, dir: "${WORKSPACE}/build/docs/html", glob: '', zipFile: "dist/${DOC_ZIP_FILENAME}"
                             stash includes: "dist/${DOC_ZIP_FILENAME},build/docs/html/**", name: 'DOCS_ARCHIVE'
