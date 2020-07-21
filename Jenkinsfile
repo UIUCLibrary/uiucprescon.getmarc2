@@ -152,19 +152,17 @@ pipeline {
                                 }
                             }
                         }
-//                         stage("Run Doctest Tests"){
-//                             steps {
-//                                 sh "coverage run --parallel-mode --source uiucprescon -m sphinx -b doctest -d build/docs/doctrees docs/source reports/doctest -w logs/doctest.log"
-//                             }
-//                             post{
-//                                 always {
-//                                     archiveArtifacts artifacts: 'reports/doctest/output.txt'
-//                                     archiveArtifacts artifacts: 'logs/doctest.log'
-//                                     recordIssues(tools: [sphinxBuild(name: 'Sphinx Doctest', pattern: 'logs/doctest.log', id: 'doctest')])
-//                                 }
-//
-//                             }
-//                         }
+                        stage("Run Doctest Tests"){
+                            steps {
+                                sh "coverage run --parallel-mode --source uiucprescon -m sphinx -b doctest -d build/docs/doctrees docs reports/doctest -w logs/doctest.log"
+                            }
+                            post{
+                                always {
+                                    recordIssues(tools: [sphinxBuild(name: 'Sphinx Doctest', pattern: 'logs/doctest.log', id: 'doctest')])
+                                }
+
+                            }
+                        }
                         stage("Run MyPy Static Analysis") {
                             steps{
                                 catchError(buildResult: 'SUCCESS', message: 'mypy found issues', stageResult: 'UNSTABLE') {
