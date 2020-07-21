@@ -27,7 +27,7 @@ class RecordServer:
 
         """
         api_route = "almaws/v1/bibs"
-        url = f"{self._domain}/{api_route}?mms_id=99{bib_id}12205899&apikey={self._api_key}"
+        url = f"{self._domain}/{api_route}?mms_id=99{bib_id}12205899&apikey={self._api_key}"  # noqa: E501 pylint: disable=line-too-long
         response = requests.request("GET", url)
 
         request_data = response.text
