@@ -6,7 +6,7 @@ from lxml import etree  # nosec
 
 
 class ValidationException(Exception):
-    """Raises if validation check fails"""
+    """Raises if validation check fails."""
 
 
 class RecordServer:
@@ -69,7 +69,7 @@ class RecordServer:
         return new_root
 
     def add_record_decorations(self, record_data: str):
-        """Add the namespace declarations expected for this xml type
+        """Add the namespace declarations expected for this xml type.
 
         Args:
             record_data: row xml data as a string
