@@ -13,11 +13,15 @@ def get_arg_parse():
     return parser
 
 
-def run(args=None):
+def run(args=None) -> None:
+    """Main entry point
 
-    if args is None:
-        parser = get_arg_parse()
-        args = parser.parse_args()
+    Args:
+        args: Command line arguments
+
+    """
+
+    args = args or get_arg_parse().parse_args()
 
     server = RecordServer(
         domain=args.domain,
@@ -33,7 +37,6 @@ def run(args=None):
         encoding="utf-8"
     )
     if args.output:
-        print("writing to ")
         with open(args.output, "w") as xml_file:
             xml_file.write(xml_result)
     else:
