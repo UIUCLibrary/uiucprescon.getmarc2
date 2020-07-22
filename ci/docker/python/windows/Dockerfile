@@ -13,7 +13,8 @@ ADD requirements.txt ci/docker/python/shared/requirements-ci.txt c:/temp/
 
 RUN pip wheel --wheel-dir=c:\temp\wheels `
                         -r c:/temp/requirements.txt `
-                        -r c:/temp/requirements-ci.txt
+                        -r c:/temp/requirements-ci.txt ; `
+    Remove-Item –path c:\users\containeradministrator\appdata\local\pip\cache\wheels –recurse
 
 FROM python:${PYTHON_VERSION}
 
