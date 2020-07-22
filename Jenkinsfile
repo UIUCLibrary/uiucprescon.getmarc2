@@ -284,6 +284,7 @@ pipeline {
                                     sh(
                                         script: '''mkdir -p logs
                                                    mkdir -p reports
+                                                   pylint --version
                                                    pylint uiucprescon -r n --persistent=n --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" > reports/pylint.txt
                                                    ''',
                                         label: "Running pylint"
