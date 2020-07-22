@@ -11,7 +11,7 @@ from uiucprescon.getmarc2 import cli
 
 
 def main() -> None:
-    """Main execution point."""
+    """Works as the main execution point."""
     cli.run()
 
 
