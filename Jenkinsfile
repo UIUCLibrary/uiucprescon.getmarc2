@@ -352,7 +352,9 @@ pipeline {
             }
             post{
                 cleanup{
-                    cleanWs(patterns: [
+                    cleanWs(
+                        deleteDirs: true,
+                        patterns: [
                             [pattern: 'reports/coverage.xml', type: 'INCLUDE'],
                             [pattern: 'reports/coverage', type: 'INCLUDE'],
                         ])
@@ -417,6 +419,17 @@ pipeline {
                             recordIssues(tools: [sonarQube(pattern: 'reports/sonar-report.json')])
                         }
                     }
+                }
+                cleanup{
+                    cleanWs(
+                        deleteDirs: true,
+                        patterns: [
+                            [pattern: 'reports/', type: 'INCLUDE'],
+                            [pattern: 'logs/', type: 'INCLUDE'],
+                            [pattern: 'uiucprescon.getmarc2.dist-info/', type: 'INCLUDE'],
+                            [pattern: '.scannerwork/', type: 'INCLUDE'],
+                        ]
+                    )
                 }
             }
         }
