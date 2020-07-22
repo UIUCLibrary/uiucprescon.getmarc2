@@ -140,7 +140,6 @@ pipeline {
                 post{
                     always {
                         recordIssues(tools: [sphinxBuild(pattern: 'logs/build_sphinx.log')])
-                        archiveArtifacts artifacts: 'logs/build_sphinx.log'
                     }
                     success{
                         publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
@@ -275,7 +274,6 @@ pipeline {
                                     }
                                 }
                                 always {
-                                    archiveArtifacts "reports/bandit-report.json"
                                     stash includes: "reports/bandit-report.json", name: 'BANDIT_REPORT'
                                 }
                             }
@@ -302,7 +300,6 @@ pipeline {
                             post{
                                 always{
                                     stash includes: "reports/pylint_issues.txt,reports/pylint.txt", name: 'PYLINT_REPORT'
-                                    archiveArtifacts allowEmptyArchive: true, artifacts: "reports/pylint.txt"
                                     recordIssues(tools: [pyLint(pattern: 'reports/pylint.txt')])
                                 }
                             }
@@ -414,10 +411,6 @@ pipeline {
             }
             post {
                 always{
-                    archiveArtifacts(
-                        allowEmptyArchive: true,
-                        artifacts: ".scannerwork/report-task.txt"
-                    )
                     script{
                         if(fileExists('reports/sonar-report.json')){
                             stash includes: "reports/sonar-report.json", name: 'SONAR_REPORT'
