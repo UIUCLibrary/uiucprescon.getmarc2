@@ -56,7 +56,6 @@ class RecordServer:
     def addns(root: etree._Element,  # pylint: disable=protected-access
               alias: Optional[str],
               uri: str) -> etree._Element:  # pylint: disable=W0212
-
         """Add namespace to a element.
 
         Args:
