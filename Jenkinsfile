@@ -648,7 +648,7 @@ pipeline {
                                         devpiRunTest(
                                             "uiucprescon.getmarc2.dist-info/METADATA",
                                             env.devpiStagingIndex,
-                                            "*.whl",
+                                            "whl",
                                             DEVPI_USR,
                                             DEVPI_PSW,
                                             "py${PYTHON_VERSION.replace('.', '')}"
@@ -679,7 +679,7 @@ pipeline {
                     agent {
                         dockerfile {
                             filename 'ci/docker/python/linux/Dockerfile'
-                            label 'linux&&docker'
+                            label 'linux && docker'
                             additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
                         }
                     }
