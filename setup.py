@@ -10,5 +10,10 @@ setup(
         "uiucprescon.getalmarc2": ["MARC21slim.xsd"]
     },
     install_requires=["lxml", "requests"],
+    entry_points={
+        "console_scripts": [
+            "getmarc = uiucprescon.getalmarc2.__main__:main"
+        ]
+    }
 
 )

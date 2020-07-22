@@ -9,5 +9,10 @@ Example:
 
 from uiucprescon.getalmarc2 import cli
 
-if __name__ == '__main__':
+
+def main():
     cli.run()
+
+
+if __name__ == '__main__':
+    main()
