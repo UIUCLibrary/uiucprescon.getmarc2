@@ -165,7 +165,7 @@ pipeline {
                     }
                 }
             }
-        stage("Test") {
+        stage("Checks") {
             agent {
                 dockerfile {
                     filename 'ci/docker/python/linux/Dockerfile'
@@ -200,7 +200,7 @@ pipeline {
                                 }
                             }
                         }
-                        stage("Run Doctest Tests"){
+                        stage("Doctest"){
                             steps {
                                 sh "coverage run --parallel-mode --source uiucprescon -m sphinx -b doctest -d build/docs/doctrees docs reports/doctest -w logs/doctest.log"
                             }
@@ -228,7 +228,7 @@ pipeline {
                                 }
                             }
                         }
-                        stage("Run MyPy Static Analysis") {
+                        stage("MyPy") {
                             steps{
                                 catchError(buildResult: 'SUCCESS', message: 'mypy found issues', stageResult: 'UNSTABLE') {
                                     sh "mypy -p uiucprescon --html-report reports/mypy/html/  | tee logs/mypy.log"
@@ -241,7 +241,7 @@ pipeline {
                                 }
                             }
                         }
-                        stage("Run Tox test") {
+                        stage("Tox") {
                             when{
                                 equals expected: true, actual: params.TEST_RUN_TOX
                             }
@@ -250,7 +250,7 @@ pipeline {
 
                             }
                         }
-                        stage("Run Bandit Static Analysis") {
+                        stage("Bandit") {
                             steps{
                                 catchError(buildResult: 'SUCCESS', message: 'Bandit found issues', stageResult: 'UNSTABLE') {
                                     sh(
@@ -280,7 +280,7 @@ pipeline {
                                 }
                             }
                         }
-                        stage("Run Pylint Static Analysis") {
+                        stage("PyLint") {
                             steps{
                                 withEnv(['PYLINTHOME=.']) {
                                     catchError(buildResult: 'SUCCESS', message: 'Pylint found issues', stageResult: 'UNSTABLE') {
@@ -307,7 +307,7 @@ pipeline {
                                 }
                             }
                         }
-                        stage("Run Flake8 Static Analysis") {
+                        stage("Flake8") {
                             steps{
                                 catchError(buildResult: 'SUCCESS', message: 'Flake8 found issues', stageResult: 'UNSTABLE') {
                                     sh(label: "Running Flake8",
