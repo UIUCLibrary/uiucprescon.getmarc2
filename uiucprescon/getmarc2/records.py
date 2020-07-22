@@ -119,7 +119,8 @@ def is_validate_xml(data: str) -> bool:
     Args:
         data: xml data
 
-    Returns: returns True if xml matches the schema
+    Returns:
+        returns True if xml matches the schema
 
     """
     schema_root = etree.XML(
