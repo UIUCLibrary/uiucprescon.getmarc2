@@ -634,7 +634,7 @@ pipeline {
                         }
                         agent none
                         stages{
-                            stage("Testing DevPi Package"){
+                            stage("Testing DevPi wheel Package"){
                                 agent {
                                     dockerfile {
                                         filename "ci/docker/python/${PLATFORM}/Dockerfile"
@@ -649,6 +649,28 @@ pipeline {
                                             "uiucprescon.getmarc2.dist-info/METADATA",
                                             env.devpiStagingIndex,
                                             "whl",
+                                            DEVPI_USR,
+                                            DEVPI_PSW,
+                                            "py${PYTHON_VERSION.replace('.', '')}"
+                                            )
+                                    }
+                                }
+                            }
+                            stage("Testing DevPi sdist Package"){
+                                agent {
+                                    dockerfile {
+                                        filename "ci/docker/python/${PLATFORM}/Dockerfile"
+                                        label "${PLATFORM} && docker"
+                                        additionalBuildArgs "--build-arg PYTHON_VERSION=${PYTHON_VERSION} --build-arg PIP_EXTRA_INDEX_URL"
+                                    }
+                                }
+                                steps{
+                                    timeout(10){
+                                        unstash "DIST-INFO"
+                                        devpiRunTest(
+                                            "uiucprescon.getmarc2.dist-info/METADATA",
+                                            env.devpiStagingIndex,
+                                            "tar.gz",
                                             DEVPI_USR,
                                             DEVPI_PSW,
                                             "py${PYTHON_VERSION.replace('.', '')}"
