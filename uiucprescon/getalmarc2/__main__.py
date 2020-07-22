@@ -11,6 +11,7 @@ from uiucprescon.getalmarc2 import cli
 
 
 def main():
+    """Main execution point"""
     cli.run()
 
 
