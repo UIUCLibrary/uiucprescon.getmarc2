@@ -651,7 +651,7 @@ pipeline {
                                             "*.whl",
                                             DEVPI_USR,
                                             DEVPI_PSW,
-                                            "py${PYTHON_VERSION}.replace('.', '')"
+                                            "py${PYTHON_VERSION.replace('.', '')}"
                                             )
                                     }
                                 }
