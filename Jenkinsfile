@@ -281,14 +281,13 @@ pipeline {
                         stage("PyLint") {
                             steps{
                                 catchError(buildResult: 'SUCCESS', message: 'Pylint found issues', stageResult: 'UNSTABLE') {
-                                    sh(
-                                        script: '''mkdir -p logs
-                                                   mkdir -p reports
-                                                   pylint --version
-                                                   pylint uiucprescon -r n --persistent=n --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}" | tee reports/pylint.txt
-                                                   ''',
-                                        label: "Running pylint"
-                                    )
+                                    tee("reports/pylint.txt"){
+                                        sh(
+                                            script: '''pylint uiucprescon -r n --persistent=n --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}"
+                                                       ''',
+                                            label: "Running pylint"
+                                        )
+                                    }
                                 }
                                 sh(
                                     script: 'pylint uiucprescon  -r n --persistent=n --msg-template="{path}:{module}:{line}: [{msg_id}({symbol}), {obj}] {msg}" > reports/pylint_issues.txt',
