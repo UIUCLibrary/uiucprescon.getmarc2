@@ -189,7 +189,7 @@ pipeline {
                 }
                 stage("Running Tests"){
                     parallel {
-                        stage("Run PyTest Unit Tests"){
+                        stage("PyTest"){
                             steps{
                                 sh "coverage run --parallel-mode --source uiucprescon -m pytest --junitxml=reports/pytest/junit-pytest.xml "
                             }
