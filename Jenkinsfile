@@ -283,7 +283,7 @@ pipeline {
                                 catchError(buildResult: 'SUCCESS', message: 'Pylint found issues', stageResult: 'UNSTABLE') {
                                     tee("reports/pylint.txt"){
                                         sh(
-                                            script: '''pylint uiucprescon -r n --persistent=n --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}"
+                                            script: '''pylint uiucprescon -r n --persistent=n --verbose --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}"
                                                        ''',
                                             label: "Running pylint"
                                         )
