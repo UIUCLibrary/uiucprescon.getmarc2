@@ -1,12 +1,14 @@
 """Module for handling command line runner."""
 
 import argparse
+from typing import Optional
+
 from lxml import etree  # nosec
-from uiucprescon.getalmarc2.records import RecordServer, is_validate_xml, \
+from uiucprescon.getmarc2.records import RecordServer, is_validate_xml, \
     ValidationException
 
 
-def get_arg_parse():
+def get_arg_parse() -> argparse.ArgumentParser:
     """Get the CLI parser factory.
 
     Returns: parser
@@ -21,7 +23,7 @@ def get_arg_parse():
     return parser
 
 
-def run(args=None) -> None:
+def run(args: Optional[argparse.Namespace] = None) -> None:
     """Run the main entry point for the command line script.
 
     Args:

@@ -1,6 +1,8 @@
 """Module for records."""
 
 from importlib.resources import read_text
+from typing import Optional
+
 import requests
 from lxml import etree  # nosec
 
@@ -51,7 +53,10 @@ class RecordServer:
         )
 
     @staticmethod
-    def addns(root, alias, uri):
+    def addns(root: etree._Element,  # pylint: disable=protected-access
+              alias: Optional[str],
+              uri: str) -> etree._Element:  # pylint: disable=W0212
+
         """Add namespace to a element.
 
         Args:
@@ -68,7 +73,7 @@ class RecordServer:
         new_root[:] = root[:]
         return new_root
 
-    def add_record_decorations(self, record_data: str):
+    def add_record_decorations(self, record_data: str) -> str:
         """Add the namespace declarations expected for this xml type.
 
         Args:
@@ -119,7 +124,7 @@ def is_validate_xml(data: str) -> bool:
 
     """
     schema_root = etree.XML(
-        read_text("uiucprescon.getalmarc2", "MARC21slim.xsd")
+        read_text("uiucprescon.getmarc2", "MARC21slim.xsd")
     )
 
     schema = etree.XMLSchema(schema_root)

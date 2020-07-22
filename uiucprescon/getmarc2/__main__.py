@@ -3,14 +3,14 @@
 Example:
     This can be run as executable module::
 
-        $ python -m uiucprescon.getalmarc2
+        $ python -m uiucprescon.getmarc2
 
 """
 
-from uiucprescon.getalmarc2 import cli
+from uiucprescon.getmarc2 import cli
 
 
-def main():
+def main() -> None:
     """Main execution point"""
     cli.run()
 

@@ -1,6 +1,6 @@
 from unittest.mock import Mock
 import xml.etree.ElementTree as ET
-from uiucprescon.getalmarc2 import records
+from uiucprescon.getmarc2 import records
 
 
 def test_uiuc_bibid_in_record(sample_record):

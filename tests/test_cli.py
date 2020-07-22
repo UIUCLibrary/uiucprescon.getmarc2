@@ -1,6 +1,6 @@
 from unittest.mock import mock_open, patch
 
-from uiucprescon.getalmarc2 import cli
+from uiucprescon.getmarc2 import cli
 from xml.etree import ElementTree as ET
 import pytest
 import requests
