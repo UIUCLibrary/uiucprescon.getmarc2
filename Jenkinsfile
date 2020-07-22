@@ -494,6 +494,9 @@ pipeline {
                         }
                         stages{
                             stage("Testing Package sdist"){
+                                options {
+                                    warnError('Package Testing Failed')
+                                }
                                 steps{
                                     unstash "PYTHON_PACKAGES"
                                     script{
@@ -533,6 +536,9 @@ pipeline {
                                 }
                             }
                             stage("Testing Package Wheel"){
+                                options {
+                                    warnError('Package Testing Failed')
+                                }
                                 steps{
                                     unstash "PYTHON_PACKAGES"
                                     script{
@@ -642,6 +648,9 @@ pipeline {
                                         additionalBuildArgs "--build-arg PYTHON_VERSION=${PYTHON_VERSION} --build-arg PIP_EXTRA_INDEX_URL"
                                     }
                                 }
+                                options {
+                                    warnError('Package Testing Failed')
+                                }
                                 steps{
                                     timeout(10){
                                         unstash "DIST-INFO"
@@ -663,6 +672,9 @@ pipeline {
                                         label "${PLATFORM} && docker"
                                         additionalBuildArgs "--build-arg PYTHON_VERSION=${PYTHON_VERSION} --build-arg PIP_EXTRA_INDEX_URL"
                                     }
+                                }
+                                options {
+                                    warnError('Package Testing Failed')
                                 }
                                 steps{
                                     timeout(10){
