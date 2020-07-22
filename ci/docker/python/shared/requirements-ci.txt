@@ -1,5 +1,6 @@
 bandit
 coverage
+devpi-client
 flake8
 mypy
 pep517
