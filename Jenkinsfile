@@ -794,10 +794,18 @@ pipeline {
             parallel{
                 stage("Deploy Documentation"){
                     when{
-                        equals expected: true, actual: DEPLOY_DOCS
+                        equals expected: true, actual: params.DEPLOY_DOCS
                     }
+                    agent any
                     steps{
                         echo "Hellol DEPLOY_DOCS = ${DEPLOY_DOCS}"
+                    }
+                }
+                stage("Hello"){
+                    agent any
+                    steps{
+                        echo "Hellol DEPLOY_DOCS = ${DEPLOY_DOCS}"
+                        echo "Hellol params.DEPLOY_DOCS = ${params.DEPLOY_DOCS}"
                     }
                 }
 
