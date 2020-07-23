@@ -793,7 +793,7 @@ pipeline {
             parallel{
                 stage("Deploy Documentation"){
                     when{
-                        equals expected: true, actual: params.DEPLOY_DOCS
+                        equals expected: true, actual: DEPLOY_DOCS
                     }
                     steps{
                         echo "Hellol DEPLOY_DOCS = ${DEPLOY_DOCS}"
