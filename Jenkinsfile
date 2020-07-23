@@ -794,8 +794,7 @@ pipeline {
             parallel{
                 stage("Deploy Documentation"){
                     when{
-                        equals expected: true, actual: DEPLOY_DOCS
-                        beforeOptions true
+                        expression { DEPLOY_DOCS == true }
                     }
                     agent any
                     steps{
