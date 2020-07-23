@@ -144,7 +144,7 @@ pipeline {
                         recordIssues(tools: [sphinxBuild(pattern: 'logs/build_sphinx.log')])
                     }
                     success{
-                        publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
+                        publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
                         unstash "DIST-INFO"
                         script{
                             def props = readProperties interpolate: false, file: "uiucprescon.getmarc2.dist-info/METADATA"
