@@ -790,8 +790,16 @@ pipeline {
                 booleanParam defaultValue: false, description: '', name: 'DEPLOY_DOCS'
               }
             }
-            steps{
-                echo "Hellol DEPLOY_DOCS = ${DEPLOY_DOCS}"
+            parallel{
+                stage("Deploy Documentation"){
+                    when{
+                        equals expected: true, actual: params.DEPLOY_DOCS
+                    }
+                    steps{
+                        echo "Hellol DEPLOY_DOCS = ${DEPLOY_DOCS}"
+                    }
+                }
+
             }
         }
     }
