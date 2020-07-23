@@ -91,6 +91,7 @@ pipeline {
         booleanParam(name: "BUILD_PACKAGES", defaultValue: false, description: "Build Python packages")
         booleanParam(name: "DEPLOY_DEVPI", defaultValue: false, description: "Deploy to devpi on http://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
         booleanParam(name: "DEPLOY_DEVPI_PRODUCTION", defaultValue: false, description: "Deploy to production devpi on https://devpi.library.illinois.edu/production/release. Master branch Only")
+        booleanParam(name: "DEPLOY", defaultValue: false, description: "Deploy")
     }
     stages {
         stage("Getting Distribution Info"){
@@ -775,6 +776,18 @@ pipeline {
                        }
                     }
                 }
+            }
+        }
+        stage("Deploy") {
+            when{
+                equals expected: true, actual: params.DEPLOY
+                beforeInput true
+            }
+            input {
+              message 'Deploy Documentation'
+            }
+            steps{
+                echo "Hellol"
             }
         }
     }
