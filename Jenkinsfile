@@ -786,6 +786,9 @@ pipeline {
             }
             input {
               message 'Deploy Documentation'
+              parameters {
+                booleanParam defaultValue: false, description: '', name: 'DEPLOY_DOCS'
+              }
             }
             steps{
                 echo "Hellol"
