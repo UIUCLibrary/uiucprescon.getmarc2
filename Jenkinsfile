@@ -791,7 +791,7 @@ pipeline {
               }
             }
             steps{
-                echo "Hellol"
+                echo "Hellol DEPLOY_DOCS = ${DEPLOY_DOCS}"
             }
         }
     }
