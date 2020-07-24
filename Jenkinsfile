@@ -787,6 +787,7 @@ pipeline {
             }
             input {
               message 'Deploy Documentation'
+              id 'DEPLOY'
               parameters {
                 booleanParam defaultValue: false, description: '', name: 'DEPLOY_DOCS'
               }
@@ -804,6 +805,7 @@ pipeline {
                 stage("Hello"){
                     agent any
                     steps{
+                        echo "Hellol DEPLOY = ${DEPLOY}"
                         echo "Hellol DEPLOY_DOCS = ${DEPLOY_DOCS}"
                         echo "Hellol params.DEPLOY_DOCS = ${params.DEPLOY_DOCS}"
                     }
