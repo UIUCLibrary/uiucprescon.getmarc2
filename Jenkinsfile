@@ -92,7 +92,7 @@ pipeline {
         booleanParam(name: "BUILD_PACKAGES", defaultValue: false, description: "Build Python packages")
         booleanParam(name: "DEPLOY_DEVPI", defaultValue: false, description: "Deploy to devpi on http://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
         booleanParam(name: "DEPLOY_DEVPI_PRODUCTION", defaultValue: false, description: "Deploy to production devpi on https://devpi.library.illinois.edu/production/release. Master branch Only")
-        booleanParam(name: "DEPLOY", defaultValue: false, description: "Deploy")
+        booleanParam(name: 'DEPLOY_DOCS', defaultValue: false, description: '')
     }
     stages {
         stage("Getting Distribution Info"){
@@ -781,36 +781,24 @@ pipeline {
             }
         }
         stage("Deploy") {
-            when{
-                equals expected: true, actual: params.DEPLOY
-                beforeInput true
-            }
-            input {
-              message 'Deploy Documentation'
-              id 'DEPLOY'
-              parameters {
-                booleanParam defaultValue: false, description: '', name: 'DEPLOY_DOCS'
-              }
-            }
             parallel{
                 stage("Deploy Documentation"){
                     when{
-                        expression { DEPLOY_DOCS == true }
+                        equals expected: true, actual: params.DEPLOY_DOCS
+                        beforeInput true
+                    }
+                    input {
+                        message 'Deploy documentation'
+                        id 'DEPLOY_DOCUMENTATION'
+                        parameters {
+                            string defaultValue: 'dd', description: '', name: 'DOC_URL', trim: true
+                        }
                     }
                     agent any
                     steps{
-                        echo "Hellol DEPLOY_DOCS = ${DEPLOY_DOCS}"
+                        echo "Deploying docs to ${DOC_URL}"
                     }
                 }
-                stage("Hello"){
-                    agent any
-                    steps{
-                        echo "Hellol DEPLOY = ${DEPLOY}"
-                        echo "Hellol DEPLOY_DOCS = ${DEPLOY_DOCS}"
-                        echo "Hellol params.DEPLOY_DOCS = ${params.DEPLOY_DOCS}"
-                    }
-                }
-
             }
         }
     }
