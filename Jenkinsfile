@@ -811,7 +811,7 @@ pipeline {
                                             makeEmptyDirs: false,
                                             noDefaultExcludes: false,
                                             patternSeparator: '[, ]+',
-                                            remoteDirectory: "${params.DEPLOY_DOCS_URL_SUBFOLDER}",
+                                            remoteDirectory: "${DEPLOY_DOCS_URL_SUBFOLDER}",
                                             remoteDirectorySDF: false,
                                             removePrefix: 'build/docs/html',
                                             sourceFiles: 'build/docs/html/**'
