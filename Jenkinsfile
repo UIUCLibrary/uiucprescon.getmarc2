@@ -91,6 +91,7 @@ pipeline {
         booleanParam(name: "BUILD_PACKAGES", defaultValue: false, description: "Build Python packages")
         booleanParam(name: "DEPLOY_DEVPI", defaultValue: false, description: "Deploy to devpi on http://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
         booleanParam(name: "DEPLOY_DEVPI_PRODUCTION", defaultValue: false, description: "Deploy to production devpi on https://devpi.library.illinois.edu/production/release. Master branch Only")
+        booleanParam(name: 'DEPLOY_DOCS', defaultValue: false, description: '')
     }
     stages {
         stage("Getting Distribution Info"){
@@ -142,7 +143,7 @@ pipeline {
                         recordIssues(tools: [sphinxBuild(pattern: 'logs/build_sphinx.log')])
                     }
                     success{
-                        publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
+                        publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
                         unstash "DIST-INFO"
                         script{
                             def props = readProperties interpolate: false, file: "uiucprescon.getmarc2.dist-info/METADATA"
@@ -597,6 +598,7 @@ pipeline {
                     }
                 }
                 beforeAgent true
+                beforeOptions true
             }
             agent none
             environment{
@@ -773,6 +775,64 @@ pipeline {
                                    )
                             }
                        }
+                    }
+                }
+            }
+        }
+        stage("Deploy") {
+            parallel{
+                stage("Deploy Documentation"){
+                    when{
+                        equals expected: true, actual: params.DEPLOY_DOCS
+                        beforeInput true
+                    }
+                    input {
+                        message 'Deploy documentation'
+                        id 'DEPLOY_DOCUMENTATION'
+                        parameters {
+                            string defaultValue: 'getmarc2', description: '', name: 'DEPLOY_DOCS_URL_SUBFOLDER', trim: true
+                        }
+                    }
+                    agent any
+                    steps{
+                        unstash "DOCS_ARCHIVE"
+                        sshPublisher(
+                            publishers: [
+                                sshPublisherDesc(
+                                    configName: 'apache-ns - lib-dccuser-updater',
+                                    transfers: [
+                                        sshTransfer(
+                                            cleanRemote: false,
+                                            excludes: '',
+                                            execCommand: '',
+                                            execTimeout: 120000,
+                                            flatten: false,
+                                            makeEmptyDirs: false,
+                                            noDefaultExcludes: false,
+                                            patternSeparator: '[, ]+',
+                                            remoteDirectory: "${DEPLOY_DOCS_URL_SUBFOLDER}",
+                                            remoteDirectorySDF: false,
+                                            removePrefix: 'build/docs/html',
+                                            sourceFiles: 'build/docs/html/**'
+                                        )
+                                    ],
+                                    usePromotionTimestamp: false,
+                                    useWorkspaceInPromotion: false,
+                                    verbose: false
+                                )
+                            ]
+                        )
+                    }
+                    post{
+                        cleanup{
+                            cleanWs(
+                                deleteDirs: true,
+                                patterns: [
+                                    [pattern: "build/", type: 'INCLUDE'],
+                                    [pattern: "dist/", type: 'INCLUDE'],
+                                ]
+                            )
+                        }
                     }
                 }
             }
