@@ -823,31 +823,16 @@ pipeline {
                                 )
                             ]
                         )
-//                         sshPublisher(
-//                                 publishers: [
-//                                     sshPublisherDesc(
-//                                         configName: 'apache-ns - lib-dccuser-updater',
-//                                         transfers: [
-//                                             sshTransfer(
-//                                                 excludes: '',
-//                                                 execCommand: '',
-//                                                 execTimeout: 120000,
-//                                                 flatten: false,
-//                                                 makeEmptyDirs: false,
-//                                                 noDefaultExcludes: false,
-//                                                 patternSeparator: '[, ]+',
-//                                                 remoteDirectory: "${params.DEPLOY_DOCS_URL_SUBFOLDER}",
-//                                                 remoteDirectorySDF: false,
-//                                                 removePrefix: '',
-//                                                 sourceFiles: '**'
-//                                             )
-//                                         ],
-//                                     usePromotionTimestamp: false,
-//                                     useWorkspaceInPromotion: false,
-//                                     verbose: true
-//                                     )
-//                                 ]
-//                             )
+                    }
+                    post{
+                        cleanup{
+                            cleanWs(
+                                deleteDirs: true,
+                                patterns: [
+                                    [pattern: "build/", type: 'INCLUDE'],
+                                ]
+                            )
+                        }
                     }
                 }
             }
