@@ -830,6 +830,7 @@ pipeline {
                                 deleteDirs: true,
                                 patterns: [
                                     [pattern: "build/", type: 'INCLUDE'],
+                                    [pattern: "dist/", type: 'INCLUDE'],
                                 ]
                             )
                         }
