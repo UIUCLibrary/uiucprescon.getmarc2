@@ -791,12 +791,63 @@ pipeline {
                         message 'Deploy documentation'
                         id 'DEPLOY_DOCUMENTATION'
                         parameters {
-                            string defaultValue: 'dd', description: '', name: 'DOC_URL', trim: true
+                            string defaultValue: 'getmarc2', description: '', name: 'DEPLOY_DOCS_URL_SUBFOLDER', trim: true
                         }
                     }
                     agent any
                     steps{
-                        echo "Deploying docs to ${DOC_URL}"
+                        unstash "DOCS_ARCHIVE"
+                        sshPublisher(
+                            publishers: [
+                                sshPublisherDesc(
+                                    configName: 'apache-ns - lib-dccuser-updater',
+                                    transfers: [
+                                        sshTransfer(
+                                            cleanRemote: false,
+                                            excludes: '',
+                                            execCommand: '',
+                                            execTimeout: 120000,
+                                            flatten: false,
+                                            makeEmptyDirs: false,
+                                            noDefaultExcludes: false,
+                                            patternSeparator: '[, ]+',
+                                            remoteDirectory: "${params.DEPLOY_DOCS_URL_SUBFOLDER}",
+                                            remoteDirectorySDF: false,
+                                            removePrefix: 'build/docs/html',
+                                            sourceFiles: 'build/docs/html/**'
+                                        )
+                                    ],
+                                    usePromotionTimestamp: false,
+                                    useWorkspaceInPromotion: false,
+                                    verbose: false
+                                )
+                            ]
+                        )
+//                         sshPublisher(
+//                                 publishers: [
+//                                     sshPublisherDesc(
+//                                         configName: 'apache-ns - lib-dccuser-updater',
+//                                         transfers: [
+//                                             sshTransfer(
+//                                                 excludes: '',
+//                                                 execCommand: '',
+//                                                 execTimeout: 120000,
+//                                                 flatten: false,
+//                                                 makeEmptyDirs: false,
+//                                                 noDefaultExcludes: false,
+//                                                 patternSeparator: '[, ]+',
+//                                                 remoteDirectory: "${params.DEPLOY_DOCS_URL_SUBFOLDER}",
+//                                                 remoteDirectorySDF: false,
+//                                                 removePrefix: '',
+//                                                 sourceFiles: '**'
+//                                             )
+//                                         ],
+//                                     usePromotionTimestamp: false,
+//                                     useWorkspaceInPromotion: false,
+//                                     verbose: true
+//                                     )
+//                                 ]
+//                             )
                     }
                 }
             }
