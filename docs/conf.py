@@ -52,7 +52,8 @@ release = metadata["version"]
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.doctest',
-    'sphinx.ext.napoleon'
+    'sphinx.ext.napoleon',
+    'sphinxcontrib.spelling'
 ]
 
 napoleon_google_docstring = True
@@ -67,6 +68,10 @@ napoleon_use_ivar = False
 napoleon_use_param = True
 napoleon_use_rtype = True
 add_module_names = False
+
+
+spelling_show_suggestions = True
+spelling_word_list_filename = './spelling_wordlist.txt'
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

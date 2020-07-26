@@ -8,4 +8,5 @@ pydocstyle
 pylint
 pytest
 sphinx
+sphinxcontrib.spelling
 tox
