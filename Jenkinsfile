@@ -211,6 +211,13 @@ pipeline {
 
                             }
                         }
+                        stage("Documentation Spell check"){
+                            steps {
+                                catchError(buildResult: 'SUCCESS', message: 'Found spelling issues in documentation', stageResult: 'UNSTABLE') {
+                                    sh "python -m sphinx docs reports/doc_spellcheck -b spelling -d build/docs/doctrees"
+                                }
+                            }
+                        }
                         stage("pyDocStyle"){
                             steps{
                                 catchError(buildResult: 'SUCCESS', message: 'Did not pass all pyDocStyle tests', stageResult: 'UNSTABLE') {
