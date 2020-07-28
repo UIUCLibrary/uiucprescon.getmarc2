@@ -58,7 +58,9 @@ class MockResponse:
 def test_get_bibid_record(capsys, monkeypatch):
 
     def mock_get(*args, **kwargs):
-        return MockResponse()
+        mock = MockResponse()
+        mock.status_code = 200
+        return mock
 
     cli_args = [
         "--bibid", "5539966",
@@ -88,7 +90,9 @@ def test_write_output_file(monkeypatch):
     ]
 
     def mock_get(*args, **kwargs):
-        return MockResponse()
+        mock = MockResponse()
+        mock.status_code = 200
+        return mock
 
     parsed_args = cli.get_arg_parse().parse_args(cli_args)
     monkeypatch.setattr(requests, "request", mock_get)
