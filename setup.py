@@ -3,8 +3,8 @@ from setuptools import setup
 setup(
     packages=['uiucprescon.getmarc2'],
     test_suite="tests",
-    tests_require=['pytest'],
     namespace_packages=["uiucprescon"],
+    tests_require=['pytest'],
     setup_requires=['pytest-runner'],
     package_data={
         "uiucprescon.getmarc2": ["MARC21slim.xsd"]
