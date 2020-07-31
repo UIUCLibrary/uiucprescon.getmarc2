@@ -1,7 +1,7 @@
 import abc
 import re
-from xml.dom import minidom
-from xml.etree import ElementTree as ET
+from xml.dom import minidom  # nosec
+from xml.etree import ElementTree as ET  # nosec
 
 try:
     from importlib.resources import read_text  # type: ignore
