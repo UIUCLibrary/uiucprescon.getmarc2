@@ -11,8 +11,8 @@ setup(
     },
     install_requires=[
         "lxml",
+        'importlib_resources;python_version<"3.7"',
         "requests",
-        'importlib_resources;python_version<"3.7"'
     ],
     entry_points={
         "console_scripts": [
