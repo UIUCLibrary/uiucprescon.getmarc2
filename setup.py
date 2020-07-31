@@ -7,7 +7,10 @@ setup(
     tests_require=['pytest'],
     setup_requires=['pytest-runner'],
     package_data={
-        "uiucprescon.getmarc2": ["MARC21slim.xsd"]
+        "uiucprescon.getmarc2": [
+            "MARC21slim.xsd",
+            "955_template.xml"
+        ]
     },
     install_requires=[
         "lxml",
