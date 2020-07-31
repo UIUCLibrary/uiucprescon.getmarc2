@@ -1,3 +1,5 @@
+"""Modify documents"""
+
 import abc
 import re
 from typing import Optional
@@ -11,9 +13,18 @@ except ModuleNotFoundError:
 
 
 class AbsEnrichment(metaclass=abc.ABCMeta):
+    """Base class to enhance a string."""
     @abc.abstractmethod
     def enrich(self, src: str) -> str:
-        pass
+        """Perform enrichment of some type to the string.
+
+        Args:
+            src: source data
+
+        Returns:
+            Newly enhanced string
+
+        """
 
 
 class Add955(AbsEnrichment):
