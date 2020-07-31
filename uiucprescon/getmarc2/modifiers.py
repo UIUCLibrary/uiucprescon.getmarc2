@@ -29,7 +29,7 @@ class AbsEnrichment(metaclass=abc.ABCMeta):
 
 
 class Add955(AbsEnrichment):
-    """ Add the 955 field values
+    """Add the 955 field values.
 
     Attributes:
         bib_id (str): bib id to be added to the 955 field.
