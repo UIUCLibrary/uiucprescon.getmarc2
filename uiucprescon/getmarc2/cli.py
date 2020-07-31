@@ -6,6 +6,7 @@ from typing import Optional
 from lxml import etree  # nosec
 from uiucprescon.getmarc2.records import RecordServer, is_validate_xml, \
     ValidationException
+from . import modifiers
 
 
 def get_arg_parse() -> argparse.ArgumentParser:
@@ -23,6 +24,14 @@ def get_arg_parse() -> argparse.ArgumentParser:
     return parser
 
 
+def fix_up_xml(xml_result, bibid):
+    field_adder = modifiers.Add955()
+    field_adder.bib_id = bibid
+    if "v" in bibid:
+        field_adder.contains_v = True
+    return field_adder.enrich(xml_result)
+
+
 def run(args: Optional[argparse.Namespace] = None) -> None:
     """Run the main entry point for the command line script.
 
@@ -36,7 +45,6 @@ def run(args: Optional[argparse.Namespace] = None) -> None:
         domain=args.domain,
         alma_api_key=args.alma_apikey
     )
-
     xml_result = str(
         etree.tostring(
             etree.fromstring(server.bibid_record(args.bibid)),
@@ -45,6 +53,8 @@ def run(args: Optional[argparse.Namespace] = None) -> None:
         ),
         encoding="utf-8"
     )
+    xml_result = fix_up_xml(xml_result, bibid=args.bibid)
+
     if is_validate_xml(xml_result) is False:
         raise ValidationException("invalid xml file")
     if args.output is not None:
