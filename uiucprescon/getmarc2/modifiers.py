@@ -6,7 +6,7 @@ from xml.etree import ElementTree as ET  # nosec
 try:
     from importlib.resources import read_text  # type: ignore
 except ModuleNotFoundError:
-    from importlib_resources import read_text
+    from importlib_resources import read_text  # type: ignore
 
 
 class AbsEnrichment(metaclass=abc.ABCMeta):
