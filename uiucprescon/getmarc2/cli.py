@@ -4,7 +4,7 @@ import argparse
 from typing import Optional
 
 from lxml import etree  # nosec
-from uiucprescon.getmarc2 import modifiers, records
+from uiucprescon.getmarc2 import modifiers, records  # noqa: E501 pylint: disable=line-too-long,no-name-in-module
 
 
 def get_arg_parse() -> argparse.ArgumentParser:
@@ -22,12 +22,22 @@ def get_arg_parse() -> argparse.ArgumentParser:
     return parser
 
 
-def fix_up_xml(xml_result, bibid):
+def fix_up_xml(xml_src: str, bibid: str) -> str:
+    """Fixes up the xml and adds anything missing from the raw record.
+
+    Args:
+        xml_src: marc xml file
+        bibid: uiuc bibid from the catalog
+
+    Returns:
+        Modified xml
+
+    """
     field_adder = modifiers.Add955()
     field_adder.bib_id = bibid
     if "v" in bibid:
         field_adder.contains_v = True
-    return field_adder.enrich(xml_result)
+    return field_adder.enrich(xml_src)
 
 
 def run(args: Optional[argparse.Namespace] = None) -> None:

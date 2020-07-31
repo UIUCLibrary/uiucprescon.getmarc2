@@ -1,5 +1,6 @@
 import abc
 import re
+from typing import Optional
 from xml.dom import minidom  # nosec
 from xml.etree import ElementTree as ET  # nosec
 
@@ -29,7 +30,7 @@ class Add955(AbsEnrichment):
 
     def __init__(self) -> None:
 
-        self.bib_id = None
+        self.bib_id: Optional[str] = None
         self.contains_v = False
 
     def enrich(self, src: str) -> str:
