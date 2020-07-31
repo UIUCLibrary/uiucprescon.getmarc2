@@ -23,7 +23,7 @@ def get_arg_parse() -> argparse.ArgumentParser:
 
 
 def fix_up_xml(xml_src: str, bibid: str) -> str:
-    """Fixes up the xml and adds anything missing from the raw record.
+    """Fix up the xml and adds anything missing from the raw record.
 
     Args:
         xml_src: marc xml file
