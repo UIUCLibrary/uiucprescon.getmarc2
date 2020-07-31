@@ -79,9 +79,11 @@ class Add955(AbsEnrichment):
 
 
 class Reflow(AbsEnrichment):
-    """Parses and re-renders the xml text. Useful for cleaning up after
-    using modifiers.
+    """Parses and re-renders the xml text.
+
+    Useful for cleaning up after using modifiers.
     """
+
     remove_whitespace_regex = re.compile(r">\s*<")
 
     def enrich(self, src: str) -> str:
