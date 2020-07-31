@@ -1,0 +1,6 @@
+<record xmlns="http://www.loc.gov/MARC21/slim">
+<datafield tag="955" ind1=" " ind2=" ">
+<subfield code="b">temp b</subfield>
+<subfield code="v">temp v</subfield>
+</datafield>
+</record>

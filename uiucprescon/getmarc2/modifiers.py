@@ -25,7 +25,7 @@ class Add955(AbsEnrichment):
     """
 
     questNS = "http://www.loc.gov/MARC21/slim"
-    template_955 = read_text("uiucprescon.pygetmarc.data", "template.xml")
+    template_955 = read_text("uiucprescon.getmarc2", "955_template.xml")
 
     def __init__(self) -> None:
 
