@@ -53,7 +53,7 @@ class Add955(AbsEnrichment):
         return new_xml
 
     @classmethod
-    def _create_new_955_field(cls, bib_id, contains_v)->str:
+    def _create_new_955_field(cls, bib_id, contains_v) -> str:
         new_966_field = ET.fromstring(Add955.template_955)
         new_966_field[0][0].text = bib_id
         if contains_v:
@@ -69,7 +69,7 @@ class Reflow(AbsEnrichment):
     """Parses and re-renders the xml text. Useful for cleaning up after
     using modifiers.
     """
-    remove_whitespace_regex = re.compile(">\s*<")
+    remove_whitespace_regex = re.compile(r">\s*<")
 
     def enrich(self, src: str) -> str:
         no_line_endings = src.replace("\n", "")
