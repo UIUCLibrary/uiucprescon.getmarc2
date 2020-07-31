@@ -1,4 +1,4 @@
-"""Modify documents"""
+"""Modify documents."""
 
 import abc
 import re
