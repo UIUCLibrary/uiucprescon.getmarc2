@@ -14,6 +14,7 @@ except ModuleNotFoundError:
 
 class AbsEnrichment(metaclass=abc.ABCMeta):
     """Base class to enhance a string."""
+
     @abc.abstractmethod
     def enrich(self, src: str) -> str:
         """Perform enrichment of some type to the string.
