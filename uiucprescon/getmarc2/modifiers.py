@@ -41,12 +41,12 @@ class Add955(AbsEnrichment):
     template_955 = read_text("uiucprescon.getmarc2", "955_template.xml")
 
     def __init__(self) -> None:
-
+        """Modify 955 fields."""
         self.bib_id: Optional[str] = None
         self.contains_v = False
 
     def enrich(self, src: str) -> str:
-
+        """Add a 955 field based on the bib_id."""
         bib_id = self.bib_id
         contains_v = self.contains_v
 
@@ -87,6 +87,7 @@ class Reflow(AbsEnrichment):
     remove_whitespace_regex = re.compile(r">\s*<")
 
     def enrich(self, src: str) -> str:
+        """Redraw the xml text."""
         no_line_endings = src.replace("\n", "")
         no_extra_whitespace = \
             Reflow.remove_whitespace_regex.sub("><", no_line_endings)
