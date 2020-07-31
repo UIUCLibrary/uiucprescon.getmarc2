@@ -4,8 +4,7 @@ import argparse
 from typing import Optional
 
 from lxml import etree  # nosec
-from uiucprescon.getmarc2.records import RecordServer, is_validate_xml, \
-    ValidationException
+from uiucprescon.getmarc2 import modifiers, records  # noqa: E501 pylint: disable=line-too-long,no-name-in-module
 
 
 def get_arg_parse() -> argparse.ArgumentParser:
@@ -23,6 +22,24 @@ def get_arg_parse() -> argparse.ArgumentParser:
     return parser
 
 
+def fix_up_xml(xml_src: str, bibid: str) -> str:
+    """Fix up the xml and adds anything missing from the raw record.
+
+    Args:
+        xml_src: marc xml file
+        bibid: uiuc bibid from the catalog
+
+    Returns:
+        Modified xml
+
+    """
+    field_adder = modifiers.Add955()
+    field_adder.bib_id = bibid
+    if "v" in bibid:
+        field_adder.contains_v = True
+    return field_adder.enrich(xml_src)
+
+
 def run(args: Optional[argparse.Namespace] = None) -> None:
     """Run the main entry point for the command line script.
 
@@ -32,11 +49,10 @@ def run(args: Optional[argparse.Namespace] = None) -> None:
     """
     args = args or get_arg_parse().parse_args()
 
-    server = RecordServer(
+    server = records.RecordServer(
         domain=args.domain,
         alma_api_key=args.alma_apikey
     )
-
     xml_result = str(
         etree.tostring(
             etree.fromstring(server.bibid_record(args.bibid)),
@@ -45,8 +61,10 @@ def run(args: Optional[argparse.Namespace] = None) -> None:
         ),
         encoding="utf-8"
     )
-    if is_validate_xml(xml_result) is False:
-        raise ValidationException("invalid xml file")
+    xml_result = fix_up_xml(xml_result, bibid=args.bibid)
+
+    if records.is_validate_xml(xml_result) is False:
+        raise records.ValidationException("invalid xml file")
     if args.output is not None:
         with open(args.output, "w") as xml_file:
             xml_file.write(xml_result)

@@ -9,7 +9,11 @@ setup(
     package_data={
         "uiucprescon.getmarc2": ["MARC21slim.xsd"]
     },
-    install_requires=["lxml", "requests"],
+    install_requires=[
+        "lxml",
+        'importlib_resources;python_version<"3.7"',
+        "requests",
+    ],
     entry_points={
         "console_scripts": [
             "getmarc = uiucprescon.getmarc2.__main__:main"
