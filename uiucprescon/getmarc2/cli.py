@@ -4,9 +4,7 @@ import argparse
 from typing import Optional
 
 from lxml import etree  # nosec
-from uiucprescon.getmarc2.records import RecordServer, is_validate_xml, \
-    ValidationException
-from . import modifiers
+from uiucprescon.getmarc2 import modifiers, records
 
 
 def get_arg_parse() -> argparse.ArgumentParser:
@@ -41,7 +39,7 @@ def run(args: Optional[argparse.Namespace] = None) -> None:
     """
     args = args or get_arg_parse().parse_args()
 
-    server = RecordServer(
+    server = records.RecordServer(
         domain=args.domain,
         alma_api_key=args.alma_apikey
     )
@@ -55,8 +53,8 @@ def run(args: Optional[argparse.Namespace] = None) -> None:
     )
     xml_result = fix_up_xml(xml_result, bibid=args.bibid)
 
-    if is_validate_xml(xml_result) is False:
-        raise ValidationException("invalid xml file")
+    if records.is_validate_xml(xml_result) is False:
+        raise records.ValidationException("invalid xml file")
     if args.output is not None:
         with open(args.output, "w") as xml_file:
             xml_file.write(xml_result)
