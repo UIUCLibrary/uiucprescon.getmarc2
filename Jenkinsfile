@@ -125,52 +125,52 @@ pipeline {
         stage("Sphinx Documentation"){
             agent{
                 dockerfile {
-                        filename 'ci/docker/python/linux/Dockerfile'
-                        label 'linux && docker'
-                        additionalBuildArgs "--build-arg USER_ID=\$(id -u) --build-arg GROUP_ID=\$(id -g) --build-arg PIP_EXTRA_INDEX_URL"
-                    }
-                }
-                steps {
-                    sh(
-                        label: "Building docs",
-                        script: '''mkdir -p logs
-                                   python -m sphinx docs build/docs/html -d build/docs/.doctrees -w logs/build_sphinx.log
-                                   '''
-                        )
-                }
-                post{
-                    always {
-                        recordIssues(tools: [sphinxBuild(pattern: 'logs/build_sphinx.log')])
-                    }
-                    success{
-                        publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
-                        unstash "DIST-INFO"
-                        script{
-                            def props = readProperties interpolate: false, file: "uiucprescon.getmarc2.dist-info/METADATA"
-                            def DOC_ZIP_FILENAME = "${props.Name}-${props.Version}.doc.zip"
-                            zip archive: true, dir: "${WORKSPACE}/build/docs/html", glob: '', zipFile: "dist/${DOC_ZIP_FILENAME}"
-                            stash includes: "dist/${DOC_ZIP_FILENAME},build/docs/html/**", name: 'DOCS_ARCHIVE'
-                        }
-
-                    }
-                    cleanup{
-                        cleanWs(
-                            patterns: [
-                                [pattern: 'logs/', type: 'INCLUDE'],
-                                [pattern: "build/docs/", type: 'INCLUDE'],
-                                [pattern: "dist/", type: 'INCLUDE']
-                            ],
-                            deleteDirs: true
-                        )
-                    }
+                    filename 'ci/docker/python/linux/Dockerfile'
+                    label 'linux && docker'
+                    additionalBuildArgs "--build-arg USER_ID=\$(id -u) --build-arg GROUP_ID=\$(id -g) --build-arg PIP_EXTRA_INDEX_URL"
                 }
             }
+            steps {
+                sh(
+                    label: "Building docs",
+                    script: '''mkdir -p logs
+                               python -m sphinx docs build/docs/html -d build/docs/.doctrees -w logs/build_sphinx.log
+                               '''
+                )
+            }
+            post{
+                always {
+                    recordIssues(tools: [sphinxBuild(pattern: 'logs/build_sphinx.log')])
+                }
+                success{
+                    publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
+                    unstash "DIST-INFO"
+                    script{
+                        def props = readProperties interpolate: false, file: "uiucprescon.getmarc2.dist-info/METADATA"
+                        def DOC_ZIP_FILENAME = "${props.Name}-${props.Version}.doc.zip"
+                        zip archive: true, dir: "${WORKSPACE}/build/docs/html", glob: '', zipFile: "dist/${DOC_ZIP_FILENAME}"
+                        stash includes: "dist/${DOC_ZIP_FILENAME},build/docs/html/**", name: 'DOCS_ARCHIVE'
+                    }
+
+                }
+                cleanup{
+                    cleanWs(
+                        patterns: [
+                            [pattern: 'logs/', type: 'INCLUDE'],
+                            [pattern: "build/docs/", type: 'INCLUDE'],
+                            [pattern: "dist/", type: 'INCLUDE']
+                        ],
+                        deleteDirs: true
+                    )
+                }
+            }
+        }
         stage("Checks") {
             agent {
                 dockerfile {
                     filename 'ci/docker/python/linux/Dockerfile'
                     label 'linux && docker'
-                    additionalBuildArgs "--build-arg PIP_EXTRA_INDEX_URL"
+                    additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) --build-arg PIP_EXTRA_INDEX_URL'
                 }
             }
             stages{
@@ -448,6 +448,7 @@ pipeline {
                         dockerfile {
                             filename 'ci/docker/python/linux/Dockerfile'
                             label 'linux && docker'
+                            additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) --build-arg PIP_EXTRA_INDEX_URL'
                         }
                     }
                     steps {
@@ -614,8 +615,8 @@ pipeline {
                         dockerfile {
                             filename 'ci/docker/python/linux/Dockerfile'
                             label 'linux && docker'
-                            additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
-                          }
+                            additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) --build-arg PIP_EXTRA_INDEX_URL'
+                        }
                     }
                     steps {
                         unstash "PYTHON_PACKAGES"
@@ -720,7 +721,7 @@ pipeline {
                         dockerfile {
                             filename 'ci/docker/python/linux/Dockerfile'
                             label 'linux && docker'
-                            additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g)'
+                            additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) --build-arg PIP_EXTRA_INDEX_URL'
                         }
                     }
                     steps {
@@ -743,7 +744,7 @@ pipeline {
                     node('linux && docker') {
                        script{
                             if (!env.TAG_NAME?.trim()){
-                                docker.build("getmarc:devpi",'-f ./ci/docker/python/linux/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
+                                docker.build("getmarc:devpi",'-f ./ci/docker/python/linux/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) --build-arg PIP_EXTRA_INDEX_URL .').inside{
                                     unstash "DIST-INFO"
                                     def props = readProperties interpolate: true, file: 'uiucprescon.getmarc2.dist-info/METADATA'
                                     sh(
