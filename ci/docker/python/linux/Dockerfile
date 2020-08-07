@@ -22,13 +22,12 @@ ARG USER_ID=1000
 ARG GROUP_ID=1000
 
 RUN groupadd -g $GROUP_ID user && \
-    useradd -u $USER_ID -s /bin/sh -m -d /home/user -g user user && \
-    mkdir -p /.cache/pip && chgrp -R  user /.cache/pip && \
-    chmod -R g+w /.cache/pip
+    useradd -u $USER_ID -s /bin/sh -m -d /home/user -g user user
+
 COPY --from=wheel_builder /wheels /wheels/
 ADD requirements.txt ci/docker/python/shared/requirements-ci.txt /tmp/
 ENV PIP_FIND_LINKS=/wheels
-
+ENV PIP_DOWNLOAD_CACHE=/home/user/.cache/pip/
 RUN pip install --no-index --find-links=/wheels \
     -r /tmp/requirements.txt \
     -r /tmp/requirements-ci.txt
