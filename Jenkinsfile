@@ -166,283 +166,287 @@ pipeline {
             }
         }
         stage("Checks") {
-            agent {
-                dockerfile {
-                    filename 'ci/docker/python/linux/Dockerfile'
-                    label 'linux && docker'
-                    additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) --build-arg PIP_EXTRA_INDEX_URL'
-                }
-            }
             stages{
-                stage("Configuring Testing Environment"){
-                    steps{
-                        sh(
-                            label: "Creating logging and report directories",
-                            script: """
-                                mkdir -p logs
-                            """
-                        )
-                    }
-                }
-                stage("Running Tests"){
-                    parallel {
-                        stage("PyTest"){
-                            steps{
-                                sh "coverage run --parallel-mode --source uiucprescon -m pytest --junitxml=reports/pytest/junit-pytest.xml "
-                            }
-                            post {
-                                always {
-                                    junit "reports/pytest/junit-pytest.xml"
-                                    stash includes: "reports/pytest/*.xml", name: 'PYTEST_REPORT'
-                                }
-                            }
+                stage("Check Code") {
+                    agent {
+                        dockerfile {
+                            filename 'ci/docker/python/linux/Dockerfile'
+                            label 'linux && docker'
+                            additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) --build-arg PIP_EXTRA_INDEX_URL'
                         }
-                        stage("Doctest"){
-                            steps {
+                    }
+                    stages{
+                        stage("Configuring Testing Environment"){
+                            steps{
                                 sh(
-                                    label:"Running doctest",
-                                    script: """mkdir -p reports/doctests
-                                              coverage run --parallel-mode --source uiucprescon -m sphinx -b doctest -d build/docs/doctrees docs reports/doctest -w logs/doctest.log
-                                              """
+                                    label: "Creating logging and report directories",
+                                    script: """
+                                        mkdir -p logs
+                                    """
                                 )
                             }
-                            post{
-                                always {
-                                    recordIssues(tools: [sphinxBuild(name: 'Sphinx Doctest', pattern: 'logs/doctest.log', id: 'doctest')])
-                                }
-
-                            }
                         }
-                        stage("pyDocStyle"){
-                            steps{
-                                catchError(buildResult: 'SUCCESS', message: 'Did not pass all pyDocStyle tests', stageResult: 'UNSTABLE') {
-                                    sh(
-                                        label: "Run pydocstyle",
-                                        script: '''mkdir -p reports
-                                                   pydocstyle uiucprescon > reports/pydocstyle-report.txt
-                                                   '''
-                                    )
-                                }
-                            }
-                            post {
-                                always{
-                                    recordIssues(tools: [pyDocStyle(pattern: 'reports/pydocstyle-report.txt')])
-                                }
-                            }
-                        }
-                        stage("MyPy") {
-                            steps{
-                                catchError(buildResult: 'SUCCESS', message: 'mypy found issues', stageResult: 'UNSTABLE') {
-                                    tee("logs/mypy.log"){
-                                        sh(
-                                            label: "Run mypy",
-                                            script:"""mkdir -p reports/mypy/html
-                                              mypy -p uiucprescon.getmarc2 --namespace-packages --html-report reports/mypy/html/
-                                              """
-                                        )
+                        stage("Running Tests"){
+                            parallel {
+                                stage("PyTest"){
+                                    steps{
+                                        sh "coverage run --parallel-mode --source uiucprescon -m pytest --junitxml=reports/pytest/junit-pytest.xml "
                                     }
-                                }
-                            }
-                            post {
-                                always {
-                                    recordIssues(tools: [myPy(name: 'MyPy', pattern: 'logs/mypy.log')])
-                                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
-                                }
-                            }
-                        }
-                        stage("Tox") {
-                            when{
-                                equals expected: true, actual: params.TEST_RUN_TOX
-                            }
-                            steps {
-                                sh "tox -e py"
-
-                            }
-                        }
-                        stage("Bandit") {
-                            steps{
-                                catchError(buildResult: 'SUCCESS', message: 'Bandit found issues', stageResult: 'UNSTABLE') {
-                                    sh(
-                                        label: "Running bandit",
-                                        script: "bandit --format json --output reports/bandit-report.json --recursive uiucprescon || bandit -f html --recursive uiucprescon --output reports/bandit-report.html"
-                                    )
-                                }
-                            }
-                            post {
-                                unstable{
-                                    script{
-                                        if(fileExists('reports/bandit-report.html')){
-                                            publishHTML([
-                                                allowMissing: false,
-                                                alwaysLinkToLastBuild: false,
-                                                keepAll: false,
-                                                reportDir: 'reports',
-                                                reportFiles: 'bandit-report.html',
-                                                reportName: 'Bandit Report', reportTitles: ''
-                                                ])
+                                    post {
+                                        always {
+                                            junit "reports/pytest/junit-pytest.xml"
+                                            stash includes: "reports/pytest/*.xml", name: 'PYTEST_REPORT'
                                         }
                                     }
                                 }
-                                always {
-                                    stash includes: "reports/bandit-report.json", name: 'BANDIT_REPORT'
-                                }
-                            }
-                        }
-                        stage("PyLint") {
-                            steps{
-                                catchError(buildResult: 'SUCCESS', message: 'Pylint found issues', stageResult: 'UNSTABLE') {
-                                    tee("reports/pylint.txt"){
+                                stage("Doctest"){
+                                    steps {
                                         sh(
-                                            script: '''pylint uiucprescon -r n --persistent=n --verbose --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}"
-                                                       ''',
-                                            label: "Running pylint"
+                                            label:"Running doctest",
+                                            script: """mkdir -p reports/doctests
+                                                      coverage run --parallel-mode --source uiucprescon -m sphinx -b doctest -d build/docs/doctrees docs reports/doctest -w logs/doctest.log
+                                                      """
                                         )
                                     }
+                                    post{
+                                        always {
+                                            recordIssues(tools: [sphinxBuild(name: 'Sphinx Doctest', pattern: 'logs/doctest.log', id: 'doctest')])
+                                        }
+
+                                    }
                                 }
-                                sh(
-                                    script: 'pylint uiucprescon  -r n --persistent=n --msg-template="{path}:{module}:{line}: [{msg_id}({symbol}), {obj}] {msg}" > reports/pylint_issues.txt',
-                                    label: "Running pylint for sonarqube",
-                                    returnStatus: true
-                                )
+                                stage("pyDocStyle"){
+                                    steps{
+                                        catchError(buildResult: 'SUCCESS', message: 'Did not pass all pyDocStyle tests', stageResult: 'UNSTABLE') {
+                                            sh(
+                                                label: "Run pydocstyle",
+                                                script: '''mkdir -p reports
+                                                           pydocstyle uiucprescon > reports/pydocstyle-report.txt
+                                                           '''
+                                            )
+                                        }
+                                    }
+                                    post {
+                                        always{
+                                            recordIssues(tools: [pyDocStyle(pattern: 'reports/pydocstyle-report.txt')])
+                                        }
+                                    }
+                                }
+                                stage("MyPy") {
+                                    steps{
+                                        catchError(buildResult: 'SUCCESS', message: 'mypy found issues', stageResult: 'UNSTABLE') {
+                                            tee("logs/mypy.log"){
+                                                sh(
+                                                    label: "Run mypy",
+                                                    script:"""mkdir -p reports/mypy/html
+                                                      mypy -p uiucprescon.getmarc2 --namespace-packages --html-report reports/mypy/html/
+                                                      """
+                                                )
+                                            }
+                                        }
+                                    }
+                                    post {
+                                        always {
+                                            recordIssues(tools: [myPy(name: 'MyPy', pattern: 'logs/mypy.log')])
+                                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
+                                        }
+                                    }
+                                }
+                                stage("Tox") {
+                                    when{
+                                        equals expected: true, actual: params.TEST_RUN_TOX
+                                    }
+                                    steps {
+                                        sh "tox -e py"
+
+                                    }
+                                }
+                                stage("Bandit") {
+                                    steps{
+                                        catchError(buildResult: 'SUCCESS', message: 'Bandit found issues', stageResult: 'UNSTABLE') {
+                                            sh(
+                                                label: "Running bandit",
+                                                script: "bandit --format json --output reports/bandit-report.json --recursive uiucprescon || bandit -f html --recursive uiucprescon --output reports/bandit-report.html"
+                                            )
+                                        }
+                                    }
+                                    post {
+                                        unstable{
+                                            script{
+                                                if(fileExists('reports/bandit-report.html')){
+                                                    publishHTML([
+                                                        allowMissing: false,
+                                                        alwaysLinkToLastBuild: false,
+                                                        keepAll: false,
+                                                        reportDir: 'reports',
+                                                        reportFiles: 'bandit-report.html',
+                                                        reportName: 'Bandit Report', reportTitles: ''
+                                                        ])
+                                                }
+                                            }
+                                        }
+                                        always {
+                                            stash includes: "reports/bandit-report.json", name: 'BANDIT_REPORT'
+                                        }
+                                    }
+                                }
+                                stage("PyLint") {
+                                    steps{
+                                        catchError(buildResult: 'SUCCESS', message: 'Pylint found issues', stageResult: 'UNSTABLE') {
+                                            tee("reports/pylint.txt"){
+                                                sh(
+                                                    script: '''pylint uiucprescon -r n --persistent=n --verbose --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}"
+                                                               ''',
+                                                    label: "Running pylint"
+                                                )
+                                            }
+                                        }
+                                        sh(
+                                            script: 'pylint uiucprescon  -r n --persistent=n --msg-template="{path}:{module}:{line}: [{msg_id}({symbol}), {obj}] {msg}" > reports/pylint_issues.txt',
+                                            label: "Running pylint for sonarqube",
+                                            returnStatus: true
+                                        )
+                                    }
+                                    post{
+                                        always{
+                                            stash includes: "reports/pylint_issues.txt,reports/pylint.txt", name: 'PYLINT_REPORT'
+                                            recordIssues(tools: [pyLint(pattern: 'reports/pylint.txt')])
+                                        }
+                                    }
+                                }
+                                stage("Flake8") {
+                                    steps{
+                                        catchError(buildResult: 'SUCCESS', message: 'Flake8 found issues', stageResult: 'UNSTABLE') {
+                                            sh(label: "Running Flake8",
+                                               script: '''mkdir -p logs
+                                                          flake8 uiucprescon --tee --output-file=logs/flake8.log
+                                                       '''
+                                               )
+                                        }
+                                    }
+                                    post {
+                                        always {
+                                            recordIssues(tools: [flake8(name: 'Flake8', pattern: 'logs/flake8.log')])
+                                            stash includes: "logs/flake8.log", name: 'FLAKE8_REPORT'
+                                        }
+                                    }
+                                }
                             }
                             post{
                                 always{
-                                    stash includes: "reports/pylint_issues.txt,reports/pylint.txt", name: 'PYLINT_REPORT'
-                                    recordIssues(tools: [pyLint(pattern: 'reports/pylint.txt')])
+                                    sh(
+                                        label:"Combine Coverage data and generate a report",
+                                        script: """mkdir -p reports/coverage
+                                                  coverage combine && coverage xml -o reports/coverage.xml
+                                                  """
+                                    )
+                                    publishCoverage adapters: [
+                                                    coberturaAdapter('reports/coverage.xml')
+                                                    ],
+                                                sourceFileResolver: sourceFiles('STORE_ALL_BUILD')
+                                    stash includes: "reports/coverage.xml", name: 'COVERAGE_REPORT'
                                 }
-                            }
-                        }
-                        stage("Flake8") {
-                            steps{
-                                catchError(buildResult: 'SUCCESS', message: 'Flake8 found issues', stageResult: 'UNSTABLE') {
-                                    sh(label: "Running Flake8",
-                                       script: '''mkdir -p logs
-                                                  flake8 uiucprescon --tee --output-file=logs/flake8.log
-                                               '''
-                                       )
-                                }
-                            }
-                            post {
-                                always {
-                                    recordIssues(tools: [flake8(name: 'Flake8', pattern: 'logs/flake8.log')])
-                                    stash includes: "logs/flake8.log", name: 'FLAKE8_REPORT'
+                                cleanup{
+                                    cleanWs(
+                                        deleteDirs: true,
+                                        patterns: [
+                                            [pattern: "dist/", type: 'INCLUDE'],
+                                            [pattern: 'build/', type: 'INCLUDE'],
+                                            [pattern: '.pytest_cache/', type: 'INCLUDE'],
+                                            [pattern: '.mypy_cache/', type: 'INCLUDE'],
+                                            [pattern: '.tox/', type: 'INCLUDE'],
+                                            [pattern: 'uiucprescon1.stats', type: 'INCLUDE'],
+                                            [pattern: 'uiucprescon.packager.egg-info/', type: 'INCLUDE'],
+                                            [pattern: 'reports/', type: 'INCLUDE'],
+                                            [pattern: 'logs/', type: 'INCLUDE']
+                                            ]
+                                    )
                                 }
                             }
                         }
                     }
                     post{
+                        cleanup{
+                            cleanWs(
+                                deleteDirs: true,
+                                patterns: [
+                                    [pattern: 'reports/coverage.xml', type: 'INCLUDE'],
+                                    [pattern: 'reports/coverage', type: 'INCLUDE'],
+                                ])
+                        }
+                    }
+                }
+                stage("Send to sonar Sonarcloud for Analysis"){
+                    agent {
+                        dockerfile {
+                            filename 'ci/docker/python/linux/Dockerfile'
+                            label 'linux && docker'
+                            additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) --build-arg PIP_EXTRA_INDEX_URL'
+                            args '--mount source=sonar-cache-uiucprescon-getmarc2,target=/home/user/.sonar/cache'
+                        }
+                    }
+                    options{
+                        lock("uiucprescon.getmarc2-sonarscanner")
+                    }
+                    when{
+                        equals expected: true, actual: params.USE_SONARQUBE
+                        beforeAgent true
+                        beforeOptions true
+                    }
+                    steps{
+                        unstash "COVERAGE_REPORT"
+                        unstash "PYTEST_REPORT"
+                        unstash "BANDIT_REPORT"
+                        unstash "PYLINT_REPORT"
+                        unstash "FLAKE8_REPORT"
+                        script{
+                            withSonarQubeEnv(installationName:"sonarcloud", credentialsId: 'sonarcloud-uiucprescon.getmarc2') {
+                                unstash "DIST-INFO"
+                                def props = readProperties(interpolate: false, file: "uiucprescon.getmarc2.dist-info/METADATA")
+                                if (env.CHANGE_ID){
+                                    sh(
+                                        label: "Running Sonar Scanner",
+                                        script:"sonar-scanner -Dsonar.projectVersion=${props.Version} -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.pullrequest.key=${env.CHANGE_ID} -Dsonar.pullrequest.base=${env.CHANGE_TARGET}"
+                                        )
+                                } else {
+                                    sh(
+                                        label: "Running Sonar Scanner",
+                                        script: "sonar-scanner -Dsonar.projectVersion=${props.Version} -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.branch.name=${env.BRANCH_NAME}"
+                                        )
+                                }
+                            }
+                            timeout(time: 1, unit: 'HOURS') {
+                                def sonarqube_result = waitForQualityGate(abortPipeline: false)
+                                if (sonarqube_result.status != 'OK') {
+                                    unstable "SonarQube quality gate: ${sonarqube_result.status}"
+                                }
+                                def outstandingIssues = get_sonarqube_unresolved_issues(".scannerwork/report-task.txt")
+                                writeJSON file: 'reports/sonar-report.json', json: outstandingIssues
+                            }
+                        }
+                    }
+                    post {
                         always{
-                            sh(
-                                label:"Combine Coverage data and generate a report",
-                                script: """mkdir -p reports/coverage
-                                          coverage combine && coverage xml -o reports/coverage.xml
-                                          """
-                            )
-                            publishCoverage adapters: [
-                                            coberturaAdapter('reports/coverage.xml')
-                                            ],
-                                        sourceFileResolver: sourceFiles('STORE_ALL_BUILD')
-                            stash includes: "reports/coverage.xml", name: 'COVERAGE_REPORT'
+                            script{
+                                if(fileExists('reports/sonar-report.json')){
+                                    stash includes: "reports/sonar-report.json", name: 'SONAR_REPORT'
+                                    archiveArtifacts allowEmptyArchive: true, artifacts: 'reports/sonar-report.json'
+                                    recordIssues(tools: [sonarQube(pattern: 'reports/sonar-report.json')])
+                                }
+                            }
                         }
                         cleanup{
                             cleanWs(
                                 deleteDirs: true,
                                 patterns: [
-                                    [pattern: "dist/", type: 'INCLUDE'],
-                                    [pattern: 'build/', type: 'INCLUDE'],
-                                    [pattern: '.pytest_cache/', type: 'INCLUDE'],
-                                    [pattern: '.mypy_cache/', type: 'INCLUDE'],
-                                    [pattern: '.tox/', type: 'INCLUDE'],
-                                    [pattern: 'uiucprescon1.stats', type: 'INCLUDE'],
-                                    [pattern: 'uiucprescon.packager.egg-info/', type: 'INCLUDE'],
                                     [pattern: 'reports/', type: 'INCLUDE'],
-                                    [pattern: 'logs/', type: 'INCLUDE']
-                                    ]
+                                    [pattern: 'logs/', type: 'INCLUDE'],
+                                    [pattern: 'uiucprescon.getmarc2.dist-info/', type: 'INCLUDE'],
+                                    [pattern: '.scannerwork/', type: 'INCLUDE'],
+                                ]
                             )
                         }
                     }
-                }
-            }
-            post{
-                cleanup{
-                    cleanWs(
-                        deleteDirs: true,
-                        patterns: [
-                            [pattern: 'reports/coverage.xml', type: 'INCLUDE'],
-                            [pattern: 'reports/coverage', type: 'INCLUDE'],
-                        ])
-                }
-            }
-        }
-        stage("Sonarcloud Analysis"){
-            agent {
-                dockerfile {
-                    filename 'ci/docker/python/linux/Dockerfile'
-                    label 'linux && docker'
-                    additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) --build-arg PIP_EXTRA_INDEX_URL'
-                    args '--mount source=sonar-cache-uiucprescon-getmarc2,target=/home/user/.sonar/cache'
-                }
-            }
-            options{
-                lock("uiucprescon.getmarc2-sonarscanner")
-            }
-            when{
-                equals expected: true, actual: params.USE_SONARQUBE
-                beforeAgent true
-                beforeOptions true
-            }
-            steps{
-                unstash "COVERAGE_REPORT"
-                unstash "PYTEST_REPORT"
-                unstash "BANDIT_REPORT"
-                unstash "PYLINT_REPORT"
-                unstash "FLAKE8_REPORT"
-                script{
-                    withSonarQubeEnv(installationName:"sonarcloud", credentialsId: 'sonarcloud-uiucprescon.getmarc2') {
-                        unstash "DIST-INFO"
-                        def props = readProperties(interpolate: false, file: "uiucprescon.getmarc2.dist-info/METADATA")
-                        if (env.CHANGE_ID){
-                            sh(
-                                label: "Running Sonar Scanner",
-                                script:"sonar-scanner -Dsonar.projectVersion=${props.Version} -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.pullrequest.key=${env.CHANGE_ID} -Dsonar.pullrequest.base=${env.CHANGE_TARGET}"
-                                )
-                        } else {
-                            sh(
-                                label: "Running Sonar Scanner",
-                                script: "sonar-scanner -Dsonar.projectVersion=${props.Version} -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.branch.name=${env.BRANCH_NAME}"
-                                )
-                        }
-                    }
-                    timeout(time: 1, unit: 'HOURS') {
-                        def sonarqube_result = waitForQualityGate(abortPipeline: false)
-                        if (sonarqube_result.status != 'OK') {
-                            unstable "SonarQube quality gate: ${sonarqube_result.status}"
-                        }
-                        def outstandingIssues = get_sonarqube_unresolved_issues(".scannerwork/report-task.txt")
-                        writeJSON file: 'reports/sonar-report.json', json: outstandingIssues
-                    }
-                }
-            }
-            post {
-                always{
-                    script{
-                        if(fileExists('reports/sonar-report.json')){
-                            stash includes: "reports/sonar-report.json", name: 'SONAR_REPORT'
-                            archiveArtifacts allowEmptyArchive: true, artifacts: 'reports/sonar-report.json'
-                            recordIssues(tools: [sonarQube(pattern: 'reports/sonar-report.json')])
-                        }
-                    }
-                }
-                cleanup{
-                    cleanWs(
-                        deleteDirs: true,
-                        patterns: [
-                            [pattern: 'reports/', type: 'INCLUDE'],
-                            [pattern: 'logs/', type: 'INCLUDE'],
-                            [pattern: 'uiucprescon.getmarc2.dist-info/', type: 'INCLUDE'],
-                            [pattern: '.scannerwork/', type: 'INCLUDE'],
-                        ]
-                    )
                 }
             }
         }
