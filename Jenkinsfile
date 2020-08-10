@@ -376,7 +376,7 @@ pipeline {
                         }
                     }
                 }
-                stage("Send to sonar Sonarcloud for Analysis"){
+                stage("Send to Sonarcloud for Analysis"){
                     agent {
                         dockerfile {
                             filename 'ci/docker/python/linux/Dockerfile'
