@@ -180,7 +180,6 @@ pipeline {
                             label: "Creating logging and report directories",
                             script: """
                                 mkdir -p logs
-                                mkdir -p reports/doctests
                             """
                         )
                     }
@@ -200,7 +199,12 @@ pipeline {
                         }
                         stage("Doctest"){
                             steps {
-                                sh "coverage run --parallel-mode --source uiucprescon -m sphinx -b doctest -d build/docs/doctrees docs reports/doctest -w logs/doctest.log"
+                                sh(
+                                    label:"Running doctest",
+                                    script: """mkdir -p reports/doctests
+                                              coverage run --parallel-mode --source uiucprescon -m sphinx -b doctest -d build/docs/doctrees docs reports/doctest -w logs/doctest.log
+                                              """
+                                )
                             }
                             post{
                                 always {
