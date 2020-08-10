@@ -180,7 +180,6 @@ pipeline {
                             label: "Creating logging and report directories",
                             script: """
                                 mkdir -p logs
-                                mkdir -p reports/coverage
                                 mkdir -p reports/doctests
                             """
                         )
@@ -329,8 +328,12 @@ pipeline {
                     }
                     post{
                         always{
-                            sh "coverage combine && coverage xml -o reports/coverage.xml && coverage html -d reports/coverage"
-                            publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: "reports/coverage", reportFiles: 'index.html', reportName: 'Coverage', reportTitles: ''])
+                            sh(
+                                label:"Combine Coverage data and generate a report",
+                                script: """mkdir -p reports/coverage
+                                          coverage combine && coverage xml -o reports/coverage.xml
+                                          """
+                            )
                             publishCoverage adapters: [
                                             coberturaAdapter('reports/coverage.xml')
                                             ],
