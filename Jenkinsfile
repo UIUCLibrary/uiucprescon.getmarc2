@@ -182,7 +182,6 @@ pipeline {
                                 mkdir -p logs
                                 mkdir -p reports/coverage
                                 mkdir -p reports/doctests
-                                mkdir -p reports/mypy/html
                             """
                         )
                     }
@@ -231,7 +230,14 @@ pipeline {
                         stage("MyPy") {
                             steps{
                                 catchError(buildResult: 'SUCCESS', message: 'mypy found issues', stageResult: 'UNSTABLE') {
-                                    sh "mypy -p uiucprescon.getmarc2 --namespace-packages --html-report reports/mypy/html/  | tee logs/mypy.log"
+                                    tee("logs/mypy.log"){
+                                        sh(
+                                            label: "Run mypy",
+                                            script:"""mkdir -p reports/mypy/html
+                                              mypy -p uiucprescon.getmarc2 --namespace-packages --html-report reports/mypy/html/
+                                              """
+                                        )
+                                    }
                                 }
                             }
                             post {
