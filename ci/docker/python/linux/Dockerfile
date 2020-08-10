@@ -25,7 +25,7 @@ RUN groupadd -g $GROUP_ID user && \
     useradd -u $USER_ID -s /bin/sh -m -d /home/user -g user user && \
     mkdir -p /.cache/pip && chgrp -R  user /.cache/ && \
     chmod -R g+w /.cache/
-
+USER user
 ENV SONAR_SCANNER_VERSION=4.4.0.2170
 ENV SONAR_SCANNER_HOME=/home/user/.sonar/sonar-scanner-$SONAR_SCANNER_VERSION-linux
 RUN curl --create-dirs -sSLo $HOME/.sonar/sonar-scanner.zip \
@@ -37,6 +37,7 @@ RUN curl --create-dirs -sSLo $HOME/.sonar/sonar-scanner.zip \
 ENV PATH=$SONAR_SCANNER_HOME/bin:$PATH
 ENV SONAR_SCANNER_OPTS="-server"
 
+USER root
 COPY --from=wheel_builder /wheels /wheels/
 ADD requirements.txt ci/docker/python/shared/requirements-ci.txt /tmp/
 ENV PIP_FIND_LINKS=/wheels
