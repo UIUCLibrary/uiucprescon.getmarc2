@@ -87,8 +87,10 @@ pipeline {
     agent none
     parameters {
         booleanParam(name: "TEST_RUN_TOX", defaultValue: false, description: "Run Tox Tests")
+        booleanParam(name: "RUN_CHECKS", defaultValue: true, description: "Run checks on code")
         booleanParam(name: "USE_SONARQUBE", defaultValue: true, description: "Send data test data to SonarQube")
         booleanParam(name: "BUILD_PACKAGES", defaultValue: false, description: "Build Python packages")
+        booleanParam(name: "TEST_PACKAGES_ON_MAC", defaultValue: false, description: "Test Python packages on Mac")
         booleanParam(name: "DEPLOY_DEVPI", defaultValue: false, description: "Deploy to devpi on http://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
         booleanParam(name: "DEPLOY_DEVPI_PRODUCTION", defaultValue: false, description: "Deploy to production devpi on https://devpi.library.illinois.edu/production/release. Master branch Only")
         booleanParam(name: 'DEPLOY_DOCS', defaultValue: false, description: '')
@@ -166,6 +168,9 @@ pipeline {
             }
         }
         stage("Checks") {
+            when{
+                equals expected: true, actual: params.RUN_CHECKS
+            }
             stages{
                 stage("Check Code") {
                     agent {
@@ -485,6 +490,45 @@ pipeline {
                                     [pattern: 'dist/', type: 'INCLUDE'],
                                     [pattern: 'build/', type: 'INCLUDE'],
                                     [pattern: 'uiucprescon.getmarc2.egg-info/', type: 'INCLUDE'],
+                                ]
+                            )
+                        }
+                    }
+                }
+                stage('Testing Packages on mac') {
+                    agent {
+                        label 'mac'
+                    }
+                    when{
+                        equals expected: true, actual: params.TEST_PACKAGES_ON_MAC
+                        beforeAgent true
+                    }
+                    steps{
+                        sh(
+                            label:"Installing tox",
+                            script: """python3 -m venv venv
+                                       venv/bin/python -m pip install pip --upgrade
+                                       venv/bin/python -m pip install wheel
+                                       venv/bin/python -m pip install --upgrade setuptools
+                                       venv/bin/python -m pip install tox
+                                       """
+                            )
+                        unstash "PYTHON_PACKAGES"
+                        script{
+                            findFiles(glob: "dist/*.tar.gz,dist/*.zip,dist/*.whl").each{
+                                sh(
+                                    label: "Testing ${it}",
+                                    script: "venv/bin/tox --installpkg=${it.path} -e py -vv --recreate"
+                                )
+                            }
+                        }
+                    }
+                    post{
+                        cleanup{
+                            cleanWs(
+                                deleteDirs: true,
+                                patterns: [
+                                    [pattern: 'venv/', type: 'INCLUDE'],
                                 ]
                             )
                         }
