@@ -513,7 +513,10 @@ pipeline {
                         unstash "PYTHON_PACKAGES"
                         script{
                             findFiles(glob: "dist/*.tar.gz,dist/*.zip,dist/*.whl").each{
-                                echo "Testing ${it.path}"
+                                sh(
+                                    label: "Testing ${it}",
+                                    script: "venv/bin/tox --installpkg=${it.path} -e py -vv"
+                                )
                             }
                         }
                     }
