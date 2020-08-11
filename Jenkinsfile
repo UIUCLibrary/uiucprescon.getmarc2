@@ -513,7 +513,7 @@ pipeline {
                             findFiles(glob: "dist/*.tar.gz,dist/*.zip,dist/*.whl").each{
                                 sh(
                                     label: "Testing ${it}",
-                                    script: "venv/bin/tox --installpkg=${it.path} -e py -vv"
+                                    script: "venv/bin/tox --installpkg=${it.path} -e py -vv --recreate"
                                 )
                             }
                         }
