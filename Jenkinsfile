@@ -501,7 +501,14 @@ pipeline {
                         label 'mac'
                     }
                     steps{
-                        sh """python3 -m venv venv"""
+                        sh(
+                            script: """python3 -m venv venv
+                                       venv/bin/python -m pip install pip --upgrade
+                                       venv/bin/python -m pip install wheel
+                                       venv/bin/python -m pip install --upgrade setuptools
+                                       venv/bin/python -m pip install tox
+                                       """
+                            )
                     }
                     post{
                         cleanup{
