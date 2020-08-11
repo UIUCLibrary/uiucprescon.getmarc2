@@ -501,14 +501,8 @@ pipeline {
                         label 'mac'
                     }
                     steps{
-                        cleanWs(
-                                deleteDirs: true,
-                                patterns: [
-                                    [pattern: 'tox.ini', type: 'excludes'],
-                                    [pattern: 'tests/', type: 'excludes'],
-                                ]
-                            )
                         sh(
+                            label:"Installing tox",
                             script: """python3 -m venv venv
                                        venv/bin/python -m pip install pip --upgrade
                                        venv/bin/python -m pip install wheel
