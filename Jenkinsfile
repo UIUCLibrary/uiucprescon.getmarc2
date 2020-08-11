@@ -90,7 +90,8 @@ pipeline {
 //         TODO: Turn this back on
         booleanParam(name: "RUN_CHECKS", defaultValue: false, description: "Run checks on code")
         booleanParam(name: "USE_SONARQUBE", defaultValue: true, description: "Send data test data to SonarQube")
-        booleanParam(name: "BUILD_PACKAGES", defaultValue: false, description: "Build Python packages")
+//         TODO: Turn this back off
+        booleanParam(name: "BUILD_PACKAGES", defaultValue: true, description: "Build Python packages")
         booleanParam(name: "DEPLOY_DEVPI", defaultValue: false, description: "Deploy to devpi on http://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
         booleanParam(name: "DEPLOY_DEVPI_PRODUCTION", defaultValue: false, description: "Deploy to production devpi on https://devpi.library.illinois.edu/production/release. Master branch Only")
         booleanParam(name: 'DEPLOY_DOCS', defaultValue: false, description: '')
@@ -500,7 +501,17 @@ pipeline {
                         label 'mac'
                     }
                     steps{
-                        sh "ls -la"
+                        sh """python3 -m venv venv"""
+                    }
+                    post{
+                        cleanup{
+                            cleanWs(
+                                deleteDirs: true,
+                                patterns: [
+                                    [pattern: 'venv/', type: 'INCLUDE'],
+                                ]
+                            )
+                        }
                     }
                 }
                 stage('Testing all Package') {
