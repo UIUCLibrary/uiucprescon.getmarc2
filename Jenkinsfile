@@ -490,6 +490,14 @@ pipeline {
                         }
                     }
                 }
+                stage('Testing Packages on mac') {
+                    agent {
+                        label 'mac'
+                    }
+                    steps{
+                        sh "ls -la"
+                    }
+                }
                 stage('Testing all Package') {
                     matrix{
                         axes{
