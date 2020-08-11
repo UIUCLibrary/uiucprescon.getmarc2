@@ -501,6 +501,13 @@ pipeline {
                         label 'mac'
                     }
                     steps{
+                        cleanWs(
+                                deleteDirs: true,
+                                patterns: [
+                                    [pattern: 'tox.ini', type: 'excludes'],
+                                    [pattern: 'tests/', type: 'excludes'],
+                                ]
+                            )
                         sh(
                             script: """python3 -m venv venv
                                        venv/bin/python -m pip install pip --upgrade
@@ -509,6 +516,12 @@ pipeline {
                                        venv/bin/python -m pip install tox
                                        """
                             )
+                        unstash "PYTHON_PACKAGES"
+                        script{
+                            findFiles(glob: "dist/*.tar.gz,dist/*.zip,dist/*.whl").each{
+                                echo "Testing ${it.path}"
+                            }
+                        }
                     }
                     post{
                         cleanup{
