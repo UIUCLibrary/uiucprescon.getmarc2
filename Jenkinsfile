@@ -536,12 +536,13 @@ pipeline {
                             unstash "PYTHON_PACKAGES"
                             findFiles(glob: "dist/*.whl").each{
                                 def sanitized_packageversion=sanitize_chocolatey_version(props.Version)
-                                bat(
+                                powershell(
                                     label: "Configuring new package for Chocolatey",
-                                    script: "choco new getmarc packageversion=${sanitized_packageversion} InstallerFile=${it.path} -t pythonscript"
+                                    script: """choco new getmarc packageversion=${sanitized_packageversion} InstallerFile=${it.path} -t pythonscript
+                                               Move-Item -Path "${it.path}"  -Destination "./getmarc/{it.path}"
+                                    """
                                 )
-                                unstash "PYTHON_PACKAGES"
-                                bat(
+                                powershell(
                                     label: "Packaging for Chocolatey",
                                     script: 'choco pack .\\getmarc\\getmarc.nuspec --outputdirectory .\\getmarc'
                                 )
