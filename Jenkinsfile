@@ -843,6 +843,18 @@ pipeline {
         }
         stage("Deploy") {
             parallel{
+                stage("Package for Chocolatey"){
+                    agent {
+                        dockerfile {
+                            filename 'ci/docker/chocolatey_package/Dockerfile'
+                            label 'windows && docker'
+                          }
+                    }
+                    steps{
+                        echo "HERE"
+                    }
+
+                }
                 stage("Deploy Documentation"){
                     when{
                         equals expected: true, actual: params.DEPLOY_DOCS
