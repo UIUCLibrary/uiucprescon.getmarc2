@@ -1,5 +1,6 @@
 # escape=`
-FROM mcr.microsoft.com/windows/servercore:ltsc2019 as choco_builder
+FROM mcr.microsoft.com/windows/servercore:ltsc2019
+#FROM mcr.microsoft.com/windows/servercore:ltsc2019 as choco_builder
 SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop';"]
 
 ADD ci/docker/chocolatey_package/chocolatey/install_choco.ps1 choco/install_choco.ps1
@@ -23,7 +24,7 @@ COPY ci/docker/chocolatey_package/choco_package_template/pythonscript/ C:/Progra
 #    Move-Item -Path "c:\pkg\*"  -Destination "c:\packageme\getmarc\dist\\" | Out-Null
 #
 #RUN ls c:\packageme\getmarc\ ;  choco pack c:\packageme\getmarc\getmarc.nuspec --outputdirectory c:\packageme\getmarc
-#
+#RUN ls c:\packageme\getmarc\
 #FROM mcr.microsoft.com/windows/servercore:ltsc2019
 #SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop';"]
 #
@@ -37,7 +38,10 @@ COPY ci/docker/chocolatey_package/choco_package_template/pythonscript/ C:/Progra
 #        Write-Host "Adding $env:CHOCOLATEY_SOURCE to chocolatey sources" ; `
 #        choco source add -n=CHOCOLATEY_SOURCE --priority=1 -s=\"$env:CHOCOLATEY_SOURCE\" ; `
 #    }
-#COPY --from=choco_builder c:/packageme/getmarc c:/packageme/getmarc/
+#COPY --from=choco_builder c:/packageme/getmarc/getmarc.1.0.nupkg c:/packageme/getmarc/
+#RUN New-LocalUser -Name "user" -Description \"Description of this account.\" -NoPassword
+#USER user
 #WORKDIR c:/packageme/
-#RUN cd getmarc; choco install getmarc -y -dv -s  '.;CHOCOLATEY_SOURCE;chocolatey'
+#RUN echo "hello"
+#RUN choco install getmarc -y -dv -s  './getmarc;CHOCOLATEY_SOURCE;chocolatey'
 #RUN getmarc --help
