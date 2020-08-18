@@ -725,7 +725,7 @@ pipeline {
                                 powershell(
                                     label: "installing getmarc",
                                     script:"""\$ErrorActionPreference = 'Stop'; # stop on all errors
-                                              choco install getmarc -y -dv -s  './getmarc/;CHOCOLATEY_SOURCE;chocolatey'
+                                              choco install getmarc -y -dv -s  './getmarc/;CHOCOLATEY_SOURCE;chocolatey' --no-progress
                                               """
                                 )
                                 bat "getmarc --help"
