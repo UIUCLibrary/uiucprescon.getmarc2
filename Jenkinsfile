@@ -567,7 +567,6 @@ pipeline {
                             }
                             steps{
                                 unstash "CHOCOLATEY_PACKAGE"
-//                                 powershell "ls getmarc/ -Recurse"
                                 powershell(
                                     label: "installing getmarc",
                                     script:"""\$ErrorActionPreference = 'Stop'; # stop on all errors
@@ -576,6 +575,11 @@ pipeline {
                                 )
                                 bat "getmarc --help"
 
+                            }
+                            post{
+                                failure{
+                                    powershell "ls getmarc/ -Recurse"
+                                }
                             }
                         }
                     }
