@@ -516,7 +516,12 @@ pipeline {
                             def props = readProperties interpolate: true, file: 'uiucprescon.getmarc2.dist-info/METADATA'
                             unstash "PYTHON_PACKAGES"
                             findFiles(glob: "dist/*.whl").each{
-                                bat "choco new getmarc packageversion=${props.Version} InstallerFile=${it.path} -t pythonscript"
+                                bat(
+                                    label: "Packaging for Chocolatey",
+                                    script: """choco new getmarc packageversion=${props.Version} InstallerFile=${it.path} -t pythonscript
+                                               choco pack .\\getmarc\\getmarc.nuspec --outputdirectory .\\getmarc
+                                               """
+                                )
                             }
                         }
                     }
