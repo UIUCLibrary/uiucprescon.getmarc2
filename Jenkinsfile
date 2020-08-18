@@ -538,7 +538,7 @@ pipeline {
                                 def sanitized_packageversion=sanitize_chocolatey_version(props.Version)
                                 powershell(
                                     label: "Configuring new package for Chocolatey",
-                                    script: """$ErrorActionPreference = 'Stop'; # stop on all errors
+                                    script: """\$ErrorActionPreference = 'Stop'; # stop on all errors
                                                choco new getmarc packageversion=${sanitized_packageversion} InstallerFile=${it.path} -t pythonscript
                                                Move-Item -Path "${it.path}"  -Destination "./getmarc/{it.path}"
                                                ls ./getmarc/ -Recurse
