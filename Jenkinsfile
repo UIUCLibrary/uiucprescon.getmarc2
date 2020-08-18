@@ -564,7 +564,8 @@ pipeline {
                                   }
                             }
                             steps{
-                                echo "Testing"
+                                unstash "CHOCOLATEY_PACKAGE"
+                                powershell "ls getmarc/ -Recurse"
                             }
                         }
                     }
