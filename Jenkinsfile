@@ -518,72 +518,6 @@ pipeline {
                         }
                     }
                 }
-                stage("Chocolatey"){
-                    when{
-                        equals expected: true, actual: params.DEPLOY_CHOCOLATEY
-                        beforeInput true
-                    }
-                    stages{
-                        stage("Package for Chocolatey"){
-                            agent {
-                                dockerfile {
-                                    filename 'ci/docker/chocolatey_package/Dockerfile'
-                                    label 'windows && docker'
-                                    additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
-                                  }
-                            }
-                            steps{
-                                script {
-                                    unstash "DIST-INFO"
-                                    def props = readProperties interpolate: true, file: 'uiucprescon.getmarc2.dist-info/METADATA'
-                                    unstash "PYTHON_PACKAGES"
-                                    findFiles(glob: "dist/*.whl").each{
-                                        def sanitized_packageversion=sanitize_chocolatey_version(props.Version)
-                                        powershell(
-                                            label: "Configuring new package for Chocolatey",
-                                            script: """\$ErrorActionPreference = 'Stop'; # stop on all errors
-                                                       choco new getmarc packageversion=${sanitized_packageversion} InstallerFile=${it.path} -t pythonscript
-                                                       New-Item -ItemType File -Path ".\\getmarc\\${it.path}" -Force | Out-Null
-                                                       Move-Item -Path "${it.path}"  -Destination "./getmarc/${it.path}"  -Force | Out-Null
-                                                       choco pack .\\getmarc\\getmarc.nuspec --outputdirectory .\\getmarc
-                                                       """
-                                        )
-                                    }
-                                }
-                            }
-                            post{
-                                always{
-                                    stash includes: 'getmarc/**', name: "CHOCOLATEY_PACKAGE"
-                                }
-                            }
-                        }
-                        stage("Testing Chocolatey Package"){
-                            agent {
-                                dockerfile {
-                                    filename 'ci/docker/chocolatey_package/Dockerfile'
-                                    label 'windows && docker'
-                                    additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
-                                  }
-                            }
-                            steps{
-                                unstash "CHOCOLATEY_PACKAGE"
-                                powershell(
-                                    label: "installing getmarc",
-                                    script:"""\$ErrorActionPreference = 'Stop'; # stop on all errors
-                                              choco install getmarc -y -dv -s  './getmarc;CHOCOLATEY_SOURCE;chocolatey'
-                                              """
-                                )
-                                bat "getmarc --help"
-
-                            }
-                            post{
-                                failure{
-                                    powershell "ls getmarc/ -Recurse"
-                                }
-                            }
-                        }
-                    }
-                }
                 stage('Testing Packages on mac') {
                     agent {
                         label 'mac'
@@ -734,6 +668,72 @@ pipeline {
                                                 ]
                                         )
                                     }
+                                }
+                            }
+                        }
+                    }
+                }
+                stage("Chocolatey"){
+                    when{
+                        equals expected: true, actual: params.DEPLOY_CHOCOLATEY
+                        beforeInput true
+                    }
+                    stages{
+                        stage("Package for Chocolatey"){
+                            agent {
+                                dockerfile {
+                                    filename 'ci/docker/chocolatey_package/Dockerfile'
+                                    label 'windows && docker'
+                                    additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
+                                  }
+                            }
+                            steps{
+                                script {
+                                    unstash "DIST-INFO"
+                                    def props = readProperties interpolate: true, file: 'uiucprescon.getmarc2.dist-info/METADATA'
+                                    unstash "PYTHON_PACKAGES"
+                                    findFiles(glob: "dist/*.whl").each{
+                                        def sanitized_packageversion=sanitize_chocolatey_version(props.Version)
+                                        powershell(
+                                            label: "Configuring new package for Chocolatey",
+                                            script: """\$ErrorActionPreference = 'Stop'; # stop on all errors
+                                                       choco new getmarc packageversion=${sanitized_packageversion} InstallerFile=${it.path} -t pythonscript
+                                                       New-Item -ItemType File -Path ".\\getmarc\\${it.path}" -Force | Out-Null
+                                                       Move-Item -Path "${it.path}"  -Destination "./getmarc/${it.path}"  -Force | Out-Null
+                                                       choco pack .\\getmarc\\getmarc.nuspec --outputdirectory .\\getmarc
+                                                       """
+                                        )
+                                    }
+                                }
+                            }
+                            post{
+                                always{
+                                    stash includes: 'getmarc/*.nupkg', name: "CHOCOLATEY_PACKAGE"
+                                }
+                            }
+                        }
+                        stage("Testing Chocolatey Package"){
+                            agent {
+                                dockerfile {
+                                    filename 'ci/docker/chocolatey_package/Dockerfile'
+                                    label 'windows && docker'
+                                    additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
+                                  }
+                            }
+                            steps{
+                                unstash "CHOCOLATEY_PACKAGE"
+                                powershell(
+                                    label: "installing getmarc",
+                                    script:"""\$ErrorActionPreference = 'Stop'; # stop on all errors
+                                              choco install getmarc -y -dv -s  './getmarc;CHOCOLATEY_SOURCE;chocolatey'
+                                              """
+                                )
+                                bat "getmarc --help"
+
+                            }
+                            post{
+                                failure{
+                                    powershell "ls getmarc/ -Recurse"
                                 }
                             }
                         }
