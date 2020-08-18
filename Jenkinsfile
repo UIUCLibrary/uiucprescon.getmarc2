@@ -722,12 +722,16 @@ pipeline {
                             }
                             steps{
                                 unstash "CHOCOLATEY_PACKAGE"
-                                powershell(
-                                    label: "installing getmarc",
-                                    script:"""\$ErrorActionPreference = 'Stop'; # stop on all errors
-                                              choco install getmarc -y -dv -s  './getmarc/;CHOCOLATEY_SOURCE;chocolatey' --no-progress
-                                              """
-                                )
+                                script{
+                                    def props = readProperties interpolate: true, file: 'uiucprescon.getmarc2.dist-info/METADATA'
+                                    def sanitized_packageversion=sanitize_chocolatey_version(props.Version)
+                                    powershell(
+                                        label: "installing getmarc",
+                                        script:"""\$ErrorActionPreference = 'Stop'; # stop on all errors
+                                                  choco install getmarc -y -dv -s --version=${sanitized_packageversion}  './getmarc/;CHOCOLATEY_SOURCE;chocolatey' --no-progress
+                                                  """
+                                    )
+                                }
                                 bat "getmarc --help"
 
                             }
