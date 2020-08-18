@@ -541,7 +541,7 @@ pipeline {
                                     script: """$ErrorActionPreference = 'Stop'; # stop on all errors
                                                choco new getmarc packageversion=${sanitized_packageversion} InstallerFile=${it.path} -t pythonscript
                                                Move-Item -Path "${it.path}"  -Destination "./getmarc/{it.path}"
-                                               ls ./getmarc/ -Recursive
+                                               ls ./getmarc/ -Recurse
                                                choco pack .\\getmarc\\getmarc.nuspec --outputdirectory .\\getmarc
                                                """
                                 )
