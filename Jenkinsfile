@@ -499,6 +499,28 @@ pipeline {
                         }
                     }
                 }
+                stage("Package for Chocolatey"){
+                    agent {
+                        dockerfile {
+                            filename 'ci/docker/chocolatey_package/Dockerfile'
+                            label 'windows && docker'
+                          }
+                    }
+                    when{
+                        equals expected: true, actual: params.DEPLOY_CHOCOLATEY
+                        beforeInput true
+                    }
+                    steps{
+                        script {
+                            unstash "DIST-INFO"
+                            def props = readProperties interpolate: true, file: 'uiucprescon.getmarc2.dist-info/METADATA'
+                            unstash "PYTHON_PACKAGES"
+                            findFiles(glob: "dist/*.whl").each{
+                                bat "choco new getmarc packageversion=${props.Version} InstallerFile=${it.path} -t pythonscript"
+                            }
+                        }
+                    }
+                }
                 stage('Testing Packages on mac') {
                     agent {
                         label 'mac'
@@ -850,29 +872,6 @@ pipeline {
         }
         stage("Deploy") {
             parallel{
-                stage("Package for Chocolatey"){
-                    agent {
-                        dockerfile {
-                            filename 'ci/docker/chocolatey_package/Dockerfile'
-                            label 'windows && docker'
-                          }
-                    }
-                    when{
-                        equals expected: true, actual: params.DEPLOY_CHOCOLATEY
-                        beforeInput true
-                    }
-                    steps{
-                        script {
-                            unstash "DIST-INFO"
-                            def props = readProperties interpolate: true, file: 'uiucprescon.getmarc2.dist-info/METADATA'
-                            unstash "PYTHON_PACKAGES"
-                            findFiles(glob: "dist/*.whl").each{
-                                bat "choco new getmarc packageversion=${props.Version} InstallerFile=${it.path} -t pythonscript"
-                            }
-                        }
-                    }
-
-                }
                 stage("Deploy Documentation"){
                     when{
                         equals expected: true, actual: params.DEPLOY_DOCS
