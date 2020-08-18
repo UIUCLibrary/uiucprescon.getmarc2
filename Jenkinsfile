@@ -529,6 +529,7 @@ pipeline {
                                 dockerfile {
                                     filename 'ci/docker/chocolatey_package/Dockerfile'
                                     label 'windows && docker'
+                                    additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
                                   }
                             }
                             steps{
@@ -561,6 +562,7 @@ pipeline {
                                 dockerfile {
                                     filename 'ci/docker/chocolatey_package/Dockerfile'
                                     label 'windows && docker'
+                                    additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
                                   }
                             }
                             steps{
@@ -570,9 +572,10 @@ pipeline {
                                     label: "installing getmarc",
                                     script:"""\$ErrorActionPreference = 'Stop'; # stop on all errors
                                               cd getmarc; choco install getmarc -y -dv -s  '.;CHOCOLATEY_SOURCE;chocolatey'
-                                              getmarc --help
                                               """
-                              )
+                                )
+                                bat "getmarc --help"
+
                             }
                         }
                     }
