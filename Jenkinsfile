@@ -535,6 +535,7 @@ pipeline {
                             def props = readProperties interpolate: true, file: 'uiucprescon.getmarc2.dist-info/METADATA'
                             unstash "PYTHON_PACKAGES"
                             findFiles(glob: "dist/*.whl").each{
+                                echo "it.directory = ${it.directory}"
                                 def sanitized_packageversion=sanitize_chocolatey_version(props.Version)
                                 powershell(
                                     label: "Configuring new package for Chocolatey",
