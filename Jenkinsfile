@@ -95,6 +95,7 @@ pipeline {
         booleanParam(name: "DEPLOY_DEVPI", defaultValue: false, description: "Deploy to devpi on http://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
         booleanParam(name: "DEPLOY_DEVPI_PRODUCTION", defaultValue: false, description: "Deploy to production devpi on https://devpi.library.illinois.edu/production/release. Master branch Only")
         booleanParam(name: 'DEPLOY_DOCS', defaultValue: false, description: '')
+        booleanParam(name: 'DEPLOY_CHOCOLATEY', defaultValue: false, description: '')
     }
     stages {
         stage("Getting Distribution Info"){
@@ -460,6 +461,7 @@ pipeline {
             when{
                 anyOf{
                     equals expected: true, actual: params.BUILD_PACKAGES
+                    equals expected: true, actual: params.DEPLOY_CHOCOLATEY
                     equals expected: true, actual: params.DEPLOY_DEVPI
                     equals expected: true, actual: params.DEPLOY_DEVPI_PRODUCTION
                 }
@@ -536,6 +538,9 @@ pipeline {
                     }
                 }
                 stage('Testing all Package') {
+                    when{
+                        equals expected: true, actual: params.BUILD_PACKAGES
+                    }
                     matrix{
                         axes{
                             axis {
@@ -850,6 +855,10 @@ pipeline {
                             filename 'ci/docker/chocolatey_package/Dockerfile'
                             label 'windows && docker'
                           }
+                    }
+                    when{
+                        equals expected: true, actual: params.DEPLOY_CHOCOLATEY
+                        beforeInput true
                     }
                     steps{
                         script {
