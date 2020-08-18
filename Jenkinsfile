@@ -43,7 +43,25 @@ def getDevPiStagingIndex(){
         return "${env.BRANCH_NAME}_staging"
     }
 }
+def sanitize_chocolatey_version(version){
+    script{
+        def dot_to_slash_pattern = '(?<=\\d)\\.?(?=(dev|b|a|rc)(\\d)?)'
 
+        def dashed_version = version.replaceFirst(dot_to_slash_pattern, "-")
+
+        def beta_pattern = "(?<=\\d(\\.?))b((?=\\d)?)"
+        if(dashed_version.matches(beta_pattern)){
+            return dashed_version.replaceFirst(beta_pattern, "beta")
+        }
+
+        def alpha_pattern = "(?<=\\d(\\.?))a((?=\\d)?)"
+        if(dashed_version.matches(alpha_pattern)){
+            return dashed_version.replaceFirst(alpha_pattern, "alpha")
+        }
+        return dashed_version
+        return new_version
+    }
+}
 def get_sonarqube_unresolved_issues(report_task_file){
     script{
         if (! fileExists(report_task_file)){
@@ -516,9 +534,10 @@ pipeline {
                             def props = readProperties interpolate: true, file: 'uiucprescon.getmarc2.dist-info/METADATA'
                             unstash "PYTHON_PACKAGES"
                             findFiles(glob: "dist/*.whl").each{
+                                def sanitized_packageversion=sanitize_chocolatey_version(props.Version)
                                 bat(
                                     label: "Packaging for Chocolatey",
-                                    script: """choco new getmarc packageversion=${props.Version} InstallerFile=${it.path} -t pythonscript
+                                    script: """choco new getmarc packageversion=${sanitized_packageversion} InstallerFile=${it.path} -t pythonscript
                                                choco pack .\\getmarc\\getmarc.nuspec --outputdirectory .\\getmarc
                                                """
                                 )
