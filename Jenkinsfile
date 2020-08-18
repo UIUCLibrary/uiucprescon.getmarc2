@@ -568,7 +568,8 @@ pipeline {
 //                                 powershell "ls getmarc/ -Recurse"
                                 powershell(
                                     label: "installing getmarc",
-                                    script:"""cd getmarc; choco install getmarc -y -dv -s  '.;CHOCOLATEY_SOURCE;chocolatey'
+                                    script:"""\$ErrorActionPreference = 'Stop'; # stop on all errors
+                                              cd getmarc; choco install getmarc -y -dv -s  '.;CHOCOLATEY_SOURCE;chocolatey'
                                               getmarc --help
                                               """
                               )
