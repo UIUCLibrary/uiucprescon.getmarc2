@@ -535,14 +535,13 @@ pipeline {
                             def props = readProperties interpolate: true, file: 'uiucprescon.getmarc2.dist-info/METADATA'
                             unstash "PYTHON_PACKAGES"
                             findFiles(glob: "dist/*.whl").each{
-                                echo "it.path = ${it.path}"
                                 def sanitized_packageversion=sanitize_chocolatey_version(props.Version)
                                 powershell(
                                     label: "Configuring new package for Chocolatey",
                                     script: """\$ErrorActionPreference = 'Stop'; # stop on all errors
                                                choco new getmarc packageversion=${sanitized_packageversion} InstallerFile=${it.path} -t pythonscript
                                                New-Item -ItemType File -Path ".\\getmarc\\${it.path}" -Force
-                                               Move-Item -Path "${it.path}"  -Destination "./getmarc/${it.path}"
+                                               Move-Item -Path "${it.path}"  -Destination "./getmarc/${it.path}"  -Force
                                                ls ./getmarc/ -Recurse
                                                choco pack .\\getmarc\\getmarc.nuspec --outputdirectory .\\getmarc
                                                """
