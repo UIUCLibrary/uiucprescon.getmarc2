@@ -565,7 +565,13 @@ pipeline {
                             }
                             steps{
                                 unstash "CHOCOLATEY_PACKAGE"
-                                powershell "ls getmarc/ -Recurse"
+//                                 powershell "ls getmarc/ -Recurse"
+                                powershell(
+                                    label: "installing getmarc",
+                                    script:"""cd getmarc; choco install getmarc -y -dv -s  '.;CHOCOLATEY_SOURCE;chocolatey'
+                                              getmarc --help
+                                              """
+                              )
                             }
                         }
                     }
