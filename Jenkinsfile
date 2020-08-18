@@ -540,11 +540,9 @@ pipeline {
                                     label: "Configuring new package for Chocolatey",
                                     script: """choco new getmarc packageversion=${sanitized_packageversion} InstallerFile=${it.path} -t pythonscript
                                                Move-Item -Path "${it.path}"  -Destination "./getmarc/{it.path}"
-                                    """
-                                )
-                                powershell(
-                                    label: "Packaging for Chocolatey",
-                                    script: 'choco pack .\\getmarc\\getmarc.nuspec --outputdirectory .\\getmarc'
+                                               ls ./getmarc/ -Recursive
+                                               choco pack .\\getmarc\\getmarc.nuspec --outputdirectory .\\getmarc
+                                               """
                                 )
                             }
                         }
