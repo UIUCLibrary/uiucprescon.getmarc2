@@ -95,7 +95,8 @@ pipeline {
         booleanParam(name: "DEPLOY_DEVPI", defaultValue: false, description: "Deploy to devpi on http://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
         booleanParam(name: "DEPLOY_DEVPI_PRODUCTION", defaultValue: false, description: "Deploy to production devpi on https://devpi.library.illinois.edu/production/release. Master branch Only")
         booleanParam(name: 'DEPLOY_DOCS', defaultValue: false, description: '')
-        booleanParam(name: 'DEPLOY_CHOCOLATEY', defaultValue: false, description: '')
+//         TODO make false
+        booleanParam(name: 'DEPLOY_CHOCOLATEY', defaultValue: true, description: '')
     }
     stages {
         stage("Getting Distribution Info"){
