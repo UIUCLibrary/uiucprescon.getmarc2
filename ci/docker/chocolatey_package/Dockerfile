@@ -14,9 +14,9 @@ RUN Set-ExecutionPolicy Bypass -Scope Process -Force; `
     }; `
     Remove-Item C:\ProgramData\chocolatey\bin\cpack.exe
 
+COPY ci/docker/chocolatey_package/choco_package_template/pythonscript/ C:/ProgramData/chocolatey/templates/pythonscript/
 #===============================
 #COPY ci/docker/chocolatey_package/choco_package_template/uiucprescon.getmarc2-0.1.0.dev2-py3-none-any.whl c:/pkg/
-#COPY ci/docker/chocolatey_package/choco_package_template/pythonscript/ C:/ProgramData/chocolatey/templates/pythonscript/
 #WORKDIR c:/packageme/
 #RUN choco new getmarc packageversion=1.0 InstallerFile=dist\uiucprescon.getmarc2-0.1.0.dev2-py3-none-any.whl -t pythonscript
 #RUN New-Item -Path "c:\packageme\getmarc\\" -Name "dist" -ItemType "directory" | Out-Null ; `
