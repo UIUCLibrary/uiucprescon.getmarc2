@@ -738,7 +738,7 @@ pipeline {
                             }
                             post{
                                 success{
-                                    archiveArtifacts artifacts: "getmarc/*.nupkg", fingerprint: true
+                                    archiveArtifacts artifacts: "packages/*.nupkg", fingerprint: true
                                 }
                                 cleanup{
                                     cleanWs(
