@@ -984,11 +984,14 @@ pipeline {
                         withCredentials([string(credentialsId: "${CHOCO_REPO_KEY}", variable: 'KEY')]) {
                             script{
                                 findFiles(glob: "packages/*.nupkg").each{
-                                    input id: 'DEPLOY_CHOCOLATEY_PACKAGE', message: "Deploy to ${CHOCOLATEY_SERVER}", parameters: [booleanParam(defaultValue: false, description: "Deploy ${it.name}", name: 'Deploy')]
-                                    bat(
-                                        label: "Deploying ${it.name} to Chocolatey",
-                                        script: "choco push ${it.path} -s %CHOCOLATEY_SERVER% -k %KEY%"
-                                    )
+                                    input id: 'DEPLOY_CHOCOLATEY_PACKAGE', message: "Deploy to ${CHOCOLATEY_SERVER}", parameters: [booleanParam(defaultValue: false, description: "Deploy ${it.name}", name: 'DEPLOY_CHOCOLATEY_NUPKG')]
+                                    echo "DEPLOY_CHOCOLATEY_NUPKG = ${DEPLOY_CHOCOLATEY_NUPKG}"
+                                    if (DEPLOY_CHOCOLATEY_NUPKG){
+                                        bat(
+                                            label: "Deploying ${it.name} to Chocolatey",
+                                            script: "choco push ${it.path} -s %CHOCOLATEY_SERVER% -k %KEY%"
+                                        )
+                                    }
                                 }
                             }
                         }
