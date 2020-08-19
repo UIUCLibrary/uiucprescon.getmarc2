@@ -708,7 +708,7 @@ pipeline {
                             }
                             post{
                                 always{
-                                    stash includes: 'getmarc/*.nupkg', name: "CHOCOLATEY_PACKAGE"
+                                    stash includes: 'packages/*.nupkg', name: "CHOCOLATEY_PACKAGE"
                                 }
                             }
                         }
