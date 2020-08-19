@@ -1013,13 +1013,14 @@ pipeline {
                             )
                             def repo_cred_id = server['CHOCO_REPO_KEY']
                             echo "Using ${repo_cred_id}"
-                            if (DEPLOY_CHOCOLATEY_PACKAGE){
-                                withCredentials([string(credentialsId: repo_cred_id, variable: 'KEY')]) {
-                                    bat(
-                                        label: "Deploying ${DEPLOY_CHOCOLATEY_PACKAGE['FILE']} to Chocolatey",
-                                        script: "choco push ${DEPLOY_CHOCOLATEY_PACKAGE['FILE']} -s ${server['CHOCOLATEY_SERVER']} -k %KEY%}"
-                                    )
-                                }
+                            def file_to_use = DEPLOY_CHOCOLATEY_PACKAGE['FILE']
+                            echo "file_to_use = ${file_to_use}"
+
+                            withCredentials([string(credentialsId: repo_cred_id, variable: 'KEY')]) {
+                                bat(
+                                    label: "Deploying ${file_to_use} to Chocolatey",
+                                    script: "choco push ${file_to_use} -s ${server['CHOCOLATEY_SERVER']} -k %KEY%}"
+                                )
                             }
                         }
                     }
