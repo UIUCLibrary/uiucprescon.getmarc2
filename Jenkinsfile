@@ -978,7 +978,8 @@ pipeline {
                     steps{
                         unstash "CHOCOLATEY_PACKAGE"
                         script{
-                            def server = input(message: 'Chocolatey server',
+                            def server = input(
+                                message: 'Chocolatey server',
                                 parameters: [
                                     choice(
                                         choices: [
@@ -1001,7 +1002,7 @@ pipeline {
                             findFiles(glob: "packages/*.nupkg").each{
                                 pkgs << it.path
                             }
-                            def DEPLOY_CHOCOLATEY_PACKAGE = input(
+                            def deploy_chocolatey_package = input(
                                 message: "Select package",
                                 parameters: [
                                     choice(
@@ -1011,12 +1012,11 @@ pipeline {
                                     )
                                 ]
                             )
-                            def repo_cred_id = server['CHOCO_REPO_KEY']
-                            echo "Using ${repo_cred_id}"
-                            def file_to_use = DEPLOY_CHOCOLATEY_PACKAGE['FILE']
+                            echo "deploy_chocolatey_package = ${deploy_chocolatey_package}"
+                            def file_to_use = deploy_chocolatey_package['FILE']
                             echo "file_to_use = ${file_to_use}"
 
-                            withCredentials([string(credentialsId: repo_cred_id, variable: 'KEY')]) {
+                            withCredentials([string(credentialsId: server['CHOCO_REPO_KEY'], variable: 'KEY')]) {
                                 bat(
                                     label: "Deploying ${file_to_use} to Chocolatey",
                                     script: "choco push ${file_to_use} -s ${server['CHOCOLATEY_SERVER']} -k %KEY%}"
