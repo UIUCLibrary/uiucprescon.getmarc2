@@ -14,6 +14,7 @@ setup(
     },
     install_requires=[
         "lxml",
+        'importlib-metadata;python_version<"3.8"',
         'importlib_resources;python_version<"3.7"',
         "requests",
     ],
