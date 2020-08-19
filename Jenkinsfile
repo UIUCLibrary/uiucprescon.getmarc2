@@ -490,7 +490,7 @@ pipeline {
                 beforeAgent true
             }
             stages{
-                stage("Creating Package") {
+                stage("Creating Python Packages") {
                     agent {
                         dockerfile {
                             filename 'ci/docker/python/linux/Dockerfile'
