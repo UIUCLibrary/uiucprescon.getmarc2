@@ -969,20 +969,22 @@ pipeline {
                           }
                     }
                     input {
-                      message 'Select Chocolatey server'
-                      parameters {
-                        choice choices: ['https://jenkins.library.illinois.edu/nexus/repository/chocolatey-hosted-beta/', 'https://jenkins.library.illinois.edu/nexus/repository/chocolatey-hosted-public/'], description: 'Chocolatey Server to deploy to', name: 'CHOCOLATEY_SERVER'
-                        credentials credentialType: 'org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl', defaultValue: 'NEXUS_NUGET_API_KEY', description: 'Nuget API key for Chocolatey', name: 'CHOCO_REPO_KEY', required: true
-                      }
+                        message 'Select Chocolatey server'
+                        parameters {
+                            choice choices: ['https://jenkins.library.illinois.edu/nexus/repository/chocolatey-hosted-beta/', 'https://jenkins.library.illinois.edu/nexus/repository/chocolatey-hosted-public/'], description: 'Chocolatey Server to deploy to', name: 'CHOCOLATEY_SERVER'
+                            credentials credentialType: 'org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl', defaultValue: 'NEXUS_NUGET_API_KEY', description: 'Nuget API key for Chocolatey', name: 'CHOCO_REPO_KEY', required: true
+                        }
                     }
                     steps{
                         unstash "CHOCOLATEY_PACKAGE"
                         withCredentials([string(credentialsId: "${CHOCO_REPO_KEY}", variable: 'KEY')]) {
-                            findFiles(glob: "packages/*.nupkg").each{
-                                bat(
-                                    label: "Deploying ${it.name} to Chocolatey",
-                                    script: "choco push ${it.path} -s %CHOCOLATEY_SERVER% -k %KEY%"
-                                )
+                            script{
+                                findFiles(glob: "packages/*.nupkg").each{
+                                    bat(
+                                        label: "Deploying ${it.name} to Chocolatey",
+                                        script: "choco push ${it.path} -s %CHOCOLATEY_SERVER% -k %KEY%"
+                                    )
+                                }
                             }
                         }
                     }
