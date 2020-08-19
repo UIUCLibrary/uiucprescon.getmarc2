@@ -1013,13 +1013,11 @@ pipeline {
                                 ]
                             )
                             echo "deploy_chocolatey_package = ${deploy_chocolatey_package}"
-                            def file_to_use = deploy_chocolatey_package['FILE']
-                            echo "file_to_use = ${file_to_use}"
 
                             withCredentials([string(credentialsId: server['CHOCO_REPO_KEY'], variable: 'KEY')]) {
                                 bat(
-                                    label: "Deploying ${file_to_use} to Chocolatey",
-                                    script: "choco push ${file_to_use} -s ${server['CHOCOLATEY_SERVER']} -k %KEY%}"
+                                    label: "Deploying ${deploy_chocolatey_package} to Chocolatey",
+                                    script: "choco push ${deploy_chocolatey_package} -s ${server['CHOCOLATEY_SERVER']} -k %KEY%}"
                                 )
                             }
                         }
