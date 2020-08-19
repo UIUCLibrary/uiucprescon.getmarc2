@@ -109,13 +109,13 @@ pipeline {
         booleanParam(name: "RUN_CHECKS", defaultValue: false, description: "Run checks on code")
         booleanParam(name: "USE_SONARQUBE", defaultValue: true, description: "Send data test data to SonarQube")
         booleanParam(name: "BUILD_PACKAGES", defaultValue: false, description: "Build Python packages")
-        booleanParam(name: 'BUILD_CHOCOLATEY_PACKAGE', defaultValue: false, description: '')
+//         TODO make false
+        booleanParam(name: 'BUILD_CHOCOLATEY_PACKAGE', defaultValue: true, description: 'Build package for chocolatey package manager')
         booleanParam(name: "TEST_PACKAGES_ON_MAC", defaultValue: false, description: "Test Python packages on Mac")
         booleanParam(name: "DEPLOY_DEVPI", defaultValue: false, description: "Deploy to devpi on http://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
         booleanParam(name: "DEPLOY_DEVPI_PRODUCTION", defaultValue: false, description: "Deploy to production devpi on https://devpi.library.illinois.edu/production/release. Master branch Only")
         booleanParam(name: 'DEPLOY_DOCS', defaultValue: false, description: '')
-//         TODO make false
-        booleanParam(name: 'DEPLOY_CHOCOLATEY', defaultValue: true, description: 'Deploy to Chocolatey repository')
+        booleanParam(name: 'DEPLOY_CHOCOLATEY', defaultValue: false, description: 'Deploy to Chocolatey repository')
     }
     stages {
         stage("Getting Distribution Info"){
