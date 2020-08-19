@@ -113,6 +113,7 @@ pipeline {
         booleanParam(name: "DEPLOY_DEVPI", defaultValue: false, description: "Deploy to devpi on http://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
         booleanParam(name: "DEPLOY_DEVPI_PRODUCTION", defaultValue: false, description: "Deploy to production devpi on https://devpi.library.illinois.edu/production/release. Master branch Only")
         booleanParam(name: 'DEPLOY_DOCS', defaultValue: false, description: '')
+        booleanParam(name: 'DEPLOY_CHOLOCATEY', defaultValue: false, description: 'Deploy to Chocolatey repository')
 //         TODO make false
         booleanParam(name: 'DEPLOY_CHOCOLATEY', defaultValue: true, description: '')
     }
@@ -950,6 +951,36 @@ pipeline {
         }
         stage("Deploy") {
             parallel{
+                stage("Deploy to Chocolatey") {
+                    when{
+                        equals expected: true, actual: params.DEPLOY_CHOLOCATEY
+                        beforeInput true
+                        beforeAgent true
+                    }
+                    agent {
+                        dockerfile {
+                            filename 'ci/docker/chocolatey_package/Dockerfile'
+                            label 'windows && docker'
+                            additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
+                          }
+                    }
+                    input {
+                      message 'Select Chocolatey server'
+                      parameters {
+                        choice choices: ['https://jenkins.library.illinois.edu/nexus/repository/chocolatey-hosted-beta/', 'https://jenkins.library.illinois.edu/nexus/repository/chocolatey-hosted-public/'], description: 'Chocolatey Server to deploy to', name: 'CHOCOLATEY_SERVER'
+                        credentials credentialType: 'org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl', defaultValue: 'NEXUS_NUGET_API_KEY', description: 'Nuget API key for Chocolatey', name: 'CHOCO_REPO_KEY', required: true
+                      }
+                    }
+                    steps{
+                        unstash "CHOCOLATEY_PACKAGE"
+                        withCredentials([string(credentialsId: "${CHOCO_REPO_KEY}", variable: 'KEY')]) {
+                            bat(
+                                label: "Deploying to Chocolatey",
+                                script: "choco push packages/getmarc.0.1.0-dev2.nupkg -s %CHOCOLATEY_SERVER% -k %KEY%"
+                            )
+                        }
+                    }
+                }
                 stage("Deploy Documentation"){
                     when{
                         equals expected: true, actual: params.DEPLOY_DOCS
