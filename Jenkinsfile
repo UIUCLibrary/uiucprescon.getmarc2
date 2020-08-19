@@ -697,10 +697,10 @@ pipeline {
                                         powershell(
                                             label: "Configuring new package for Chocolatey",
                                             script: """\$ErrorActionPreference = 'Stop'; # stop on all errors
-                                                       choco new getmarc packageversion=${sanitized_packageversion} InstallerFile=${it.path} -t pythonscript
-                                                       New-Item -ItemType File -Path ".\\getmarc\\${it.path}" -Force | Out-Null
-                                                       Move-Item -Path "${it.path}"  -Destination "./getmarc/${it.path}"  -Force | Out-Null
-                                                       choco pack .\\getmarc\\getmarc.nuspec --outputdirectory .\\getmarc
+                                                       choco new getmarc packageversion=${sanitized_packageversion} InstallerFile=${it.path} -t pythonscript --outputdirectory packages
+                                                       New-Item -ItemType File -Path ".\\packages\\${it.path}" -Force | Out-Null
+                                                       Move-Item -Path "${it.path}"  -Destination "./packages/${it.path}"  -Force | Out-Null
+                                                       choco pack .\\packages\\getmarc.nuspec --outputdirectory .\\packages
                                                        """
                                         )
                                     }
