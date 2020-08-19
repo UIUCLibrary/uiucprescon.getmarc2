@@ -1011,8 +1011,10 @@ pipeline {
                                     )
                                 ]
                             )
+                            def repo_cred_id = server['CHOCO_REPO_KEY']
+                            echo "Using ${repo_cred_id}"
                             if (DEPLOY_CHOCOLATEY_PACKAGE){
-                                withCredentials([string(credentialsId: server["CHOCO_REPO_KEY"], variable: 'KEY')]) {
+                                withCredentials([string(credentialsId: repo_cred_id, variable: 'KEY')]) {
                                     bat(
                                         label: "Deploying ${DEPLOY_CHOCOLATEY_PACKAGE['FILE']} to Chocolatey",
                                         script: "choco push ${DEPLOY_CHOCOLATEY_PACKAGE['FILE']} -s ${server['CHOCOLATEY_SERVER']} -k %KEY%}"
