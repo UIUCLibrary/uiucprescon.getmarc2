@@ -974,6 +974,17 @@ pipeline {
                     }
                     input {
                         message 'Deploy to Chocolatey server'
+                        id 'CHOCOLATEY_DEPLOYMENT'
+                        parameters {
+                            choice(
+                                choices: [
+                                    'https://jenkins.library.illinois.edu/nexus/repository/chocolatey-hosted-beta/',
+                                    'https://jenkins.library.illinois.edu/nexus/repository/chocolatey-hosted-public/'
+                                ],
+                                description: 'Chocolatey Server to deploy to',
+                                name: 'CHOCOLATEY_SERVER'
+                            )
+                        }
                     }
                     steps{
                         unstash "CHOCOLATEY_PACKAGE"
@@ -981,14 +992,7 @@ pipeline {
                             def server = input(
                                 message: 'Chocolatey server',
                                 parameters: [
-                                    choice(
-                                        choices: [
-                                            'https://jenkins.library.illinois.edu/nexus/repository/chocolatey-hosted-beta/',
-                                            'https://jenkins.library.illinois.edu/nexus/repository/chocolatey-hosted-public/'
-                                        ],
-                                        description: 'Chocolatey Server to deploy to',
-                                        name: 'CHOCOLATEY_SERVER'
-                                    ),
+
                                     credentials(
                                         credentialType: 'org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl',
                                         defaultValue: 'NEXUS_NUGET_API_KEY',
@@ -1017,7 +1021,7 @@ pipeline {
                             withCredentials([string(credentialsId: server['CHOCO_REPO_KEY'], variable: 'KEY')]) {
                                 bat(
                                     label: "Deploying ${deploy_chocolatey_package} to Chocolatey",
-                                    script: "choco push ${deploy_chocolatey_package} -s ${server['CHOCOLATEY_SERVER']} -k %KEY%"
+                                    script: "choco push ${deploy_chocolatey_package} -s ${CHOCOLATEY_DEPLOYMENT['CHOCOLATEY_SERVER']} -k %KEY%"
                                 )
                             }
                         }
