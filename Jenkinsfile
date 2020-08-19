@@ -997,7 +997,7 @@ pipeline {
                                     )
                                 ]
                             )
-                            withCredentials([string(credentialsId: "${CHOCO_REPO_KEY}", variable: 'KEY')]) {
+                            withCredentials([string(credentialsId: server["CHOCO_REPO_KEY"], variable: 'KEY')]) {
                                 def nupkgs = findFiles(glob: "packages/*.nupkg")
                                 def pkgs = []
                                 nupkgs.each{
