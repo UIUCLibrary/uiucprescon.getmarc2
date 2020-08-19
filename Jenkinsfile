@@ -1004,7 +1004,7 @@ pipeline {
                                     pkgs << it.path
                                 }
                                 def DEPLOY_CHOCOLATEY_PACKAGE = input(
-                                    message: "Deploy to ${CHOCOLATEY_SERVER}",
+                                    message: "Deploy to ${server['CHOCOLATEY_SERVER']}",
                                     parameters: [
                                         choice(
                                             choices: pkgs,
