@@ -114,7 +114,7 @@ pipeline {
         booleanParam(name: "DEPLOY_DEVPI", defaultValue: false, description: "Deploy to devpi on http://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
         booleanParam(name: "DEPLOY_DEVPI_PRODUCTION", defaultValue: false, description: "Deploy to production devpi on https://devpi.library.illinois.edu/production/release. Master branch Only")
         booleanParam(name: 'DEPLOY_DOCS', defaultValue: false, description: '')
-        booleanParam(name: 'DEPLOY_CHOLOCATEY', defaultValue: false, description: 'Deploy to Chocolatey repository')
+        booleanParam(name: 'DEPLOY_CHOCOLATEY', defaultValue: false, description: 'Deploy to Chocolatey repository')
 //         TODO make false
     }
     stages {
@@ -957,7 +957,7 @@ pipeline {
             parallel{
                 stage("Deploy to Chocolatey") {
                     when{
-                        equals expected: true, actual: params.DEPLOY_CHOLOCATEY
+                        equals expected: true, actual: params.DEPLOY_CHOCOLATEY
                         beforeInput true
                         beforeAgent true
                     }
