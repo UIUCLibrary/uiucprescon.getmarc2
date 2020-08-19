@@ -518,42 +518,46 @@ pipeline {
                         }
                     }
                 }
-                stage('Testing Packages on mac') {
-                    agent {
-                        label 'mac'
-                    }
-                    when{
-                        equals expected: true, actual: params.TEST_PACKAGES_ON_MAC
-                        beforeAgent true
-                    }
-                    steps{
-                        sh(
-                            label:"Installing tox",
-                            script: """python3 -m venv venv
-                                       venv/bin/python -m pip install pip --upgrade
-                                       venv/bin/python -m pip install wheel
-                                       venv/bin/python -m pip install --upgrade setuptools
-                                       venv/bin/python -m pip install tox
-                                       """
-                            )
-                        unstash "PYTHON_PACKAGES"
-                        script{
-                            findFiles(glob: "dist/*.tar.gz,dist/*.zip,dist/*.whl").each{
-                                sh(
-                                    label: "Testing ${it}",
-                                    script: "venv/bin/tox --installpkg=${it.path} -e py -vv --recreate"
-                                )
+                stage("Mac Testing"){
+                    parallel{
+                        stage('Testing Packages on mac') {
+                            agent {
+                                label 'mac'
                             }
-                        }
-                    }
-                    post{
-                        cleanup{
-                            cleanWs(
-                                deleteDirs: true,
-                                patterns: [
-                                    [pattern: 'venv/', type: 'INCLUDE'],
-                                ]
-                            )
+                            when{
+                                equals expected: true, actual: params.TEST_PACKAGES_ON_MAC
+                                beforeAgent true
+                            }
+                            steps{
+                                sh(
+                                    label:"Installing tox",
+                                    script: """python3 -m venv venv
+                                               venv/bin/python -m pip install pip --upgrade
+                                               venv/bin/python -m pip install wheel
+                                               venv/bin/python -m pip install --upgrade setuptools
+                                               venv/bin/python -m pip install tox
+                                               """
+                                    )
+                                unstash "PYTHON_PACKAGES"
+                                script{
+                                    findFiles(glob: "dist/*.tar.gz,dist/*.zip,dist/*.whl").each{
+                                        sh(
+                                            label: "Testing ${it}",
+                                            script: "venv/bin/tox --installpkg=${it.path} -e py -vv --recreate"
+                                        )
+                                    }
+                                }
+                            }
+                            post{
+                                cleanup{
+                                    cleanWs(
+                                        deleteDirs: true,
+                                        patterns: [
+                                            [pattern: 'venv/', type: 'INCLUDE'],
+                                        ]
+                                    )
+                                }
+                            }
                         }
                     }
                 }
