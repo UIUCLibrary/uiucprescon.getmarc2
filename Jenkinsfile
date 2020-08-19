@@ -978,10 +978,12 @@ pipeline {
                     steps{
                         unstash "CHOCOLATEY_PACKAGE"
                         withCredentials([string(credentialsId: "${CHOCO_REPO_KEY}", variable: 'KEY')]) {
-                            bat(
-                                label: "Deploying to Chocolatey",
-                                script: "choco push packages/getmarc.0.1.0-dev2.nupkg -s %CHOCOLATEY_SERVER% -k %KEY%"
-                            )
+                            findFiles(glob: "packages/*.nupkg").each{
+                                bat(
+                                    label: "Deploying ${it.name} to Chocolatey",
+                                    script: "choco push ${it.path} -s %CHOCOLATEY_SERVER% -k %KEY%"
+                                )
+                            }
                         }
                     }
                 }
