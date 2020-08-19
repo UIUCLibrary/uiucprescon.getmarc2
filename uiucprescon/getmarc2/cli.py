@@ -4,7 +4,7 @@ import argparse
 try:
     from importlib import metadata
 except ImportError:
-    import importlib_metadata as metadata
+    import importlib_metadata as metadata  # type: ignore
 
 from typing import Optional
 
