@@ -997,26 +997,25 @@ pipeline {
                                     )
                                 ]
                             )
-                            withCredentials([string(credentialsId: server["CHOCO_REPO_KEY"], variable: 'KEY')]) {
-                                def nupkgs = findFiles(glob: "packages/*.nupkg")
-                                def pkgs = []
-                                nupkgs.each{
-                                    pkgs << it.path
-                                }
-                                def DEPLOY_CHOCOLATEY_PACKAGE = input(
-                                    message: "Deploy to ${server['CHOCOLATEY_SERVER']}",
-                                    parameters: [
-                                        choice(
-                                            choices: pkgs,
-                                            description: 'Package to use',
-                                            name: 'FILE'
-                                        )
-                                    ]
-                                )
-                                if (DEPLOY_CHOCOLATEY_PACKAGE['DEPLOY_CHOCOLATEY_NUPKG']){
+                            def pkgs = []
+                            findFiles(glob: "packages/*.nupkg").each{
+                                pkgs << it.path
+                            }
+                            def DEPLOY_CHOCOLATEY_PACKAGE = input(
+                                message: "Deploy to ${server['CHOCOLATEY_SERVER']}",
+                                parameters: [
+                                    choice(
+                                        choices: pkgs,
+                                        description: 'Package to use',
+                                        name: 'FILE'
+                                    )
+                                ]
+                            )
+                            if (DEPLOY_CHOCOLATEY_PACKAGE['DEPLOY_CHOCOLATEY_NUPKG']){
+                                withCredentials([string(credentialsId: server["CHOCO_REPO_KEY"], variable: 'KEY')]) {
                                     bat(
                                         label: "Deploying ${DEPLOY_CHOCOLATEY_PACKAGE['FILE']} to Chocolatey",
-                                        script: "choco push ${DEPLOY_CHOCOLATEY_PACKAGE['FILE']} -s ${server['CHOCOLATEY_SERVER']} -k ${server['KEY']}"
+                                        script: "choco push ${DEPLOY_CHOCOLATEY_PACKAGE['FILE']} -s ${server['CHOCOLATEY_SERVER']} -k ${KEY}}"
                                     )
                                 }
                             }
