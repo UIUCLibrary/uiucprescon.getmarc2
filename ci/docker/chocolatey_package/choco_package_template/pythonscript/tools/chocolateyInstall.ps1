@@ -1,10 +1,4 @@
-#function Create-Virtualenv{
-#  param(
-#    [string]$pythonLocation
-#  )
-#
-#  Write-Host "Creating new Python virtualenv at $pythonLocation"
-#}
+
 
 # Custom value: [[CustomValue]]
 $ErrorActionPreference = 'Stop'; # stop on all errors
@@ -16,9 +10,7 @@ $installDir   = "$(Split-Path -parent $MyInvocation.MyCommand.Definition)"
 
 $fileLocation = Join-Path $toolsDir '[[InstallerFile]]'
 $packageSourceUrl =  '[[PackageSourceUrl]]'
-#Create-Virtualenv($installDir\venv\Scripts\python.exe)
 $PYTHON = "$(Join-Path $(Get-AppInstallLocation('python')) 'python.exe')"
-
 
 Write-Host "Creating Python virtualenv at $installDir\venv"
 & "$PYTHON" -m venv $installDir\venv
