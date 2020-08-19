@@ -737,8 +737,18 @@ pipeline {
 
                             }
                             post{
-                                failure{
-                                    powershell "ls getmarc/ -Recurse"
+                                success{
+                                    archiveArtifacts artifacts: "getmarc/*.nupkg", fingerprint: true
+                                }
+                                cleanup{
+                                    cleanWs(
+                                        notFailBuild: true,
+                                        deleteDirs: true,
+                                        patterns: [
+                                            [pattern: 'getmarc/', type: 'INCLUDE'],
+                                            [pattern: 'uiucprescon.getmarc2.dist-info/', type: 'INCLUDE'],
+                                        ]
+                                    )
                                 }
                             }
                         }
