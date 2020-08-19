@@ -1002,7 +1002,7 @@ pipeline {
                                 pkgs << it.path
                             }
                             def DEPLOY_CHOCOLATEY_PACKAGE = input(
-                                message: "Deploy to ${server['CHOCOLATEY_SERVER']}",
+                                message: "Select package",
                                 parameters: [
                                     choice(
                                         choices: pkgs,
@@ -1011,6 +1011,7 @@ pipeline {
                                     )
                                 ]
                             )
+                            echo "DEPLOY_CHOCOLATEY_PACKAGE = ${DEPLOY_CHOCOLATEY_PACKAGE}"
                             if (DEPLOY_CHOCOLATEY_PACKAGE['DEPLOY_CHOCOLATEY_NUPKG']){
                                 withCredentials([string(credentialsId: server["CHOCO_REPO_KEY"], variable: 'KEY')]) {
                                     bat(
