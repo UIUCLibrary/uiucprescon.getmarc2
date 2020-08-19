@@ -43,7 +43,25 @@ def getDevPiStagingIndex(){
         return "${env.BRANCH_NAME}_staging"
     }
 }
+def sanitize_chocolatey_version(version){
+    script{
+        def dot_to_slash_pattern = '(?<=\\d)\\.?(?=(dev|b|a|rc)(\\d)?)'
 
+        def dashed_version = version.replaceFirst(dot_to_slash_pattern, "-")
+
+        def beta_pattern = "(?<=\\d(\\.?))b((?=\\d)?)"
+        if(dashed_version.matches(beta_pattern)){
+            return dashed_version.replaceFirst(beta_pattern, "beta")
+        }
+
+        def alpha_pattern = "(?<=\\d(\\.?))a((?=\\d)?)"
+        if(dashed_version.matches(alpha_pattern)){
+            return dashed_version.replaceFirst(alpha_pattern, "alpha")
+        }
+        return dashed_version
+        return new_version
+    }
+}
 def get_sonarqube_unresolved_issues(report_task_file){
     script{
         if (! fileExists(report_task_file)){
@@ -90,9 +108,11 @@ pipeline {
         booleanParam(name: "RUN_CHECKS", defaultValue: true, description: "Run checks on code")
         booleanParam(name: "USE_SONARQUBE", defaultValue: true, description: "Send data test data to SonarQube")
         booleanParam(name: "BUILD_PACKAGES", defaultValue: false, description: "Build Python packages")
+        booleanParam(name: 'BUILD_CHOCOLATEY_PACKAGE', defaultValue: false, description: 'Build package for chocolatey package manager')
         booleanParam(name: "TEST_PACKAGES_ON_MAC", defaultValue: false, description: "Test Python packages on Mac")
         booleanParam(name: "DEPLOY_DEVPI", defaultValue: false, description: "Deploy to devpi on http://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
         booleanParam(name: "DEPLOY_DEVPI_PRODUCTION", defaultValue: false, description: "Deploy to production devpi on https://devpi.library.illinois.edu/production/release. Master branch Only")
+        booleanParam(name: 'DEPLOY_CHOCOLATEY', defaultValue: false, description: 'Deploy to Chocolatey repository')
         booleanParam(name: 'DEPLOY_DOCS', defaultValue: false, description: '')
     }
     stages {
@@ -459,13 +479,16 @@ pipeline {
             when{
                 anyOf{
                     equals expected: true, actual: params.BUILD_PACKAGES
+                    equals expected: true, actual: params.BUILD_CHOCOLATEY_PACKAGE
+                    equals expected: true, actual: params.TEST_PACKAGES_ON_MAC
                     equals expected: true, actual: params.DEPLOY_DEVPI
                     equals expected: true, actual: params.DEPLOY_DEVPI_PRODUCTION
+                    equals expected: true, actual: params.DEPLOY_CHOCOLATEY
                 }
                 beforeAgent true
             }
             stages{
-                stage("Creating Package") {
+                stage("Creating Python Packages") {
                     agent {
                         dockerfile {
                             filename 'ci/docker/python/linux/Dockerfile'
@@ -535,6 +558,9 @@ pipeline {
                     }
                 }
                 stage('Testing all Package') {
+                    when{
+                        equals expected: true, actual: params.BUILD_PACKAGES
+                    }
                     matrix{
                         axes{
                             axis {
@@ -642,6 +668,91 @@ pipeline {
                                                 ]
                                         )
                                     }
+                                }
+                            }
+                        }
+                    }
+                }
+                stage("Chocolatey"){
+                    when{
+                        anyOf{
+                            equals expected: true, actual: params.DEPLOY_CHOCOLATEY
+                            equals expected: true, actual: params.BUILD_CHOCOLATEY_PACKAGE
+                        }
+                        beforeInput true
+                    }
+                    stages{
+                        stage("Package for Chocolatey"){
+                            agent {
+                                dockerfile {
+                                    filename 'ci/docker/chocolatey_package/Dockerfile'
+                                    label 'windows && docker'
+                                    additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
+                                  }
+                            }
+                            steps{
+                                script {
+                                   unstash "DIST-INFO"
+                                    def props = readProperties interpolate: true, file: 'uiucprescon.getmarc2.dist-info/METADATA'
+                                    unstash "PYTHON_PACKAGES"
+                                    findFiles(glob: "dist/*.whl").each{
+                                        def sanitized_packageversion=sanitize_chocolatey_version(props.Version)
+                                        powershell(
+                                            label: "Configuring new package for Chocolatey",
+                                            script: """\$ErrorActionPreference = 'Stop'; # stop on all errors
+                                                       choco new getmarc packageversion=${sanitized_packageversion} PythonSummary="${props.Summary}" InstallerFile=${it.path} MaintainerName="${props.Maintainer}" -t pythonscript --outputdirectory packages
+                                                       New-Item -ItemType File -Path ".\\packages\\getmarc\\${it.path}" -Force | Out-Null
+                                                       Move-Item -Path "${it.path}"  -Destination "./packages/getmarc/${it.path}"  -Force | Out-Null
+                                                       choco pack .\\packages\\getmarc\\getmarc.nuspec --outputdirectory .\\packages
+                                                       """
+                                        )
+                                    }
+                                }
+                            }
+                            post{
+                                always{
+                                    archiveArtifacts artifacts: "packages/**/*.nuspec"
+                                    stash includes: 'packages/*.nupkg', name: "CHOCOLATEY_PACKAGE"
+                                }
+                            }
+                        }
+                        stage("Testing Chocolatey Package"){
+                            agent {
+                                dockerfile {
+                                    filename 'ci/docker/chocolatey_package/Dockerfile'
+                                    label 'windows && docker'
+                                    additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
+                                  }
+                            }
+                            steps{
+                                unstash "DIST-INFO"
+                                unstash "CHOCOLATEY_PACKAGE"
+                                script{
+                                    def props = readProperties interpolate: true, file: 'uiucprescon.getmarc2.dist-info/METADATA'
+                                    def sanitized_packageversion=sanitize_chocolatey_version(props.Version)
+                                    powershell(
+                                        label: "Installing Chocolatey Package",
+                                        script:"""\$ErrorActionPreference = 'Stop'; # stop on all errors
+                                                  choco install getmarc -y -dv  --version=${sanitized_packageversion} -s './packages/;CHOCOLATEY_SOURCE;chocolatey' --no-progress
+                                                  """
+                                    )
+                                }
+                                bat "getmarc --help"
+
+                            }
+                            post{
+                                success{
+                                    archiveArtifacts artifacts: "packages/*.nupkg", fingerprint: true
+                                }
+                                cleanup{
+                                    cleanWs(
+                                        notFailBuild: true,
+                                        deleteDirs: true,
+                                        patterns: [
+                                            [pattern: 'packages/', type: 'INCLUDE'],
+                                            [pattern: 'uiucprescon.getmarc2.dist-info/', type: 'INCLUDE'],
+                                        ]
+                                    )
                                 }
                             }
                         }
@@ -843,6 +954,70 @@ pipeline {
         }
         stage("Deploy") {
             parallel{
+                stage("Deploy to Chocolatey") {
+                    when{
+                        equals expected: true, actual: params.DEPLOY_CHOCOLATEY
+                        beforeInput true
+                        beforeAgent true
+                    }
+                    agent {
+                        dockerfile {
+                            filename 'ci/docker/chocolatey_package/Dockerfile'
+                            label 'windows && docker'
+                            additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
+                          }
+                    }
+                    options{
+                        timeout(time: 1, unit: 'DAYS')
+                        retry(3)
+                    }
+                    input {
+                        message 'Deploy to Chocolatey server'
+                        id 'CHOCOLATEY_DEPLOYMENT'
+                        parameters {
+                            choice(
+                                choices: [
+                                    'https://jenkins.library.illinois.edu/nexus/repository/chocolatey-hosted-beta/',
+                                    'https://jenkins.library.illinois.edu/nexus/repository/chocolatey-hosted-public/'
+                                ],
+                                description: 'Chocolatey Server to deploy to',
+                                name: 'CHOCOLATEY_SERVER'
+                            )
+                        }
+                    }
+                    steps{
+                        unstash "CHOCOLATEY_PACKAGE"
+                        script{
+                            def pkgs = []
+                            findFiles(glob: "packages/*.nupkg").each{
+                                pkgs << it.path
+                            }
+                            def deployment_options = input(
+                                message: 'Chocolatey server',
+                                parameters: [
+                                    credentials(
+                                        credentialType: 'org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl',
+                                        defaultValue: 'NEXUS_NUGET_API_KEY',
+                                        description: 'Nuget API key for Chocolatey',
+                                        name: 'CHOCO_REPO_KEY',
+                                        required: true
+                                    ),
+                                    choice(
+                                        choices: pkgs,
+                                        description: 'Package to use',
+                                        name: 'NUPKG'
+                                    ),
+                                ]
+                            )
+                            withCredentials([string(credentialsId: deployment_options['CHOCO_REPO_KEY'], variable: 'KEY')]) {
+                                bat(
+                                    label: "Deploying ${deployment_options['NUPKG']} to Chocolatey",
+                                    script: "choco push ${deployment_options['NUPKG']} -s ${CHOCOLATEY_SERVER} -k %KEY%"
+                                )
+                            }
+                        }
+                    }
+                }
                 stage("Deploy Documentation"){
                     when{
                         equals expected: true, actual: params.DEPLOY_DOCS

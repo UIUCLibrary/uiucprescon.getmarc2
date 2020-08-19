@@ -25,6 +25,7 @@ RUN groupadd -g $GROUP_ID user && \
     useradd -u $USER_ID -s /bin/sh -m -d /home/user -g user user && \
     mkdir -p /.cache/pip && chgrp -R  user /.cache/ && \
     chmod -R g+w /.cache/
+
 USER user
 ENV SONAR_SCANNER_VERSION=4.4.0.2170
 ENV SONAR_SCANNER_HOME=/home/user/.sonar/sonar-scanner-$SONAR_SCANNER_VERSION-linux
