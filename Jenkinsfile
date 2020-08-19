@@ -970,6 +970,7 @@ pipeline {
                     }
                     options{
                         timeout(time: 1, unit: 'DAYS')
+                        retry(3)
                     }
                     input {
                         message 'Select Chocolatey server'
@@ -983,7 +984,7 @@ pipeline {
                         withCredentials([string(credentialsId: "${CHOCO_REPO_KEY}", variable: 'KEY')]) {
                             script{
                                 findFiles(glob: "packages/*.nupkg").each{
-                                    input id: 'DEPLOY_CHOCOLATEY_PACKAGE', message: "Deploy ${it.name}", parameters: [booleanParam(defaultValue: false, description: '', name: 'Deploy')]
+                                    input id: 'DEPLOY_CHOCOLATEY_PACKAGE', message: "Deploy to ${CHOCOLATEY_SERVER}", parameters: [booleanParam(defaultValue: false, description: "Deploy ${it.name}", name: 'Deploy')]
                                     bat(
                                         label: "Deploying ${it.name} to Chocolatey",
                                         script: "choco push ${it.path} -s %CHOCOLATEY_SERVER% -k %KEY%"
