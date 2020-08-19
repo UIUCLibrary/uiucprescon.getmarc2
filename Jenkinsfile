@@ -745,7 +745,7 @@ pipeline {
                                         notFailBuild: true,
                                         deleteDirs: true,
                                         patterns: [
-                                            [pattern: 'getmarc/', type: 'INCLUDE'],
+                                            [pattern: 'packages/', type: 'INCLUDE'],
                                             [pattern: 'uiucprescon.getmarc2.dist-info/', type: 'INCLUDE'],
                                         ]
                                     )
