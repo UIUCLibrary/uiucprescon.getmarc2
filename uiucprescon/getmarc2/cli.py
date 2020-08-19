@@ -12,9 +12,7 @@ def get_arg_parse() -> argparse.ArgumentParser:
     """Get the CLI parser factory.
 
     Returns: parser
-
     """
-
     parser = argparse.ArgumentParser(description='Get Marc XML data.')
     parser.add_argument("--bibid")
     parser.add_argument("--alma-apikey", required=True)
