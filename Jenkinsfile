@@ -519,14 +519,14 @@ pipeline {
                     }
                 }
                 stage("Mac Testing"){
+                    when{
+                        equals expected: true, actual: params.TEST_PACKAGES_ON_MAC
+                        beforeAgent true
+                    }
                     parallel{
                         stage('Testing Packages on mac') {
                             agent {
                                 label 'mac'
-                            }
-                            when{
-                                equals expected: true, actual: params.TEST_PACKAGES_ON_MAC
-                                beforeAgent true
                             }
                             steps{
                                 sh(
