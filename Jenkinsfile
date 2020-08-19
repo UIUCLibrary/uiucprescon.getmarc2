@@ -732,7 +732,7 @@ pipeline {
                                     def props = readProperties interpolate: true, file: 'uiucprescon.getmarc2.dist-info/METADATA'
                                     def sanitized_packageversion=sanitize_chocolatey_version(props.Version)
                                     powershell(
-                                        label: "installing getmarc",
+                                        label: "Installing ${props.Name}",
                                         script:"""\$ErrorActionPreference = 'Stop'; # stop on all errors
                                                   choco install getmarc -y -dv  --version=${sanitized_packageversion} -s './packages/;CHOCOLATEY_SOURCE;chocolatey' --no-progress
                                                   """
