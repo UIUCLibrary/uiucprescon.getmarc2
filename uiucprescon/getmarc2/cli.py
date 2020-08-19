@@ -21,7 +21,6 @@ def get_arg_parse() -> argparse.ArgumentParser:
     parser.add_argument("-o", "--output")
     parser.add_argument("--domain",
                         default="https://api-na.hosted.exlibrisgroup.com")
-
     parser.add_argument('--version', action='version',
                         version=f'%(prog)s {version(__package__)}')
 
