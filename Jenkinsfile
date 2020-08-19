@@ -109,13 +109,13 @@ pipeline {
         booleanParam(name: "RUN_CHECKS", defaultValue: false, description: "Run checks on code")
         booleanParam(name: "USE_SONARQUBE", defaultValue: true, description: "Send data test data to SonarQube")
         booleanParam(name: "BUILD_PACKAGES", defaultValue: false, description: "Build Python packages")
+        booleanParam(name: 'BUILD_CHOCOLATEY_PACKAGE', defaultValue: true, description: '')
         booleanParam(name: "TEST_PACKAGES_ON_MAC", defaultValue: false, description: "Test Python packages on Mac")
         booleanParam(name: "DEPLOY_DEVPI", defaultValue: false, description: "Deploy to devpi on http://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
         booleanParam(name: "DEPLOY_DEVPI_PRODUCTION", defaultValue: false, description: "Deploy to production devpi on https://devpi.library.illinois.edu/production/release. Master branch Only")
         booleanParam(name: 'DEPLOY_DOCS', defaultValue: false, description: '')
         booleanParam(name: 'DEPLOY_CHOLOCATEY', defaultValue: false, description: 'Deploy to Chocolatey repository')
 //         TODO make false
-        booleanParam(name: 'DEPLOY_CHOCOLATEY', defaultValue: true, description: '')
     }
     stages {
         stage("Getting Distribution Info"){
@@ -481,10 +481,11 @@ pipeline {
             when{
                 anyOf{
                     equals expected: true, actual: params.BUILD_PACKAGES
-                    equals expected: true, actual: params.DEPLOY_CHOCOLATEY
+                    equals expected: true, actual: params.BUILD_CHOCOLATEY_PACKAGE
                     equals expected: true, actual: params.TEST_PACKAGES_ON_MAC
                     equals expected: true, actual: params.DEPLOY_DEVPI
                     equals expected: true, actual: params.DEPLOY_DEVPI_PRODUCTION
+                    equals expected: true, actual: params.DEPLOY_CHOCOLATEY
                 }
                 beforeAgent true
             }
@@ -676,7 +677,10 @@ pipeline {
                 }
                 stage("Chocolatey"){
                     when{
-                        equals expected: true, actual: params.DEPLOY_CHOCOLATEY
+                        anyOf{
+                            equals expected: true, actual: params.DEPLOY_CHOCOLATEY
+                            equals expected: true, actual: params.BUILD_CHOCOLATEY_PACKAGE
+                        }
                         beforeInput true
                     }
                     stages{
