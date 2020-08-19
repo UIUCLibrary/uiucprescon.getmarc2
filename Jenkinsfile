@@ -1017,7 +1017,7 @@ pipeline {
                             withCredentials([string(credentialsId: server['CHOCO_REPO_KEY'], variable: 'KEY')]) {
                                 bat(
                                     label: "Deploying ${deploy_chocolatey_package} to Chocolatey",
-                                    script: "choco push ${deploy_chocolatey_package} -s ${server['CHOCOLATEY_SERVER']} -k %KEY%}"
+                                    script: "choco push ${deploy_chocolatey_package} -s ${server['CHOCOLATEY_SERVER']} -k %KEY%"
                                 )
                             }
                         }
