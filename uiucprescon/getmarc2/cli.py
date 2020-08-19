@@ -1,7 +1,7 @@
 """Module for handling command line runner."""
 
 import argparse
-from importlib.metadata import version
+import importlib.metadata
 from typing import Optional
 
 from lxml import etree  # nosec
@@ -21,8 +21,13 @@ def get_arg_parse() -> argparse.ArgumentParser:
     parser.add_argument("-o", "--output")
     parser.add_argument("--domain",
                         default="https://api-na.hosted.exlibrisgroup.com")
+    try:
+        version = importlib.metadata.version(__package__)
+    except importlib.metadata.PackageNotFoundError:
+        version = "HEAD"
+
     parser.add_argument('--version', action='version',
-                        version=f'%(prog)s {version(__package__)}')
+                        version=f'%(prog)s {version}')
 
     return parser
 
