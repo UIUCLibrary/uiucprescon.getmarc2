@@ -21,8 +21,8 @@ $packageSourceUrl =  '[[PackageSourceUrl]]'
 Write-Host "Creating Python virtualenv at $installDir\venv"
 python -m venv $installDir\venv
 & "$installDir\venv\Scripts\python.exe" -m pip install pip --upgrade --no-compile
-& "$installDir\venv\Scripts\python.exe" -m pip install wheel --upgrade --no-compile
-& "$installDir\venv\Scripts\python.exe" -m pip install -vv $fileLocation --no-compile
+# & "$installDir\venv\Scripts\python.exe" -m pip install wheel --upgrade --no-compile
+& "$installDir\venv\Scripts\python.exe" -m pip install -vv $fileLocation
 
 $files = get-childitem $installDir -include *.exe -recurse
 foreach ($file in $files) {
