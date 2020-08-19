@@ -698,9 +698,9 @@ pipeline {
                                             label: "Configuring new package for Chocolatey",
                                             script: """\$ErrorActionPreference = 'Stop'; # stop on all errors
                                                        choco new getmarc packageversion=${sanitized_packageversion} InstallerFile=${it.path} -t pythonscript --outputdirectory packages
-                                                       New-Item -ItemType File -Path ".\\packages\\${it.path}" -Force | Out-Null
-                                                       Move-Item -Path "${it.path}"  -Destination "./packages/${it.path}"  -Force | Out-Null
-                                                       choco pack .\\packages\\getmarc.nuspec --outputdirectory .\\packages
+                                                       New-Item -ItemType File -Path ".\\packages\\getmarc\\${it.path}" -Force | Out-Null
+                                                       Move-Item -Path "${it.path}"  -Destination "./packages/getmarc/${it.path}"  -Force | Out-Null
+                                                       choco pack .\\packages\\getmarc\\getmarc.nuspec --outputdirectory .\\packages
                                                        """
                                         )
                                     }
