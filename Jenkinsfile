@@ -968,6 +968,9 @@ pipeline {
                             additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
                           }
                     }
+                    options{
+                        timeout(time: 1, unit: 'DAYS')
+                    }
                     input {
                         message 'Select Chocolatey server'
                         parameters {
