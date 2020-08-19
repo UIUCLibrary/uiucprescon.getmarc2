@@ -983,10 +983,11 @@ pipeline {
                         unstash "CHOCOLATEY_PACKAGE"
                         withCredentials([string(credentialsId: "${CHOCO_REPO_KEY}", variable: 'KEY')]) {
                             script{
-                                findFiles(glob: "packages/*.nupkg").each{
-                                    input id: 'DEPLOY_CHOCOLATEY_PACKAGE', message: "Deploy to ${CHOCOLATEY_SERVER}", parameters: [booleanParam(defaultValue: false, description: "Deploy ${it.name}", name: 'DEPLOY_CHOCOLATEY_NUPKG')]
+                                def nupkgs = findFiles(glob: "packages/*.nupkg")
+                                nupkgs.each{
+                                    def result = input id: 'DEPLOY_CHOCOLATEY_PACKAGE', message: "Deploy to ${CHOCOLATEY_SERVER}", parameters: [booleanParam(defaultValue: false, description: "Deploy ${it.name}", name: 'DEPLOY_CHOCOLATEY_NUPKG')]
                                     bat "set"
-//                                     echo "DEPLOY_CHOCOLATEY_NUPKG = ${DEPLOY_CHOCOLATEY_NUPKG}"
+                                    echo "DEPLOY_CHOCOLATEY_NUPKG = ${env.DEPLOY_CHOCOLATEY_NUPKG}"
                                     if (DEPLOY_CHOCOLATEY_NUPKG){
                                         bat(
                                             label: "Deploying ${it.name} to Chocolatey",
