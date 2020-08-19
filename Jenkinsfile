@@ -989,39 +989,33 @@ pipeline {
                     steps{
                         unstash "CHOCOLATEY_PACKAGE"
                         script{
-                            def server = input(
+                            def pkgs = []
+                            findFiles(glob: "packages/*.nupkg").each{
+                                pkgs << it.path
+                            }
+                            def deployment_options = input(
                                 message: 'Chocolatey server',
                                 parameters: [
-
                                     credentials(
                                         credentialType: 'org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl',
                                         defaultValue: 'NEXUS_NUGET_API_KEY',
                                         description: 'Nuget API key for Chocolatey',
                                         name: 'CHOCO_REPO_KEY',
                                         required: true
-                                    )
-                                ]
-                            )
-                            def pkgs = []
-                            findFiles(glob: "packages/*.nupkg").each{
-                                pkgs << it.path
-                            }
-                            def deploy_chocolatey_package = input(
-                                message: "Select package",
-                                parameters: [
+                                    ),
                                     choice(
                                         choices: pkgs,
                                         description: 'Package to use',
-                                        name: 'FILE'
+                                        name: 'NUPKG'
                                     )
                                 ]
                             )
-                            echo "deploy_chocolatey_package = ${deploy_chocolatey_package}"
 
-                            withCredentials([string(credentialsId: server['CHOCO_REPO_KEY'], variable: 'KEY')]) {
+
+                            withCredentials([string(credentialsId: deployment_options['CHOCO_REPO_KEY'], variable: 'KEY')]) {
                                 bat(
-                                    label: "Deploying ${deploy_chocolatey_package} to Chocolatey",
-                                    script: "choco push ${deploy_chocolatey_package} -s ${CHOCOLATEY_DEPLOYMENT['CHOCOLATEY_SERVER']} -k %KEY%"
+                                    label: "Deploying ${deployment_options['NUPKG']} to Chocolatey",
+                                    script: "choco push ${deployment_options['NUPKG']} -s ${CHOCOLATEY_DEPLOYMENT['CHOCOLATEY_SERVER']} -k %KEY%"
                                 )
                             }
                         }
