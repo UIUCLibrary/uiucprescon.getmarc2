@@ -17,7 +17,7 @@ $installDir = "$(Split-Path -parent $MyInvocation.MyCommand.Definition)"
 $fileLocation = Join-Path $toolsDir '[[InstallerFile]]'
 $packageSourceUrl =  '[[PackageSourceUrl]]'
 #Create-Virtualenv($installDir\venv\Scripts\python.exe)
-$P = Get-AppInstallLocation('python') + "python.exe"
+$P = "$(Get-AppInstallLocation('python') + 'python.exe')"
 
 Write-Host "python = $P"
 
