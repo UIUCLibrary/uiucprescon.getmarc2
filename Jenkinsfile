@@ -985,7 +985,14 @@ pipeline {
                             script{
                                 def nupkgs = findFiles(glob: "packages/*.nupkg")
                                 nupkgs.each{
-                                    def result = input id: 'DEPLOY_CHOCOLATEY_PACKAGE', message: "Deploy to ${CHOCOLATEY_SERVER}", parameters: [booleanParam(defaultValue: false, description: "Deploy ${it.name}", name: 'DEPLOY_CHOCOLATEY_NUPKG')]
+                                    def result = input(
+                                        id: 'DEPLOY_CHOCOLATEY_PACKAGE',
+                                        message: "Deploy to ${CHOCOLATEY_SERVER}",
+                                        parameters: [
+                                            booleanParam(defaultValue: false, description: "Deploy ${it.name}", name: 'DEPLOY_CHOCOLATEY_NUPKG'),
+                                            booleanParam(defaultValue: false, description: "something else", name: 'Somthin')
+                                        ]
+                                        )
                                     bat "set"
                                     echo "result = ${result}"
                                     echo "DEPLOY_CHOCOLATEY_NUPKG = ${env.DEPLOY_CHOCOLATEY_NUPKG}"
