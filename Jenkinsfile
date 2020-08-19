@@ -1012,7 +1012,7 @@ pipeline {
                                 ]
                             )
                             echo "DEPLOY_CHOCOLATEY_PACKAGE = ${DEPLOY_CHOCOLATEY_PACKAGE}"
-                            if (DEPLOY_CHOCOLATEY_PACKAGE['DEPLOY_CHOCOLATEY_NUPKG']){
+                            if (DEPLOY_CHOCOLATEY_PACKAGE){
                                 withCredentials([string(credentialsId: server["CHOCO_REPO_KEY"], variable: 'KEY')]) {
                                     bat(
                                         label: "Deploying ${DEPLOY_CHOCOLATEY_PACKAGE['FILE']} to Chocolatey",
