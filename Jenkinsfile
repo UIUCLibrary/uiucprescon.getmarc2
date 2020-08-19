@@ -689,7 +689,7 @@ pipeline {
                             }
                             steps{
                                 script {
-                                    unstash "DIST-INFO"
+                                   unstash "DIST-INFO"
                                     def props = readProperties interpolate: true, file: 'uiucprescon.getmarc2.dist-info/METADATA'
                                     unstash "PYTHON_PACKAGES"
                                     findFiles(glob: "dist/*.whl").each{
@@ -721,8 +721,11 @@ pipeline {
                                   }
                             }
                             steps{
+
+                                unstash "DIST-INFO"
                                 unstash "CHOCOLATEY_PACKAGE"
                                 script{
+
                                     def props = readProperties interpolate: true, file: 'uiucprescon.getmarc2.dist-info/METADATA'
                                     def sanitized_packageversion=sanitize_chocolatey_version(props.Version)
                                     powershell(
