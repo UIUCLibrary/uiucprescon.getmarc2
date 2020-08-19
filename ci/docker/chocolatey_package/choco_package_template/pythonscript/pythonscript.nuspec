@@ -6,7 +6,7 @@
     <version>[[PackageVersion]]</version>
     <authors>University Library at The University of Illinois at Urbana Champaign: Preservation Services</authors>
     <owners>[[MaintainerName]]</owners>
-    <description>dummy
+    <description>__REPLACE__MarkDown_Okay [[AutomaticPackageNotesNuspec]]
     </description>
     <tags>[[PackageNameLower]] UIUC</tags>
     <dependencies>
