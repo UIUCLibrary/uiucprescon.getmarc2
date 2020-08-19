@@ -3,7 +3,7 @@
 import argparse
 try:
     from importlib import metadata
-except ModuleNotFoundError:
+except ImportError:
     import importlib_metadata as metadata
 
 from typing import Optional
