@@ -1009,23 +1009,12 @@ pipeline {
                                         description: 'Package to use',
                                         name: 'NUPKG'
                                     ),
-                                    booleanParam(
-                                        defaultValue: false,
-                                        description: 'force the behavior. Do not use force during normal operation',
-                                        name: 'FORCE'
-                                    )
                                 ]
                             )
                             withCredentials([string(credentialsId: deployment_options['CHOCO_REPO_KEY'], variable: 'KEY')]) {
-                                def push_command
-                                if (deployment_options['FORCE']){
-                                    push_command = "choco push ${deployment_options['NUPKG']} -s ${CHOCOLATEY_SERVER} -k %KEY% --force"
-                                } else {
-                                    push_command = "choco push ${deployment_options['NUPKG']} -s ${CHOCOLATEY_SERVER} -k %KEY%"
-                                }
                                 bat(
                                     label: "Deploying ${deployment_options['NUPKG']} to Chocolatey",
-                                    script: push_command
+                                    script: "choco push ${deployment_options['NUPKG']} -s ${CHOCOLATEY_SERVER} -k %KEY%"
                                 )
                             }
                         }
