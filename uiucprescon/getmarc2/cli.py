@@ -1,6 +1,7 @@
 """Module for handling command line runner."""
 
 import argparse
+from importlib.metadata import version
 from typing import Optional
 
 from lxml import etree  # nosec
@@ -13,12 +14,17 @@ def get_arg_parse() -> argparse.ArgumentParser:
     Returns: parser
 
     """
+
     parser = argparse.ArgumentParser(description='Get Marc XML data.')
     parser.add_argument("--bibid")
     parser.add_argument("--alma-apikey", required=True)
     parser.add_argument("-o", "--output")
     parser.add_argument("--domain",
                         default="https://api-na.hosted.exlibrisgroup.com")
+
+    parser.add_argument('--version', action='version',
+                        version=f'%(prog)s {version(__package__)}')
+
     return parser
 
 
