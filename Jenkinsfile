@@ -713,6 +713,7 @@ pipeline {
                             }
                             post{
                                 always{
+                                    archiveArtifacts artifacts: "**/*.nuspec"
                                     stash includes: 'packages/*.nupkg', name: "CHOCOLATEY_PACKAGE"
                                 }
                             }
