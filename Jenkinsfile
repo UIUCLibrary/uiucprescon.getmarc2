@@ -987,6 +987,7 @@ pipeline {
                                 nupkgs.each{
                                     def result = input id: 'DEPLOY_CHOCOLATEY_PACKAGE', message: "Deploy to ${CHOCOLATEY_SERVER}", parameters: [booleanParam(defaultValue: false, description: "Deploy ${it.name}", name: 'DEPLOY_CHOCOLATEY_NUPKG')]
                                     bat "set"
+                                    echo "result = ${result}"
                                     echo "DEPLOY_CHOCOLATEY_NUPKG = ${env.DEPLOY_CHOCOLATEY_NUPKG}"
                                     if (DEPLOY_CHOCOLATEY_NUPKG){
                                         bat(
