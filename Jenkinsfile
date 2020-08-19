@@ -973,35 +973,51 @@ pipeline {
                         retry(3)
                     }
                     input {
-                        message 'Select Chocolatey server'
-                        parameters {
-                            choice choices: ['https://jenkins.library.illinois.edu/nexus/repository/chocolatey-hosted-beta/', 'https://jenkins.library.illinois.edu/nexus/repository/chocolatey-hosted-public/'], description: 'Chocolatey Server to deploy to', name: 'CHOCOLATEY_SERVER'
-                            credentials credentialType: 'org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl', defaultValue: 'NEXUS_NUGET_API_KEY', description: 'Nuget API key for Chocolatey', name: 'CHOCO_REPO_KEY', required: true
-                        }
+                        message 'Deploy to Chocolatey server'
                     }
                     steps{
                         unstash "CHOCOLATEY_PACKAGE"
-                        withCredentials([string(credentialsId: "${CHOCO_REPO_KEY}", variable: 'KEY')]) {
-                            script{
+                        script{
+                            def server = input(message: 'Chocolatey server',
+                                parameters: [
+                                    choice(
+                                        choices: [
+                                            'https://jenkins.library.illinois.edu/nexus/repository/chocolatey-hosted-beta/',
+                                            'https://jenkins.library.illinois.edu/nexus/repository/chocolatey-hosted-public/'
+                                        ],
+                                        description: 'Chocolatey Server to deploy to',
+                                        name: 'CHOCOLATEY_SERVER'
+                                    ),
+                                    credentials(
+                                        credentialType: 'org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl',
+                                        defaultValue: 'NEXUS_NUGET_API_KEY',
+                                        description: 'Nuget API key for Chocolatey',
+                                        name: 'CHOCO_REPO_KEY',
+                                        required: true
+                                    )
+                                ]
+                            )
+                            withCredentials([string(credentialsId: "${CHOCO_REPO_KEY}", variable: 'KEY')]) {
                                 def nupkgs = findFiles(glob: "packages/*.nupkg")
+                                def pkgs = []
                                 nupkgs.each{
-                                    def result = input(
-                                        id: 'DEPLOY_CHOCOLATEY_PACKAGE',
-                                        message: "Deploy to ${CHOCOLATEY_SERVER}",
-                                        parameters: [
-                                            booleanParam(defaultValue: false, description: "Deploy ${it.name}", name: 'DEPLOY_CHOCOLATEY_NUPKG'),
-                                            booleanParam(defaultValue: false, description: "something else", name: 'Somthin')
-                                        ]
+                                    pkgs << it.path
+                                }
+                                def DEPLOY_CHOCOLATEY_PACKAGE = input(
+                                    message: "Deploy to ${CHOCOLATEY_SERVER}",
+                                    parameters: [
+                                        choice(
+                                            choices: pkgs,
+                                            description: 'Package to use',
+                                            name: 'FILE'
                                         )
-                                    bat "set"
-                                    echo "result = ${result}"
-                                    echo "DEPLOY_CHOCOLATEY_NUPKG = ${env.DEPLOY_CHOCOLATEY_NUPKG}"
-                                    if (DEPLOY_CHOCOLATEY_NUPKG){
-                                        bat(
-                                            label: "Deploying ${it.name} to Chocolatey",
-                                            script: "choco push ${it.path} -s %CHOCOLATEY_SERVER% -k %KEY%"
-                                        )
-                                    }
+                                    ]
+                                )
+                                if (DEPLOY_CHOCOLATEY_PACKAGE['DEPLOY_CHOCOLATEY_NUPKG']){
+                                    bat(
+                                        label: "Deploying ${DEPLOY_CHOCOLATEY_PACKAGE['FILE']} to Chocolatey",
+                                        script: "choco push ${DEPLOY_CHOCOLATEY_PACKAGE['FILE']} -s ${server['CHOCOLATEY_SERVER']} -k ${server['KEY']}"
+                                    )
                                 }
                             }
                         }
