@@ -75,14 +75,14 @@ class RecordServer:
         )
 
     def get_record(self, identifier, identifier_type: str) -> str:
-        """ Retrieve a record
+        """Retrieve a record.
 
         Args:
             identifier:
             identifier_type: the type of identifier used
 
         Returns:
-
+            xml record as a string
         """
         id_strategy = {
             "bibid": query.QueryIdentityBibid(),
@@ -127,7 +127,6 @@ class RecordServer:
                           identifier,
                           identifier_strategy: AbsAlmaQueryIdentityStrategy
                           ) -> str:
-
         """Build a url for the api.
 
         Args:
@@ -135,6 +134,7 @@ class RecordServer:
             identifier_strategy: type of identifier
 
         Returns:
+            url for making a request
 
         """
         api_route = "almaws/v1/bibs"
@@ -144,12 +144,13 @@ class RecordServer:
 
     @staticmethod
     def parse_record_count(request_data) -> int:
-        """
+        """Parse the data for a record count.
 
         Args:
             request_data:
 
         Returns:
+            number of records
 
         >>> RecordServer.parse_record_count(\
                 b'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'\
@@ -185,8 +186,17 @@ class BibidRecordServer(RecordServer):
         query.QueryIdentityBibid()
     )
 
-    def get_record(self, identifier, identifier_type=None):
+    def get_record(self, identifier, identifier_type=None) -> str:
+        """Retrieve a record.
 
+        Args:
+            identifier:
+            identifier_type: the type of identifier used
+
+        Returns:
+            record as an xml string
+
+        """
         url = self._get_request_url(identifier)
 
         response = requests.request("GET", url)
