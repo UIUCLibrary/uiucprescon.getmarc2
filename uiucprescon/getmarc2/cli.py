@@ -1,6 +1,8 @@
 """Module for handling command line runner."""
 
 import argparse
+import sys
+
 try:
     from importlib import metadata
 except ImportError:
@@ -18,7 +20,20 @@ def get_arg_parse() -> argparse.ArgumentParser:
     Returns: parser
     """
     parser = argparse.ArgumentParser(description='Get Marc XML data.')
-    parser.add_argument("--bibid")
+    parser.add_argument("identifier")
+
+    group = parser.add_mutually_exclusive_group(required=True)
+
+    group.add_argument("--bibid",
+                       dest="identifier_type",
+                       action='store_const',
+                       const="bibid")
+
+    group.add_argument("--mmsid",
+                       dest="identifier_type",
+                       action='store_const',
+                       const="mmsid")
+
     parser.add_argument("--alma-apikey", required=True)
     parser.add_argument("-o", "--output")
     parser.add_argument("--domain",
@@ -60,20 +75,24 @@ def run(args: Optional[argparse.Namespace] = None) -> None:
 
     """
     args = args or get_arg_parse().parse_args()
+    server = records.RecordServer(args.domain, args.alma_apikey)
+    try:
+        xml_result = str(
+            etree.tostring(
+                etree.fromstring(
+                    server.get_record(
+                        args.identifier, args.identifier_type
+                    )
+                ),
+                pretty_print=True,
+                encoding="UTF-8"
+            ),
+            encoding="utf-8"
+        )
+    except ValueError as error:
+        sys.exit(error)
 
-    server = records.RecordServer(
-        domain=args.domain,
-        alma_api_key=args.alma_apikey
-    )
-    xml_result = str(
-        etree.tostring(
-            etree.fromstring(server.bibid_record(args.bibid)),
-            pretty_print=True,
-            encoding="UTF-8"
-        ),
-        encoding="utf-8"
-    )
-    xml_result = fix_up_xml(xml_result, bibid=args.bibid)
+    xml_result = fix_up_xml(xml_result, bibid=args.identifier)
 
     if records.is_validate_xml(xml_result) is False:
         raise records.ValidationException("invalid xml file")
