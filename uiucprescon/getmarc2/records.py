@@ -1,5 +1,4 @@
 """Module for records."""
-import warnings
 from importlib.resources import read_text
 from typing import Optional
 
@@ -181,68 +180,7 @@ class RecordServer:
             ) from error
 
 
-class BibidRecordServer(RecordServer):
-    """Used for managing the connection with the server API."""
-
-    id_query_strategy = query.AlmaRecordIdentityQuery(
-        query.QueryIdentityBibid()
-    )
-
-    def get_record(self, identifier, identifier_type=None) -> str:
-        """Retrieve a record.
-
-        Args:
-            identifier:
-            identifier_type: the type of identifier used
-
-        Returns:
-            record as an xml string
-
-        """
-        url = self._get_request_url(identifier)
-
-        response = requests.request("GET", url)
-        if response.status_code != 200:
-            raise AttributeError(
-                f"Failed to access from server: Reason {response.reason}"
-            )
-
-        request_data = response.text.encode("utf-8")
-        my_record = self._process_record(request_data)
-        return self.add_record_decorations(record_data=my_record)
-
-    def bibid_record(self, bib_id: str) -> str:
-        """Request a MARC xml record of a given bib id.
-
-        Args:
-            bib_id: UIUC bib id
-
-        Returns: XML data as a string
-
-        """
-        warnings.warn(
-            "Pending dep use get_record instead", DeprecationWarning
-        )
-
-        url = self._get_request_url(bib_id)
-        response = requests.request("GET", url)
-        if response.status_code != 200:
-            raise AttributeError(
-                f"Failed to access from server: Reason {response.reason}"
-            )
-
-        request_data = response.text.encode("utf-8")
-        my_record = self._process_record(request_data)
-        return self.add_record_decorations(record_data=my_record)
-
-    def _get_request_url(self, bib_id):
-        api_route = "almaws/v1/bibs"
-        item_query_string = self.id_query_strategy.make_query_fragment(bib_id)
-        url = f"{self.domain}/{api_route}?{item_query_string}&apikey={self.api_key}"  # noqa: E501 pylint: disable=line-too-long
-        return url
-
-
-def get_from_bibid(bibid: str, server: BibidRecordServer) -> str:
+def get_from_bibid(bibid: str, server: RecordServer) -> str:
     """Get the xml from a UIUC bib id.
 
     Args:
@@ -252,7 +190,7 @@ def get_from_bibid(bibid: str, server: BibidRecordServer) -> str:
     Returns: MARC XML as a string
 
     """
-    return str(server.bibid_record(bibid))
+    return str(server.get_record(bibid, "bibid"))
 
 
 def is_validate_xml(data: str) -> bool:

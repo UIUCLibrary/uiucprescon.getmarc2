@@ -7,7 +7,7 @@ from uiucprescon.getmarc2 import records
 
 
 def test_uiuc_bibid_in_record(sample_record):
-    server = Mock(**{"bibid_record.return_value": sample_record})
+    server = Mock(**{"get_record.return_value": sample_record})
     record_data = ET.fromstring(
         records.get_from_bibid(bibid="5539966", server=server))
     for e in record_data.iter("datafield"):
