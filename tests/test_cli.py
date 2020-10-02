@@ -12,29 +12,39 @@ arg_values = [
             "--alma-apikey", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
         ],
         {
-            "bibid": "5539966",
+            "identifier_type": "bibid",
+            "identifier": "5539966",
             'domain': 'https://api-na.hosted.exlibrisgroup.com'
         }
     ),
     (
         [
+            "--mmsid", "99553996612205899",
             "--alma-apikey", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
         ],
         {
+            "identifier_type": "mmsid",
+            "identifier": "99553996612205899",
             'domain': 'https://api-na.hosted.exlibrisgroup.com'
         }
     ),
     (
         [
+            "--bibid", "5539966",
             "-o", "5539966.xml",
             "--alma-apikey", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
         ],
         {
-            'domain': 'https://api-na.hosted.exlibrisgroup.com'
+            "identifier_type": "bibid",
+            "identifier": "5539966",
+            'domain': 'https://api-na.hosted.exlibrisgroup.com',
         }
     ),
     (
-        ["--alma-apikey", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"],
+        [
+            "--alma-apikey", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "--bibid", "5539966",
+        ],
         {
             'alma_apikey': 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
             'domain': 'https://api-na.hosted.exlibrisgroup.com'
@@ -47,7 +57,8 @@ arg_values = [
         ],
         {
             'alma_apikey': 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
-            "mmsid": "99553996612205899",
+            "identifier_type": "mmsid",
+            "identifier": "99553996612205899",
         }
     )
 ]

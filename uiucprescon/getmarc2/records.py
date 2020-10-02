@@ -1,5 +1,5 @@
 """Module for records."""
-
+import warnings
 from importlib.resources import read_text
 from typing import Optional
 
@@ -7,6 +7,7 @@ import requests
 from lxml import etree  # nosec
 
 from . import query
+from .query import AbsAlmaQueryIdentityStrategy
 
 
 class ValidationException(Exception):
@@ -73,6 +74,109 @@ class RecordServer:
             encoding="utf-8"
         )
 
+    def get_record(self, identifier, identifier_type: str) -> str:
+        """ Retrieve a record
+
+        Args:
+            identifier:
+            identifier_type: the type of identifier used
+
+        Returns:
+
+        """
+        id_strategy = {
+            "bibid": query.QueryIdentityBibid(),
+            "mmsid": query.QueryIdentityMMSID()
+        }.get(identifier_type)
+
+        if id_strategy is None:
+            raise AttributeError(
+                "Unknown identifier type, {}".format(identifier_type)
+            )
+
+        url = self.build_request_url(identifier, id_strategy)
+        response = requests.request("GET", url)
+        if response.status_code != 200:
+            raise ConnectionError(
+                f"Failed to access from server: Reason {response.reason}"
+            )
+
+        request_data = response.text.encode("utf-8")
+        record_count = self.parse_record_count(request_data)
+        if record_count == 0:
+            raise ValueError("No record found")
+        my_record = self._process_record(request_data)
+        return self.add_record_decorations(record_data=my_record)
+
+    @staticmethod
+    def _process_record(request_data: bytes) -> str:
+        data = etree.fromstring(request_data)
+        try:
+            record = next(data.iter("record"))
+        except StopIteration:
+            raise ValueError("Invalid data")
+        return str(
+            etree.tostring(
+                record,
+                encoding="utf-8"
+            ),
+            encoding="utf-8"
+        )
+
+    def build_request_url(self,
+                          identifier,
+                          identifier_strategy: AbsAlmaQueryIdentityStrategy
+                          ) -> str:
+
+        """Build a url for the api.
+
+        Args:
+            identifier: identifier for record
+            identifier_strategy: type of identifier
+
+        Returns:
+
+        """
+        api_route = "almaws/v1/bibs"
+        item_query_string = identifier_strategy.make_query_fragment(identifier)
+        url = f"{self.domain}/{api_route}?{item_query_string}&apikey={self.api_key}"  # noqa: E501 pylint: disable=line-too-long
+        return url
+
+    @staticmethod
+    def parse_record_count(request_data) -> int:
+        """
+
+        Args:
+            request_data:
+
+        Returns:
+
+        >>> RecordServer.parse_record_count(\
+                b'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'\
+                b'<bibs total_record_count="0"/>'\
+            )
+        0
+
+        >>> RecordServer.parse_record_count(\
+                b'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'\
+                b'<bibs total_record_count="d"/>'\
+            )
+        Traceback (most recent call last):
+            ...
+        ValueError: invalid literal for int() with base 10: 'd'
+
+        >>> RecordServer.parse_record_count(b'spam eggs')
+        Traceback (most recent call last):
+            ...
+        ValueError: Unable to parse data. ...
+
+        """
+        try:
+            xml = etree.fromstring(request_data)
+            return int(xml.attrib['total_record_count'])
+        except etree.XMLSyntaxError as error:
+            raise ValueError("Unable to parse data. Reason {}".format(error))
+
 
 class BibidRecordServer(RecordServer):
     """Used for managing the connection with the server API."""
@@ -80,6 +184,20 @@ class BibidRecordServer(RecordServer):
     id_query_strategy = query.AlmaRecordIdentityQuery(
         query.QueryIdentityBibid()
     )
+
+    def get_record(self, identifier, identifier_type=None):
+
+        url = self._get_request_url(identifier)
+
+        response = requests.request("GET", url)
+        if response.status_code != 200:
+            raise AttributeError(
+                f"Failed to access from server: Reason {response.reason}"
+            )
+
+        request_data = response.text.encode("utf-8")
+        my_record = self._process_record(request_data)
+        return self.add_record_decorations(record_data=my_record)
 
     def bibid_record(self, bib_id: str) -> str:
         """Request a MARC xml record of a given bib id.
@@ -90,9 +208,11 @@ class BibidRecordServer(RecordServer):
         Returns: XML data as a string
 
         """
-        api_route = "almaws/v1/bibs"
-        item_query_string = self.id_query_strategy.make_query_fragment(bib_id)
-        url = f"{self.domain}/{api_route}?{item_query_string}&apikey={self.api_key}"  # noqa: E501 pylint: disable=line-too-long
+        warnings.warn(
+            "Pending dep use get_record instead", DeprecationWarning
+        )
+
+        url = self._get_request_url(bib_id)
         response = requests.request("GET", url)
         if response.status_code != 200:
             raise AttributeError(
@@ -100,19 +220,14 @@ class BibidRecordServer(RecordServer):
             )
 
         request_data = response.text.encode("utf-8")
-        my_record = self._get_record(request_data)
+        my_record = self._process_record(request_data)
         return self.add_record_decorations(record_data=my_record)
 
-    @staticmethod
-    def _get_record(request_data: bytes) -> str:
-        data = etree.fromstring(request_data)
-        return str(
-            etree.tostring(
-                next(data.iter("record")),
-                encoding="utf-8"
-            ),
-            encoding="utf-8"
-        )
+    def _get_request_url(self, bib_id):
+        api_route = "almaws/v1/bibs"
+        item_query_string = self.id_query_strategy.make_query_fragment(bib_id)
+        url = f"{self.domain}/{api_route}?{item_query_string}&apikey={self.api_key}"  # noqa: E501 pylint: disable=line-too-long
+        return url
 
 
 def get_from_bibid(bibid: str, server: BibidRecordServer) -> str:

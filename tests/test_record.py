@@ -108,3 +108,9 @@ def test_validate():
             </datafield>
         </record>"""
     assert records.is_validate_xml(sample_record) is True
+
+
+def test_get_record_count_zero():
+    test_data = b'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><bibs total_record_count="0"/>'
+    number = records.RecordServer.parse_record_count(test_data)
+    assert number == 0
