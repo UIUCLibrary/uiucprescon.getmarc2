@@ -176,7 +176,9 @@ class RecordServer:
             xml = etree.fromstring(request_data)
             return int(xml.attrib['total_record_count'])
         except etree.XMLSyntaxError as error:
-            raise ValueError("Unable to parse data. Reason {}".format(error))
+            raise ValueError(
+                "Unable to parse data. Reason {}".format(error)
+            ) from error
 
 
 class BibidRecordServer(RecordServer):
