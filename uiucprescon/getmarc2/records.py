@@ -14,6 +14,8 @@ class ValidationException(Exception):
 
 
 class RecordServer:
+    """Manage the API server."""
+
     def __init__(self, domain: str, alma_api_key: str) -> None:
         """Manage the API server.
 
