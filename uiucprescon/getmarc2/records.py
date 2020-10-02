@@ -113,8 +113,8 @@ class RecordServer:
         data = etree.fromstring(request_data)
         try:
             record = next(data.iter("record"))
-        except StopIteration:
-            raise ValueError("Invalid data")
+        except StopIteration as error:
+            raise ValueError("Invalid data") from error
         return str(
             etree.tostring(
                 record,
