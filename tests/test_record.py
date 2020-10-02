@@ -1,5 +1,8 @@
 from unittest.mock import Mock
 import xml.etree.ElementTree as ET
+
+import pytest
+
 from uiucprescon.getmarc2 import records
 
 
@@ -114,3 +117,8 @@ def test_get_record_count_zero():
     test_data = b'<?xml version="1.0" encoding="UTF-8" standalone="yes"?><bibs total_record_count="0"/>'
     number = records.RecordServer.parse_record_count(test_data)
     assert number == 0
+
+def test_record_server_get_record_invalid_raises():
+    server = records.RecordServer("dummy", "dummy")
+    with pytest.raises(AttributeError):
+        server.get_record("eggs", "spam")
