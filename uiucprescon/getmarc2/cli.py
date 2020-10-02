@@ -19,6 +19,7 @@ def get_arg_parse() -> argparse.ArgumentParser:
     """
     parser = argparse.ArgumentParser(description='Get Marc XML data.')
     parser.add_argument("--bibid")
+    parser.add_argument("--mmsid")
     parser.add_argument("--alma-apikey", required=True)
     parser.add_argument("-o", "--output")
     parser.add_argument("--domain",
@@ -61,7 +62,7 @@ def run(args: Optional[argparse.Namespace] = None) -> None:
     """
     args = args or get_arg_parse().parse_args()
 
-    server = records.RecordServer(
+    server = records.BibidRecordServer(
         domain=args.domain,
         alma_api_key=args.alma_apikey
     )

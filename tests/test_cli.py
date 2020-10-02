@@ -39,6 +39,16 @@ arg_values = [
             'alma_apikey': 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
             'domain': 'https://api-na.hosted.exlibrisgroup.com'
         }
+    ),
+    (
+        [
+            "--alma-apikey", "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "--mmsid", "99553996612205899"
+        ],
+        {
+            'alma_apikey': 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+            "mmsid": "99553996612205899",
+        }
     )
 ]
 

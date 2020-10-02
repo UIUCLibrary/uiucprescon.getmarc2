@@ -6,14 +6,14 @@ from typing import Optional
 import requests
 from lxml import etree  # nosec
 
+from . import query
+
 
 class ValidationException(Exception):
     """Raises if validation check fails."""
 
 
 class RecordServer:
-    """Used for managing the connection with the server API."""
-
     def __init__(self, domain: str, alma_api_key: str) -> None:
         """Manage the API server.
 
@@ -23,38 +23,6 @@ class RecordServer:
         """
         self.domain = domain
         self.api_key = alma_api_key
-
-    def bibid_record(self, bib_id: str) -> str:
-        """Request a MARC xml record of a given bib id.
-
-        Args:
-            bib_id: UIUC bib id
-
-        Returns: XML data as a string
-
-        """
-        api_route = "almaws/v1/bibs"
-        url = f"{self.domain}/{api_route}?mms_id=99{bib_id}12205899&apikey={self.api_key}"  # noqa: E501 pylint: disable=line-too-long
-        response = requests.request("GET", url)
-        if response.status_code != 200:
-            raise AttributeError(
-                f"Failed to access from server: Reason {response.reason}"
-            )
-
-        request_data = response.text.encode("utf-8")
-        my_record = self._get_record(request_data)
-        return self.add_record_decorations(record_data=my_record)
-
-    @staticmethod
-    def _get_record(request_data: bytes) -> str:
-        data = etree.fromstring(request_data)
-        return str(
-            etree.tostring(
-                next(data.iter("record")),
-                encoding="utf-8"
-            ),
-            encoding="utf-8"
-        )
 
     @staticmethod
     def addns(root: etree._Element,  # pylint: disable=protected-access
@@ -104,7 +72,48 @@ class RecordServer:
         )
 
 
-def get_from_bibid(bibid: str, server: RecordServer) -> str:
+class BibidRecordServer(RecordServer):
+    """Used for managing the connection with the server API."""
+
+    id_query_strategy = query.AlmaRecordIdentityQuery(
+        query.QueryIdentityBibid()
+    )
+
+    def bibid_record(self, bib_id: str) -> str:
+        """Request a MARC xml record of a given bib id.
+
+        Args:
+            bib_id: UIUC bib id
+
+        Returns: XML data as a string
+
+        """
+        api_route = "almaws/v1/bibs"
+        item_query_string = self.id_query_strategy.make_query_fragment(bib_id)
+        url = f"{self.domain}/{api_route}?{item_query_string}&apikey={self.api_key}"  # noqa: E501 pylint: disable=line-too-long
+        response = requests.request("GET", url)
+        if response.status_code != 200:
+            raise AttributeError(
+                f"Failed to access from server: Reason {response.reason}"
+            )
+
+        request_data = response.text.encode("utf-8")
+        my_record = self._get_record(request_data)
+        return self.add_record_decorations(record_data=my_record)
+
+    @staticmethod
+    def _get_record(request_data: bytes) -> str:
+        data = etree.fromstring(request_data)
+        return str(
+            etree.tostring(
+                next(data.iter("record")),
+                encoding="utf-8"
+            ),
+            encoding="utf-8"
+        )
+
+
+def get_from_bibid(bibid: str, server: BibidRecordServer) -> str:
     """Get the xml from a UIUC bib id.
 
     Args:
