@@ -228,7 +228,18 @@ pipeline {
                                               venv/bin/python -m pip install tox
                                               """
                                    )
-                                sh "venv/bin/tox -e py38 -e py39 -p"
+                                   script {
+                                      def tox = "venv/bin/tox"
+                                      def envs = sh(returnStdout: true, script: "${tox} -l").trim().split('\n')
+                                      def cmds = envs.collectEntries({ tox_env ->
+                                        [tox_env, {
+                                          sh "${tox} --parallel--safe-build -vve $tox_env"
+                                        }]
+                                      })
+                                      parallel(cmds)
+                                    }
+
+//                                 sh "venv/bin/tox -e py38 -e py39 -p"
 
                             }
                         }
