@@ -277,15 +277,6 @@ pipeline {
                                         }
                                     }
                                 }
-                                stage("Tox") {
-                                    when{
-                                        equals expected: true, actual: params.TEST_RUN_TOX
-                                    }
-                                    steps {
-                                        sh "tox -e py"
-
-                                    }
-                                }
                                 stage("Bandit") {
                                     steps{
                                         catchError(buildResult: 'SUCCESS', message: 'Bandit found issues', stageResult: 'UNSTABLE') {
@@ -470,6 +461,69 @@ pipeline {
                                     [pattern: '.scannerwork/', type: 'INCLUDE'],
                                 ]
                             )
+                        }
+                    }
+                }
+                stage("Tox") {
+                    when{
+                        equals expected: true, actual: params.TEST_RUN_TOX
+                    }
+                    parallel{
+                        stage("Linux"){
+                            agent {
+                                dockerfile {
+                                    filename 'ci/docker/python/linux/Dockerfile'
+                                    label 'linux && docker'
+                                    additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) --build-arg PIP_EXTRA_INDEX_URL'
+                                }
+                            }
+
+                            steps {
+                                sh "tox -e py"
+
+                            }
+                        }
+                        stage("Mac"){
+                            agent {
+                                label "mac && python3.8 && python3.9"
+                            }
+                            when{
+                                equals expected: true, actual: params.TEST_PACKAGES_ON_MAC
+                            }
+                            steps {
+                                sh(label:"Installing tox",
+                                   script: """python3 -m venv venv
+                                              venv/bin/python -m pip install pip --upgrade
+                                              venv/bin/python -m pip install wheel
+                                              venv/bin/python -m pip install --upgrade setuptools
+                                              venv/bin/python -m pip install tox
+                                              """
+                                )
+                                script {
+                                    def tox = "venv/bin/tox"
+                                    def skipEnv = ["py36"]
+                                    def envs = sh(returnStdout: true, script: "${tox} -l").trim().split('\n')
+                                    def cmds = envs.collectEntries({ tox_env ->
+                                        skipEnv.contains(tox_env) ? [:] : [tox_env, {
+                                            sh "${tox} --parallel--safe-build -vve $tox_env"
+                                        }]
+                                  })
+                                  parallel(cmds)
+                                }
+                            }
+                            post{
+                                cleanup{
+                                    cleanWs(
+                                        deleteDirs: true,
+                                        patterns: [
+                                            [pattern: ".tox/", type: 'INCLUDE'],
+                                            [pattern: "venv/", type: 'INCLUDE'],
+                                            [pattern: ".eggs/", type: 'INCLUDE'],
+                                            [pattern: "*.egg-info/", type: 'INCLUDE'],
+                                        ]
+                                    )
+                                }
+                            }
                         }
                     }
                 }
