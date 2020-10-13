@@ -211,6 +211,18 @@ pipeline {
 
                             }
                         }
+                        stage("Mac"){
+                            agent {
+                                label "mac && python3.8 && python3.9"
+                            }
+                            when{
+                                equals expected: true, actual: params.TEST_RUN_TOX
+                            }
+                            steps {
+                                sh "tox -e py"
+
+                            }
+                        }
                     }
                 }
                 stage("Check Code") {
