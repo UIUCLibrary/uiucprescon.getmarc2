@@ -799,315 +799,319 @@ pipeline {
                 }
             }
         }
-        stage("Deploy to Devpi"){
-            when {
-                allOf{
-                    equals expected: true, actual: params.DEPLOY_DEVPI
-                    anyOf {
-                        equals expected: "master", actual: env.BRANCH_NAME
-                        equals expected: "dev", actual: env.BRANCH_NAME
-                        tag "*"
-                    }
-                }
-                beforeAgent true
-                beforeOptions true
-            }
-            agent none
-            environment{
-                DEVPI = credentials("DS_devpi")
-                devpiStagingIndex = getDevPiStagingIndex()
-            }
-            options{
-                lock("uiucprescon.getmarc2-devpi")
-            }
+        stage("Deploy"){
             stages{
-                stage("Deploy to Devpi Staging") {
-                    agent {
-                        dockerfile {
-                            filename 'ci/docker/python/linux/Dockerfile'
-                            label 'linux && docker'
-                            additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) --build-arg PIP_EXTRA_INDEX_URL'
-                        }
-                    }
-                    steps {
-                        unstash "PYTHON_PACKAGES"
-                        unstash "DOCS_ARCHIVE"
-                        sh(
-                            label: "Uploading to DevPi Staging",
-                            script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
-                                       devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./devpi
-                                       devpi use /${env.DEVPI_USR}/${env.devpiStagingIndex} --clientdir ./devpi
-                                       devpi upload --from-dir dist --clientdir ./devpi"""
-                        )
-                    }
-                }
-                stage("Test DevPi Package") {
-                    matrix {
-                        axes {
-                            axis {
-                                name 'PLATFORM'
-                                values(
-                                    "linux",
-                                    "windows"
-                                )
-                            }
-                            axis {
-                                name 'PYTHON_VERSION'
-                                values '3.7', '3.8'
-                            }
-                        }
-                        agent none
-                        stages{
-                            stage("Testing DevPi wheel Package"){
-                                agent {
-                                    dockerfile {
-                                        filename "ci/docker/python/${PLATFORM}/Dockerfile"
-                                        label "${PLATFORM} && docker"
-                                        additionalBuildArgs "--build-arg PYTHON_VERSION=${PYTHON_VERSION} --build-arg PIP_EXTRA_INDEX_URL"
-                                    }
-                                }
-                                options {
-                                    warnError('Package Testing Failed')
-                                }
-                                steps{
-                                    timeout(10){
-                                        unstash "DIST-INFO"
-                                        devpiRunTest(
-                                            "uiucprescon.getmarc2.dist-info/METADATA",
-                                            env.devpiStagingIndex,
-                                            "whl",
-                                            DEVPI_USR,
-                                            DEVPI_PSW,
-                                            "py${PYTHON_VERSION.replace('.', '')}"
-                                            )
-                                    }
-                                }
-                            }
-                            stage("Testing DevPi sdist Package"){
-                                agent {
-                                    dockerfile {
-                                        filename "ci/docker/python/${PLATFORM}/Dockerfile"
-                                        label "${PLATFORM} && docker"
-                                        additionalBuildArgs "--build-arg PYTHON_VERSION=${PYTHON_VERSION} --build-arg PIP_EXTRA_INDEX_URL"
-                                    }
-                                }
-                                options {
-                                    warnError('Package Testing Failed')
-                                }
-                                steps{
-                                    timeout(10){
-                                        unstash "DIST-INFO"
-                                        devpiRunTest(
-                                            "uiucprescon.getmarc2.dist-info/METADATA",
-                                            env.devpiStagingIndex,
-                                            "tar.gz",
-                                            DEVPI_USR,
-                                            DEVPI_PSW,
-                                            "py${PYTHON_VERSION.replace('.', '')}"
-                                            )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                stage("Deploy to DevPi Production") {
+                stage("Devpi"){
                     when {
                         allOf{
-                            equals expected: true, actual: params.DEPLOY_DEVPI_PRODUCTION
+                            equals expected: true, actual: params.DEPLOY_DEVPI
                             anyOf {
-                                branch "master"
+                                equals expected: "master", actual: env.BRANCH_NAME
+                                equals expected: "dev", actual: env.BRANCH_NAME
                                 tag "*"
                             }
                         }
-                        beforeInput true
+                        beforeAgent true
+                        beforeOptions true
+                    }
+                    agent none
+                    environment{
+                        DEVPI = credentials("DS_devpi")
+                        devpiStagingIndex = getDevPiStagingIndex()
                     }
                     options{
-                          timeout(time: 1, unit: 'DAYS')
+                        lock("uiucprescon.getmarc2-devpi")
                     }
-                    input {
-                      message 'Release to DevPi Production? '
-                    }
-                    agent {
-                        dockerfile {
-                            filename 'ci/docker/python/linux/Dockerfile'
-                            label 'linux && docker'
-                            additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) --build-arg PIP_EXTRA_INDEX_URL'
+                    stages{
+                        stage("Deploy to Devpi Staging") {
+                            agent {
+                                dockerfile {
+                                    filename 'ci/docker/python/linux/Dockerfile'
+                                    label 'linux && docker'
+                                    additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) --build-arg PIP_EXTRA_INDEX_URL'
+                                }
+                            }
+                            steps {
+                                unstash "PYTHON_PACKAGES"
+                                unstash "DOCS_ARCHIVE"
+                                sh(
+                                    label: "Uploading to DevPi Staging",
+                                    script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
+                                               devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./devpi
+                                               devpi use /${env.DEVPI_USR}/${env.devpiStagingIndex} --clientdir ./devpi
+                                               devpi upload --from-dir dist --clientdir ./devpi"""
+                                )
+                            }
                         }
-                    }
-                    steps {
-                        script {
-                            unstash "DIST-INFO"
-                            def props = readProperties interpolate: true, file: 'uiucprescon.getmarc2.dist-info/METADATA'
-                            sh(
-                                label: "Pushing to production/release index",
-                                script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
-                                           devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./devpi
-                                           devpi push --index DS_Jenkins/${env.devpiStagingIndex} ${props.Name}==${props.Version} production/release --clientdir ./devpi
-                                           """
-                            )
+                        stage("Test DevPi Package") {
+                            matrix {
+                                axes {
+                                    axis {
+                                        name 'PLATFORM'
+                                        values(
+                                            "linux",
+                                            "windows"
+                                        )
+                                    }
+                                    axis {
+                                        name 'PYTHON_VERSION'
+                                        values '3.7', '3.8'
+                                    }
+                                }
+                                agent none
+                                stages{
+                                    stage("Testing DevPi wheel Package"){
+                                        agent {
+                                            dockerfile {
+                                                filename "ci/docker/python/${PLATFORM}/Dockerfile"
+                                                label "${PLATFORM} && docker"
+                                                additionalBuildArgs "--build-arg PYTHON_VERSION=${PYTHON_VERSION} --build-arg PIP_EXTRA_INDEX_URL"
+                                            }
+                                        }
+                                        options {
+                                            warnError('Package Testing Failed')
+                                        }
+                                        steps{
+                                            timeout(10){
+                                                unstash "DIST-INFO"
+                                                devpiRunTest(
+                                                    "uiucprescon.getmarc2.dist-info/METADATA",
+                                                    env.devpiStagingIndex,
+                                                    "whl",
+                                                    DEVPI_USR,
+                                                    DEVPI_PSW,
+                                                    "py${PYTHON_VERSION.replace('.', '')}"
+                                                    )
+                                            }
+                                        }
+                                    }
+                                    stage("Testing DevPi sdist Package"){
+                                        agent {
+                                            dockerfile {
+                                                filename "ci/docker/python/${PLATFORM}/Dockerfile"
+                                                label "${PLATFORM} && docker"
+                                                additionalBuildArgs "--build-arg PYTHON_VERSION=${PYTHON_VERSION} --build-arg PIP_EXTRA_INDEX_URL"
+                                            }
+                                        }
+                                        options {
+                                            warnError('Package Testing Failed')
+                                        }
+                                        steps{
+                                            timeout(10){
+                                                unstash "DIST-INFO"
+                                                devpiRunTest(
+                                                    "uiucprescon.getmarc2.dist-info/METADATA",
+                                                    env.devpiStagingIndex,
+                                                    "tar.gz",
+                                                    DEVPI_USR,
+                                                    DEVPI_PSW,
+                                                    "py${PYTHON_VERSION.replace('.', '')}"
+                                                    )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
-                    }
-                }
-            }
-            post{
-                success{
-                    node('linux && docker') {
-                       script{
-                            if (!env.TAG_NAME?.trim()){
-                                docker.build("getmarc:devpi",'-f ./ci/docker/python/linux/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) --build-arg PIP_EXTRA_INDEX_URL .').inside{
+                        stage("Deploy to DevPi Production") {
+                            when {
+                                allOf{
+                                    equals expected: true, actual: params.DEPLOY_DEVPI_PRODUCTION
+                                    anyOf {
+                                        branch "master"
+                                        tag "*"
+                                    }
+                                }
+                                beforeInput true
+                            }
+                            options{
+                                  timeout(time: 1, unit: 'DAYS')
+                            }
+                            input {
+                              message 'Release to DevPi Production? '
+                            }
+                            agent {
+                                dockerfile {
+                                    filename 'ci/docker/python/linux/Dockerfile'
+                                    label 'linux && docker'
+                                    additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) --build-arg PIP_EXTRA_INDEX_URL'
+                                }
+                            }
+                            steps {
+                                script {
                                     unstash "DIST-INFO"
                                     def props = readProperties interpolate: true, file: 'uiucprescon.getmarc2.dist-info/METADATA'
                                     sh(
-                                        label: "Moving DevPi package from staging index to index",
+                                        label: "Pushing to production/release index",
                                         script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
                                                    devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./devpi
-                                                   devpi use /DS_Jenkins/${env.devpiStagingIndex} --clientdir ./devpi
-                                                   devpi push ${props.Name}==${props.Version} DS_Jenkins/${env.BRANCH_NAME} --clientdir ./devpi
+                                                   devpi push --index DS_Jenkins/${env.devpiStagingIndex} ${props.Name}==${props.Version} production/release --clientdir ./devpi
                                                    """
                                     )
                                 }
-                           }
-                       }
-                    }
-                }
-                cleanup{
-                    node('linux && docker') {
-                       script{
-                            docker.build("getmarc:devpi",'-f ./ci/docker/python/linux/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
-                                unstash "DIST-INFO"
-                                def props = readProperties interpolate: true, file: 'uiucprescon.getmarc2.dist-info/METADATA'
-                                sh(
-                                    label: "Removing Package from DevPi staging index",
-                                    script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
-                                               devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./devpi
-                                               devpi use /DS_Jenkins/${env.devpiStagingIndex} --clientdir ./devpi
-                                               devpi remove -y ${props.Name}==${props.Version} --clientdir ./devpi
-                                               """
-                                   )
-                            }
-                       }
-                    }
-                }
-            }
-        }
-        stage("Deploy") {
-            parallel{
-                stage("Deploy to Chocolatey") {
-                    when{
-                        equals expected: true, actual: params.DEPLOY_CHOCOLATEY
-                        beforeInput true
-                        beforeAgent true
-                    }
-                    agent {
-                        dockerfile {
-                            filename 'ci/docker/chocolatey_package/Dockerfile'
-                            label 'windows && docker'
-                            additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
-                          }
-                    }
-                    options{
-                        timeout(time: 1, unit: 'DAYS')
-                        retry(3)
-                    }
-                    input {
-                        message 'Deploy to Chocolatey server'
-                        id 'CHOCOLATEY_DEPLOYMENT'
-                        parameters {
-                            choice(
-                                choices: [
-                                    'https://jenkins.library.illinois.edu/nexus/repository/chocolatey-hosted-beta/',
-                                    'https://jenkins.library.illinois.edu/nexus/repository/chocolatey-hosted-public/'
-                                ],
-                                description: 'Chocolatey Server to deploy to',
-                                name: 'CHOCOLATEY_SERVER'
-                            )
-                        }
-                    }
-                    steps{
-                        unstash "CHOCOLATEY_PACKAGE"
-                        script{
-                            def pkgs = []
-                            findFiles(glob: "packages/*.nupkg").each{
-                                pkgs << it.path
-                            }
-                            def deployment_options = input(
-                                message: 'Chocolatey server',
-                                parameters: [
-                                    credentials(
-                                        credentialType: 'org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl',
-                                        defaultValue: 'NEXUS_NUGET_API_KEY',
-                                        description: 'Nuget API key for Chocolatey',
-                                        name: 'CHOCO_REPO_KEY',
-                                        required: true
-                                    ),
-                                    choice(
-                                        choices: pkgs,
-                                        description: 'Package to use',
-                                        name: 'NUPKG'
-                                    ),
-                                ]
-                            )
-                            withCredentials([string(credentialsId: deployment_options['CHOCO_REPO_KEY'], variable: 'KEY')]) {
-                                bat(
-                                    label: "Deploying ${deployment_options['NUPKG']} to Chocolatey",
-                                    script: "choco push ${deployment_options['NUPKG']} -s ${CHOCOLATEY_SERVER} -k %KEY%"
-                                )
                             }
                         }
-                    }
-                }
-                stage("Deploy Documentation"){
-                    when{
-                        equals expected: true, actual: params.DEPLOY_DOCS
-                        beforeInput true
-                    }
-                    input {
-                        message 'Deploy documentation'
-                        id 'DEPLOY_DOCUMENTATION'
-                        parameters {
-                            string defaultValue: 'getmarc2', description: '', name: 'DEPLOY_DOCS_URL_SUBFOLDER', trim: true
-                        }
-                    }
-                    agent any
-                    steps{
-                        unstash "DOCS_ARCHIVE"
-                        sshPublisher(
-                            publishers: [
-                                sshPublisherDesc(
-                                    configName: 'apache-ns - lib-dccuser-updater',
-                                    transfers: [
-                                        sshTransfer(
-                                            cleanRemote: false,
-                                            excludes: '',
-                                            execCommand: '',
-                                            execTimeout: 120000,
-                                            flatten: false,
-                                            makeEmptyDirs: false,
-                                            noDefaultExcludes: false,
-                                            patternSeparator: '[, ]+',
-                                            remoteDirectory: "${DEPLOY_DOCS_URL_SUBFOLDER}",
-                                            remoteDirectorySDF: false,
-                                            removePrefix: 'build/docs/html',
-                                            sourceFiles: 'build/docs/html/**'
-                                        )
-                                    ],
-                                    usePromotionTimestamp: false,
-                                    useWorkspaceInPromotion: false,
-                                    verbose: false
-                                )
-                            ]
-                        )
                     }
                     post{
+                        success{
+                            node('linux && docker') {
+                               script{
+                                    if (!env.TAG_NAME?.trim()){
+                                        docker.build("getmarc:devpi",'-f ./ci/docker/python/linux/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) --build-arg PIP_EXTRA_INDEX_URL .').inside{
+                                            unstash "DIST-INFO"
+                                            def props = readProperties interpolate: true, file: 'uiucprescon.getmarc2.dist-info/METADATA'
+                                            sh(
+                                                label: "Moving DevPi package from staging index to index",
+                                                script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
+                                                           devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./devpi
+                                                           devpi use /DS_Jenkins/${env.devpiStagingIndex} --clientdir ./devpi
+                                                           devpi push ${props.Name}==${props.Version} DS_Jenkins/${env.BRANCH_NAME} --clientdir ./devpi
+                                                           """
+                                            )
+                                        }
+                                   }
+                               }
+                            }
+                        }
                         cleanup{
-                            cleanWs(
-                                deleteDirs: true,
-                                patterns: [
-                                    [pattern: "build/", type: 'INCLUDE'],
-                                    [pattern: "dist/", type: 'INCLUDE'],
-                                ]
-                            )
+                            node('linux && docker') {
+                               script{
+                                    docker.build("getmarc:devpi",'-f ./ci/docker/python/linux/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
+                                        unstash "DIST-INFO"
+                                        def props = readProperties interpolate: true, file: 'uiucprescon.getmarc2.dist-info/METADATA'
+                                        sh(
+                                            label: "Removing Package from DevPi staging index",
+                                            script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
+                                                       devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./devpi
+                                                       devpi use /DS_Jenkins/${env.devpiStagingIndex} --clientdir ./devpi
+                                                       devpi remove -y ${props.Name}==${props.Version} --clientdir ./devpi
+                                                       """
+                                           )
+                                    }
+                               }
+                            }
+                        }
+                    }
+                }
+                stage("Deploy Additional") {
+                    parallel{
+                        stage("Deploy to Chocolatey") {
+                            when{
+                                equals expected: true, actual: params.DEPLOY_CHOCOLATEY
+                                beforeInput true
+                                beforeAgent true
+                            }
+                            agent {
+                                dockerfile {
+                                    filename 'ci/docker/chocolatey_package/Dockerfile'
+                                    label 'windows && docker'
+                                    additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
+                                  }
+                            }
+                            options{
+                                timeout(time: 1, unit: 'DAYS')
+                                retry(3)
+                            }
+                            input {
+                                message 'Deploy to Chocolatey server'
+                                id 'CHOCOLATEY_DEPLOYMENT'
+                                parameters {
+                                    choice(
+                                        choices: [
+                                            'https://jenkins.library.illinois.edu/nexus/repository/chocolatey-hosted-beta/',
+                                            'https://jenkins.library.illinois.edu/nexus/repository/chocolatey-hosted-public/'
+                                        ],
+                                        description: 'Chocolatey Server to deploy to',
+                                        name: 'CHOCOLATEY_SERVER'
+                                    )
+                                }
+                            }
+                            steps{
+                                unstash "CHOCOLATEY_PACKAGE"
+                                script{
+                                    def pkgs = []
+                                    findFiles(glob: "packages/*.nupkg").each{
+                                        pkgs << it.path
+                                    }
+                                    def deployment_options = input(
+                                        message: 'Chocolatey server',
+                                        parameters: [
+                                            credentials(
+                                                credentialType: 'org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl',
+                                                defaultValue: 'NEXUS_NUGET_API_KEY',
+                                                description: 'Nuget API key for Chocolatey',
+                                                name: 'CHOCO_REPO_KEY',
+                                                required: true
+                                            ),
+                                            choice(
+                                                choices: pkgs,
+                                                description: 'Package to use',
+                                                name: 'NUPKG'
+                                            ),
+                                        ]
+                                    )
+                                    withCredentials([string(credentialsId: deployment_options['CHOCO_REPO_KEY'], variable: 'KEY')]) {
+                                        bat(
+                                            label: "Deploying ${deployment_options['NUPKG']} to Chocolatey",
+                                            script: "choco push ${deployment_options['NUPKG']} -s ${CHOCOLATEY_SERVER} -k %KEY%"
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        stage("Deploy Documentation"){
+                            when{
+                                equals expected: true, actual: params.DEPLOY_DOCS
+                                beforeInput true
+                            }
+                            input {
+                                message 'Deploy documentation'
+                                id 'DEPLOY_DOCUMENTATION'
+                                parameters {
+                                    string defaultValue: 'getmarc2', description: '', name: 'DEPLOY_DOCS_URL_SUBFOLDER', trim: true
+                                }
+                            }
+                            agent any
+                            steps{
+                                unstash "DOCS_ARCHIVE"
+                                sshPublisher(
+                                    publishers: [
+                                        sshPublisherDesc(
+                                            configName: 'apache-ns - lib-dccuser-updater',
+                                            transfers: [
+                                                sshTransfer(
+                                                    cleanRemote: false,
+                                                    excludes: '',
+                                                    execCommand: '',
+                                                    execTimeout: 120000,
+                                                    flatten: false,
+                                                    makeEmptyDirs: false,
+                                                    noDefaultExcludes: false,
+                                                    patternSeparator: '[, ]+',
+                                                    remoteDirectory: "${DEPLOY_DOCS_URL_SUBFOLDER}",
+                                                    remoteDirectorySDF: false,
+                                                    removePrefix: 'build/docs/html',
+                                                    sourceFiles: 'build/docs/html/**'
+                                                )
+                                            ],
+                                            usePromotionTimestamp: false,
+                                            useWorkspaceInPromotion: false,
+                                            verbose: false
+                                        )
+                                    ]
+                                )
+                            }
+                            post{
+                                cleanup{
+                                    cleanWs(
+                                        deleteDirs: true,
+                                        patterns: [
+                                            [pattern: "build/", type: 'INCLUDE'],
+                                            [pattern: "dist/", type: 'INCLUDE'],
+                                        ]
+                                    )
+                                }
+                            }
                         }
                     }
                 }
