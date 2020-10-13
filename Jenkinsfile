@@ -194,19 +194,23 @@ pipeline {
             }
             stages{
                 stage("Tox") {
-                    agent {
-                        dockerfile {
-                            filename 'ci/docker/python/linux/Dockerfile'
-                            label 'linux && docker'
-                            additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) --build-arg PIP_EXTRA_INDEX_URL'
-                        }
-                    }
-                    when{
-                        equals expected: true, actual: params.TEST_RUN_TOX
-                    }
-                    steps {
-                        sh "tox -e py"
+                    parallel{
+                        stage("Linux"){
+                            agent {
+                                dockerfile {
+                                    filename 'ci/docker/python/linux/Dockerfile'
+                                    label 'linux && docker'
+                                    additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) --build-arg PIP_EXTRA_INDEX_URL'
+                                }
+                            }
+                            when{
+                                equals expected: true, actual: params.TEST_RUN_TOX
+                            }
+                            steps {
+                                sh "tox -e py"
 
+                            }
+                        }
                     }
                 }
                 stage("Check Code") {
