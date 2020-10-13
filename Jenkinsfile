@@ -217,7 +217,7 @@ pipeline {
                                 label "mac && python3.8 && python3.9"
                             }
                             when{
-                                equals expected: true, actual: params.TEST_RUN_TOX
+                                equals expected: true, actual: params.TEST_PACKAGES_ON_MAC
                             }
                             steps {
                                 sh(label:"Installing tox",
@@ -227,21 +227,29 @@ pipeline {
                                               venv/bin/python -m pip install --upgrade setuptools
                                               venv/bin/python -m pip install tox
                                               """
-                                   )
-                                   script {
-                                      def tox = "venv/bin/tox"
-                                      def skipEnv = ["py36"]
-                                      def envs = sh(returnStdout: true, script: "${tox} -l").trim().split('\n')
-                                      def cmds = envs.collectEntries({ tox_env ->
+                                )
+                                script {
+                                    def tox = "venv/bin/tox"
+                                    def skipEnv = ["py36"]
+                                    def envs = sh(returnStdout: true, script: "${tox} -l").trim().split('\n')
+                                    def cmds = envs.collectEntries({ tox_env ->
                                         skipEnv.contains(tox_env) ? [:] : [tox_env, {
-                                          sh "${tox} --parallel--safe-build -vve $tox_env"
+                                            sh "${tox} --parallel--safe-build -vve $tox_env"
                                         }]
-                                      })
-                                      parallel(cmds)
-                                    }
-
-//                                 sh "venv/bin/tox -e py38 -e py39 -p"
-
+                                  })
+                                  parallel(cmds)
+                                }
+                            }
+                            post{
+                                cleanup{
+                                    cleanWs(
+                                        deleteDirs: true,
+                                        patterns: [
+                                            [pattern: ".tox/", type: 'INCLUDE'],
+                                            [pattern: "venv/", type: 'INCLUDE'],
+                                        ]
+                                    )
+                                }
                             }
                         }
                     }
