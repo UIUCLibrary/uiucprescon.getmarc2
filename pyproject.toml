@@ -1,3 +1,16 @@
 [build-system]
 requires = ["setuptools>=40.8.0", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[tool.coverage.run]
+branch = true
+source = ["uiucprescon"]
+relative_files = true
+
+[tool.coverage.paths]
+source = ["uiucprescon"]
+
+[tool.coverage.report]
+exclude_lines =[
+    "if TYPE_CHECKING:"
+]
