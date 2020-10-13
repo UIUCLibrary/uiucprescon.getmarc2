@@ -247,6 +247,8 @@ pipeline {
                                         patterns: [
                                             [pattern: ".tox/", type: 'INCLUDE'],
                                             [pattern: "venv/", type: 'INCLUDE'],
+                                            [pattern: ".eggs/", type: 'INCLUDE'],
+                                            [pattern: "*.egg-info/", type: 'INCLUDE'],
                                         ]
                                     )
                                 }
