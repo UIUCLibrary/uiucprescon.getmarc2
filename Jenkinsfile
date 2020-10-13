@@ -194,6 +194,9 @@ pipeline {
             }
             stages{
                 stage("Tox") {
+                    when{
+                        equals expected: true, actual: params.TEST_RUN_TOX
+                    }
                     parallel{
                         stage("Linux"){
                             agent {
@@ -203,9 +206,7 @@ pipeline {
                                     additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) --build-arg PIP_EXTRA_INDEX_URL'
                                 }
                             }
-                            when{
-                                equals expected: true, actual: params.TEST_RUN_TOX
-                            }
+
                             steps {
                                 sh "tox -e py"
 
@@ -219,7 +220,15 @@ pipeline {
                                 equals expected: true, actual: params.TEST_RUN_TOX
                             }
                             steps {
-                                sh "tox -e py"
+                                sh(label:"Installing tox",
+                                   script: """python3 -m venv venv
+                                              venv/bin/python -m pip install pip --upgrade
+                                              venv/bin/python -m pip install wheel
+                                              venv/bin/python -m pip install --upgrade setuptools
+                                              venv/bin/python -m pip install tox
+                                              """
+                                   )
+                                sh "venv/bin/tox -e py"
 
                             }
                         }
