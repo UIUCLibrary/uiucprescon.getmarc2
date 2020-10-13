@@ -234,7 +234,7 @@ pipeline {
                                       def envs = sh(returnStdout: true, script: "${tox} -l").trim().split('\n')
                                       def cmds = envs.collectEntries({ tox_env ->
                                         skipEnv.contains(tox_env) ? [:] : [tox_env, {
-                                          sh "${tox} --parallel--safe-build -vve $tox_env --skip-missing-interpreters"
+                                          sh "${tox} --parallel--safe-build -vve $tox_env"
                                         }]
                                       })
                                       parallel(cmds)
