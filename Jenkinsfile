@@ -801,7 +801,7 @@ pipeline {
         }
         stage("Deploy"){
             stages{
-                stage("Deploy to Devpi"){
+                stage("Devpi"){
                     when {
                         allOf{
                             equals expected: true, actual: params.DEPLOY_DEVPI
