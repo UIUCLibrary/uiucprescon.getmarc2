@@ -228,7 +228,7 @@ pipeline {
                                               venv/bin/python -m pip install tox
                                               """
                                    )
-                                sh "venv/bin/tox -e py38 -e py39"
+                                sh "venv/bin/tox -e py38 -e py39 -p"
 
                             }
                         }
