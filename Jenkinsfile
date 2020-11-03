@@ -147,7 +147,7 @@ pipeline {
         stage("Sphinx Documentation"){
             agent{
                 dockerfile {
-                    filename 'ci/docker/python/linux/Dockerfile'
+                    filename 'ci/docker/python/linux/jenkins/Dockerfile'
                     label 'linux && docker'
                     additionalBuildArgs "--build-arg USER_ID=\$(id -u) --build-arg GROUP_ID=\$(id -g) --build-arg PIP_EXTRA_INDEX_URL"
                 }
@@ -195,7 +195,7 @@ pipeline {
                 stage("Check Code") {
                     agent {
                         dockerfile {
-                            filename 'ci/docker/python/linux/Dockerfile'
+                            filename 'ci/docker/python/linux/jenkins/Dockerfile'
                             label 'linux && docker'
                             additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) --build-arg PIP_EXTRA_INDEX_URL'
                         }
@@ -395,7 +395,7 @@ pipeline {
                 stage("Send to Sonarcloud for Analysis"){
                     agent {
                         dockerfile {
-                            filename 'ci/docker/python/linux/Dockerfile'
+                            filename 'ci/docker/python/linux/jenkins/Dockerfile'
                             label 'linux && docker'
                             additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) --build-arg PIP_EXTRA_INDEX_URL'
                             args '--mount source=sonar-cache-uiucprescon-getmarc2,target=/home/user/.sonar/cache'
@@ -472,7 +472,7 @@ pipeline {
 //                         stage("Linux"){
 //                             agent {
 //                                 dockerfile {
-//                                     filename 'ci/docker/python/linux/Dockerfile'
+//                                     filename 'ci/docker/python/linux/jenkins/Dockerfile'
 //                                     label 'linux && docker'
 //                                     additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) --build-arg PIP_EXTRA_INDEX_URL'
 //                                 }
@@ -565,7 +565,7 @@ pipeline {
                 stage("Creating Python Packages") {
                     agent {
                         dockerfile {
-                            filename 'ci/docker/python/linux/Dockerfile'
+                            filename 'ci/docker/python/linux/jenkins/Dockerfile'
                             label 'linux && docker'
                             additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) --build-arg PIP_EXTRA_INDEX_URL'
                         }
