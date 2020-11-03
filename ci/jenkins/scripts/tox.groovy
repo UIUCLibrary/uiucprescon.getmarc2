@@ -48,44 +48,62 @@ def getPackageToxMetadataReport(tox_env, toxResultFile){
     def packageReport = generateToxPackageReport(tox_test_env)
     return packageReport
 }
+def getErrorToxMetadataReport(tox_env, toxResultFile){
+    def tox_result = readJSON(file: toxResultFile)
+    def errorMessages = []
+    testEnv["test"].each{
+        if (it['retcode'] != 0){
+            echo "Found error ${it}"
+            def errorOutput =  it['output']
+            def failedCommand = it['command']
+            errorMessages += "**${failedCommand}**\n${errorOutput}"
+        }
+    }
+    def resultsReport = "# Results"
+    if (errorMessages.size() > 0){
+         return resultsReport + "\n" + errorMessages.join("\n")
+    }
+    return ""
+}
 
 def generateToxReport(tox_env, toxResultFile){
     if(!fileExists(toxResultFile)){
         error "No file found for ${toxResultFile}"
     }
-    def testingEnvReport = getBasicToxMetadataReport(toxResultFile)
-    def packageReport
     try{
-        packageReport = getPackageToxMetadataReport(tox_env, toxResultFile)
-    }catch(e){
-        packageReport = ""
-    }
-    echo "packageReport = ${packageReport}"
-    try{
-        def errorMessages = []
+        def testingEnvReport = getBasicToxMetadataReport(toxResultFile)
+        def packageReport
         try{
-            testEnv["test"].each{
-                if (it['retcode'] != 0){
-                    echo "Found error ${it}"
-                    def errorOutput =  it['output']
-                    def failedCommand = it['command']
-                    errorMessages += "**${failedCommand}**\n${errorOutput}"
-                }
-            }
+            packageReport = getPackageToxMetadataReport(tox_env, toxResultFile)
+        }catch(e){
+            packageReport = ""
         }
-        catch (e) {
-            echo "unable to parse Error output: Reason ${e}"
-            throw e
-        }
-        def resultsReport = "# Results"
-        if (errorMessages.size() > 0){
-            resultsReport = resultsReport + "\n" + errorMessages.join("\n") + "\n"
-        } else{
-            resultsReport = resultsReport + "\n" + "Success\n"
-        }
-//         =========
-        checksReportText = testingEnvReport + " \n" + resultsReport
-        return checksReportText
+        echo "packageReport = ${packageReport}"
+        def resultsReport = getErrorToxMetadataReport(tox_env, toxResultFile)
+//         def errorMessages = []
+//         try{
+//             testEnv["test"].each{
+//                 if (it['retcode'] != 0){
+//                     echo "Found error ${it}"
+//                     def errorOutput =  it['output']
+//                     def failedCommand = it['command']
+//                     errorMessages += "**${failedCommand}**\n${errorOutput}"
+//                 }
+//             }
+//         }
+//         catch (e) {
+//             echo "unable to parse Error output: Reason ${e}"
+//             throw e
+//         }
+//         def resultsReport = "# Results"
+//         if (errorMessages.size() > 0){
+//             resultsReport = resultsReport + "\n" + errorMessages.join("\n") + "\n"
+//         } else{
+//             resultsReport = resultsReport + "\n" + "Success\n"
+//         }
+// //         =========
+//         checksReportText = testingEnvReport + " \n" + resultsReport
+//         return checksReportText
     } catch (e){
         echo "Unable to parse json file, Falling back to reading the file as text. \nReason: ${e}"
         def data =  readFile(toxResultFile)
