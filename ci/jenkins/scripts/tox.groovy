@@ -60,29 +60,8 @@ def generateToxReport(tox_env, toxResultFile){
     }catch(e){
         packageReport = ""
     }
+    echo "packageReport = ${packageReport}"
     try{
-//         def checksReportText = ""
-// //         def tox_result = readJSON(file: toxResultFile)
-// //         if(! tox_result['testenvs'].containsKey(tox_env)){
-// //             def w = tox_result['testenvs']
-// //             echo "${w}"
-// //             tox_result['testenvs'].each{key, test_env->
-// //                 echo "${test_env}"
-// //                 test_env.each{
-// //                     echo "${it}"
-// //                     echo "${it.getClass()}"
-// //                 }
-// //             }
-// //             error "No test env for ${tox_env} found in ${toxResultFile}"
-// //         }
-//         def tox_test_env = tox_result['testenvs'][tox_env]
-//         echo "${tox_env}"
-// //         =========
-//         def packageReport = generateToxPackageReport(tox_test_env)
-//         checksReportText = testingEnvReport + " \n" + packageReport
-//         =========
-
-
         def errorMessages = []
         try{
             testEnv["test"].each{
@@ -95,7 +74,7 @@ def generateToxReport(tox_env, toxResultFile){
             }
         }
         catch (e) {
-            echo "unable to parse Error output"
+            echo "unable to parse Error output: Reason ${e}"
             throw e
         }
         def resultsReport = "# Results"
