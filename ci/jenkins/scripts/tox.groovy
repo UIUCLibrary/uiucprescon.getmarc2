@@ -81,6 +81,8 @@ def generateToxReport(tox_env, toxResultFile){
         }
         echo "packageReport = ${packageReport}"
         def resultsReport = getErrorToxMetadataReport(tox_env, toxResultFile)
+        echo "resultsReport = ${resultsReport}"
+
 //         def errorMessages = []
 //         try{
 //             testEnv["test"].each{
