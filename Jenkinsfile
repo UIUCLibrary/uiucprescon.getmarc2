@@ -119,7 +119,7 @@ pipeline {
         stage("Getting Distribution Info"){
             agent {
                 dockerfile {
-                    filename 'ci/docker/python/linux/Dockerfile'
+                    filename 'ci/docker/python/linux/jenkins/Dockerfile'
                     label 'linux && docker'
                     additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) --build-arg PIP_EXTRA_INDEX_URL'
                 }
@@ -147,7 +147,7 @@ pipeline {
         stage("Sphinx Documentation"){
             agent{
                 dockerfile {
-                    filename 'ci/docker/python/linux/Dockerfile'
+                    filename 'ci/docker/python/linux/jenkins/Dockerfile'
                     label 'linux && docker'
                     additionalBuildArgs "--build-arg USER_ID=\$(id -u) --build-arg GROUP_ID=\$(id -g) --build-arg PIP_EXTRA_INDEX_URL"
                 }
@@ -195,7 +195,7 @@ pipeline {
                 stage("Check Code") {
                     agent {
                         dockerfile {
-                            filename 'ci/docker/python/linux/Dockerfile'
+                            filename 'ci/docker/python/linux/jenkins/Dockerfile'
                             label 'linux && docker'
                             additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) --build-arg PIP_EXTRA_INDEX_URL'
                         }
@@ -395,7 +395,7 @@ pipeline {
                 stage("Send to Sonarcloud for Analysis"){
                     agent {
                         dockerfile {
-                            filename 'ci/docker/python/linux/Dockerfile'
+                            filename 'ci/docker/python/linux/jenkins/Dockerfile'
                             label 'linux && docker'
                             additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) --build-arg PIP_EXTRA_INDEX_URL'
                             args '--mount source=sonar-cache-uiucprescon-getmarc2,target=/home/user/.sonar/cache'
@@ -469,18 +469,43 @@ pipeline {
                         equals expected: true, actual: params.TEST_RUN_TOX
                     }
                     parallel{
-                        stage("Linux"){
-                            agent {
-                                dockerfile {
-                                    filename 'ci/docker/python/linux/Dockerfile'
-                                    label 'linux && docker'
-                                    additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) --build-arg PIP_EXTRA_INDEX_URL'
+//                         stage("Linux"){
+//                             agent {
+//                                 dockerfile {
+//                                     filename 'ci/docker/python/linux/jenkins/Dockerfile'
+//                                     label 'linux && docker'
+//                                     additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) --build-arg PIP_EXTRA_INDEX_URL'
+//                                 }
+//                             }
+//
+//                             steps {
+//                                 sh "tox -e py"
+//
+//                             }
+//                         }
+                        stage("Linux") {
+                            steps {
+                                script{
+                                    def tox
+                                    node(){
+                                        checkout scm
+                                        tox = load("ci/jenkins/scripts/tox.groovy")
+                                    }
+                                    def jobs = tox.getToxTestsParallel("Linux", "linux && docker", "ci/docker/python/linux/tox/Dockerfile", "--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL")
+                                    parallel(jobs)
                                 }
                             }
-
+                        }
+                        stage("Windows") {
                             steps {
-                                sh "tox -e py"
-
+                                script{
+                                    def tox
+                                    node(){
+                                        checkout scm
+                                        tox = load("ci/jenkins/scripts/tox.groovy")
+                                    }
+                                    parallel(tox.getToxTestsParallel("Windows", "windows && docker", "ci/docker/python/windows/tox/Dockerfile", "--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE"))
+                                }
                             }
                         }
                         stage("Mac"){
@@ -500,12 +525,13 @@ pipeline {
                                               """
                                 )
                                 script {
-                                    def tox = "venv/bin/tox"
+                                    def tox = load("ci/jenkins/scripts/tox.groovy")
+                                    def tox_app = "venv/bin/tox"
                                     def skipEnv = ["py36"]
-                                    def envs = sh(returnStdout: true, script: "${tox} -l").trim().split('\n')
+                                    def envs = tox.getToxEnvs2(tox_app)
                                     def cmds = envs.collectEntries({ tox_env ->
-                                        skipEnv.contains(tox_env) ? [:] : [tox_env, {
-                                            sh "${tox} --parallel--safe-build -vve $tox_env"
+                                        skipEnv.contains(tox_env) ? [:] : ["MacOS ${tox_env}", {
+                                            sh "${tox_app} --parallel--safe-build -vve $tox_env"
                                         }]
                                   })
                                   parallel(cmds)
@@ -545,7 +571,7 @@ pipeline {
                 stage("Creating Python Packages") {
                     agent {
                         dockerfile {
-                            filename 'ci/docker/python/linux/Dockerfile'
+                            filename 'ci/docker/python/linux/jenkins/Dockerfile'
                             label 'linux && docker'
                             additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) --build-arg PIP_EXTRA_INDEX_URL'
                         }
@@ -880,7 +906,7 @@ pipeline {
                         stage("Deploy to Devpi Staging") {
                             agent {
                                 dockerfile {
-                                    filename 'ci/docker/python/linux/Dockerfile'
+                                    filename 'ci/docker/python/linux/jenkins/Dockerfile'
                                     label 'linux && docker'
                                     additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) --build-arg PIP_EXTRA_INDEX_URL'
                                 }
@@ -986,7 +1012,7 @@ pipeline {
                             }
                             agent {
                                 dockerfile {
-                                    filename 'ci/docker/python/linux/Dockerfile'
+                                    filename 'ci/docker/python/linux/jenkins/Dockerfile'
                                     label 'linux && docker'
                                     additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) --build-arg PIP_EXTRA_INDEX_URL'
                                 }
@@ -1011,7 +1037,7 @@ pipeline {
                             node('linux && docker') {
                                script{
                                     if (!env.TAG_NAME?.trim()){
-                                        docker.build("getmarc:devpi",'-f ./ci/docker/python/linux/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) --build-arg PIP_EXTRA_INDEX_URL .').inside{
+                                        docker.build("getmarc:devpi",'-f ./ci/docker/python/linux/jenkins/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) --build-arg PIP_EXTRA_INDEX_URL .').inside{
                                             unstash "DIST-INFO"
                                             def props = readProperties interpolate: true, file: 'uiucprescon.getmarc2.dist-info/METADATA'
                                             sh(
@@ -1030,7 +1056,7 @@ pipeline {
                         cleanup{
                             node('linux && docker') {
                                script{
-                                    docker.build("getmarc:devpi",'-f ./ci/docker/python/linux/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
+                                    docker.build("getmarc:devpi",'-f ./ci/docker/python/linux/jenkins/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
                                         unstash "DIST-INFO"
                                         def props = readProperties interpolate: true, file: 'uiucprescon.getmarc2.dist-info/METADATA'
                                         sh(
