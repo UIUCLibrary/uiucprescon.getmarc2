@@ -127,52 +127,54 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
 
             [jenkinsStageName,{
                 node(originalNodeLabel){
-                    checkout scm
-                    dockerImageForTesting.inside{
-                        try{
-                            publishChecks(
-                                conclusion: 'NONE',
-                                name: githubChecksName,
-                                status: 'IN_PROGRESS',
-                                summary: 'Use Tox to test installed package',
-                                title: 'Running Tox'
-                            )
-                            if(isUnix()){
-                                sh(
-                                    label: "Running Tox with ${tox_env} environment",
-                                    script: "tox  -vv --parallel--safe-build --result-json=tox_result.json -e $tox_env"
-                                )
-                            } else {
-                                bat(
-                                    label: "Running Tox with ${tox_env} environment",
-                                    script: "tox  -vv --parallel--safe-build --result-json=tox_result.json -e $tox_env "
-                                )
-                            }
-                        } catch (e){
-                            def text
+                    ws{
+                        checkout scm
+                        dockerImageForTesting.inside{
                             try{
-                                text = generateToxReport(tox_env, 'tox_result.json')
+                                publishChecks(
+                                    conclusion: 'NONE',
+                                    name: githubChecksName,
+                                    status: 'IN_PROGRESS',
+                                    summary: 'Use Tox to test installed package',
+                                    title: 'Running Tox'
+                                )
+                                if(isUnix()){
+                                    sh(
+                                        label: "Running Tox with ${tox_env} environment",
+                                        script: "tox  -vv --parallel--safe-build --result-json=tox_result.json -e $tox_env"
+                                    )
+                                } else {
+                                    bat(
+                                        label: "Running Tox with ${tox_env} environment",
+                                        script: "tox  -vv --parallel--safe-build --result-json=tox_result.json -e $tox_env "
+                                    )
+                                }
+                            } catch (e){
+                                def text
+                                try{
+                                    text = generateToxReport(tox_env, 'tox_result.json')
+                                }
+                                catch (ex){
+                                    text = "No details given. Unable to read tox_result.json"
+                                }
+                                publishChecks(
+                                    name: githubChecksName,
+                                    summary: 'Use Tox to test installed package',
+                                    text: text,
+                                    conclusion: 'FAILURE',
+                                    title: 'Failed'
+                                )
+                                throw e
                             }
-                            catch (ex){
-                                text = "No details given. Unable to read tox_result.json"
-                            }
+                            def checksReportText = generateToxReport(tox_env, 'tox_result.json')
+                            echo "publishing \n${checksReportText}"
                             publishChecks(
-                                name: githubChecksName,
-                                summary: 'Use Tox to test installed package',
-                                text: text,
-                                conclusion: 'FAILURE',
-                                title: 'Failed'
-                            )
-                            throw e
+                                    name: githubChecksName,
+                                    summary: 'Use Tox to test installed package',
+                                    text: "${checksReportText}",
+                                    title: 'Passed'
+                                )
                         }
-                        def checksReportText = generateToxReport(tox_env, 'tox_result.json')
-                        echo "publishing \n${checksReportText}"
-                        publishChecks(
-                                name: githubChecksName,
-                                summary: 'Use Tox to test installed package',
-                                text: "${checksReportText}",
-                                title: 'Passed'
-                            )
                     }
                 }
             }]
