@@ -50,6 +50,7 @@ def getPackageToxMetadataReport(tox_env, toxResultFile){
 }
 def getErrorToxMetadataReport(tox_env, toxResultFile){
     def tox_result = readJSON(file: toxResultFile)
+    def testEnv = tox_result['testenvs'][tox_env]
     def errorMessages = []
     testEnv["test"].each{
         if (it['retcode'] != 0){
