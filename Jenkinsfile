@@ -533,7 +533,7 @@ pipeline {
                                     def skipEnv = ["py36"]
                                     def envs = tox.getToxEnvs2(tox_app)
                                     def cmds = envs.collectEntries({ tox_env ->
-                                        skipEnv.contains(tox_env) ? [:] : [tox_env, {
+                                        skipEnv.contains(tox_env) ? [:] : ["MacOS ${tox_env}", {
                                             sh "${tox_app} --parallel--safe-build -vve $tox_env"
                                         }]
                                   })
