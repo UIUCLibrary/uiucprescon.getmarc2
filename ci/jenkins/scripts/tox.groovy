@@ -34,19 +34,12 @@ def generateToxReport(tox_env, toxResultFile){
 **Platform:**   ${tox_result['platform']}
 """
     if(! tox_result['testenvs'].containsKey(tox_env)){
+        def w = tox_result['testenvs']
         tox_result['testenvs'].each{test_env->
             echo "${test_env}"
             test_env.each{
-
-                try{
-                    def d = readJSON(text: "${it}")
-                    echo "${d}"
-                } catch(e){
-                    echo "Unable to parse the data as json"
-                    echo "${it}"
-                }
-
-
+                echo "${it}"
+                echo "${it.getClass()}"
             }
         }
         error "No test env for ${tox_env} found in ${toxResultFile}"
