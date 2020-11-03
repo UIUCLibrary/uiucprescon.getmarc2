@@ -88,6 +88,7 @@ def generateToxReport(tox_env, toxResultFile){
 
 def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
     script{
+        def TOX_RESULT_FILE_NAME = "tox_result.json"
         def envs
         def originalNodeLabel
         node(label){
@@ -141,12 +142,12 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
                                 if(isUnix()){
                                     sh(
                                         label: "Running Tox with ${tox_env} environment",
-                                        script: "tox  -vv --parallel--safe-build --result-json=tox_result.json -e $tox_env"
+                                        script: "tox  -vv --parallel--safe-build --result-json=${TOX_RESULT_FILE_NAME} -e $tox_env"
                                     )
                                 } else {
                                     bat(
                                         label: "Running Tox with ${tox_env} environment",
-                                        script: "tox  -vv --parallel--safe-build --result-json=tox_result.json -e $tox_env "
+                                        script: "tox  -vv --parallel--safe-build --result-json=${TOX_RESULT_FILE_NAME} -e $tox_env "
                                     )
                                 }
                             } catch (e){
@@ -174,6 +175,9 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
                                     text: "${checksReportText}",
                                     title: 'Passed'
                                 )
+                            cleanWs(
+                                patterns: [[pattern: TOX_RESULT_FILE_NAME, type: 'INCLUDE']]
+                            )
                         }
                     }
                 }
