@@ -37,9 +37,14 @@ def generateToxReport(tox_env, toxResultFile){
         tox_result['testenvs'].each{test_env->
             echo "${test_env}"
             test_env.each{
-                echo "${it}"
-                def d = readJSON(text: "${it}")
-                echo "${d}"
+
+                try{
+                    def d = readJSON(text: "${it}")
+                    echo "${d}"
+                } catch(e){
+                    echo "Unable to parse the data as json"
+                    echo "${it}"
+                }
 
 
             }
