@@ -498,6 +498,19 @@ pipeline {
                                 }
                             }
                         }
+                        stage("Windows") {
+                            steps {
+                                script{
+                                    def tox
+                                    node(){
+                                        checkout scm
+                                        tox = load("ci/jenkins/scripts/tox.groovy")
+                                    }
+                                    tox.getToxTestsParallel("Windows", "windows && docker", "ci/docker/python/windows/tox/Dockerfile", "--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE")
+                                    parallel(jobs)
+                                }
+                            }
+                        }
                         stage("Mac"){
                             agent {
                                 label "mac && python3.8 && python3.9"
