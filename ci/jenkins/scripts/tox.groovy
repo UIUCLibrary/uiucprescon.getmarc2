@@ -20,18 +20,18 @@ def generateToxPackageReport(testEnv){
         return packageReport
 }
 
-def generateToxReport(tox_env, toxResultFile){
-    if(!fileExists(toxResultFile)){
-        error "No file found for ${toxResultFile}"
-    }
-    try{
-        def tox_result = readJSON(file: toxResultFile)
-        def checksReportText = ""
-        def testingEnvReport = """# Testing Environment
+def getBasicToxMetadataReport(toxResultFile){
+    def tox_result = readJSON(file: toxResultFile)
+    def testingEnvReport = """# Testing Environment
 
 **Tox Version:** ${tox_result['toxversion']}
 **Platform:**   ${tox_result['platform']}
 """
+    return testingEnvReport
+}
+def getPackageToxMetadataReport(tox_env, toxResultFile){
+    def tox_result = readJSON(file: toxResultFile)
+
     if(! tox_result['testenvs'].containsKey(tox_env)){
         def w = tox_result['testenvs']
         echo "${w}"
@@ -45,10 +45,41 @@ def generateToxReport(tox_env, toxResultFile){
         error "No test env for ${tox_env} found in ${toxResultFile}"
     }
     def tox_test_env = tox_result['testenvs'][tox_env]
-    echo "${tox_env}"
-//         =========
-        def packageReport = generateToxPackageReport(tox_test_env)
-        checksReportText = testingEnvReport + " \n" + packageReport
+    def packageReport = generateToxPackageReport(tox_test_env)
+    return packageReport
+}
+
+def generateToxReport(tox_env, toxResultFile){
+    if(!fileExists(toxResultFile)){
+        error "No file found for ${toxResultFile}"
+    }
+    def testingEnvReport = getBasicToxMetadataReport(toxResultFile)
+    def packageReport
+    try{
+        packageReport = getPackageToxMetadataReport(tox_env, toxResultFile)
+    }catch(e){
+        packageReport = ""
+    }
+    try{
+//         def checksReportText = ""
+// //         def tox_result = readJSON(file: toxResultFile)
+// //         if(! tox_result['testenvs'].containsKey(tox_env)){
+// //             def w = tox_result['testenvs']
+// //             echo "${w}"
+// //             tox_result['testenvs'].each{key, test_env->
+// //                 echo "${test_env}"
+// //                 test_env.each{
+// //                     echo "${it}"
+// //                     echo "${it.getClass()}"
+// //                 }
+// //             }
+// //             error "No test env for ${tox_env} found in ${toxResultFile}"
+// //         }
+//         def tox_test_env = tox_result['testenvs'][tox_env]
+//         echo "${tox_env}"
+// //         =========
+//         def packageReport = generateToxPackageReport(tox_test_env)
+//         checksReportText = testingEnvReport + " \n" + packageReport
 //         =========
 
 
