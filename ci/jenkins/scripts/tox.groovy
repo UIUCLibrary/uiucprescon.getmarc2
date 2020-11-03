@@ -48,12 +48,9 @@ def getPackageToxMetadataReport(tox_env, toxResultFile){
 
     if(! tox_result['testenvs'].containsKey(tox_env)){
         def w = tox_result['testenvs']
-        echo "${w}"
         tox_result['testenvs'].each{key, test_env->
-            echo "${test_env}"
             test_env.each{
                 echo "${it}"
-                echo "${it.getClass()}"
             }
         }
         error "No test env for ${tox_env} found in ${toxResultFile}"
@@ -186,7 +183,6 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
                                 throw e
                             }
                             def checksReportText = generateToxReport(tox_env, 'tox_result.json')
-                            echo "publishing \n${checksReportText}"
                             publishChecks(
                                     name: githubChecksName,
                                     summary: 'Use Tox to test installed package',
