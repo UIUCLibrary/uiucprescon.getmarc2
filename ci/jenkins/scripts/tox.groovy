@@ -10,6 +10,20 @@ def getToxEnvs(){
     }
     return envs
 }
+
+def getToxEnvs2(tox){
+    def envs
+    if(isUnix()){
+        envs = sh(returnStdout: true, script: "${tox} -l").trim().split('\n')
+    } else{
+        envs = bat(returnStdout: true, script: "@${tox} -l").trim().split('\n')
+    }
+    envs.collect{
+        it.trim()
+    }
+    return envs
+}
+
 def generateToxPackageReport(testEnv){
 
         def packageReport = "\n**Installed Packages:**"
