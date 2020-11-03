@@ -38,6 +38,9 @@ def generateToxReport(tox_env, toxResultFile){
             echo "${test_env}"
             test_env.each{
                 echo "${it}"
+                def d = readJSON(text: "${it}")
+                echo "${d}"
+
 
             }
         }
