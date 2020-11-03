@@ -528,12 +528,13 @@ pipeline {
                                               """
                                 )
                                 script {
-                                    def tox = "venv/bin/tox"
+                                    def tox = load("ci/jenkins/scripts/tox.groovy")
+                                    def tox_app = "venv/bin/tox"
                                     def skipEnv = ["py36"]
-                                    def envs = sh(returnStdout: true, script: "${tox} -l").trim().split('\n')
+                                    def envs = sh(returnStdout: true, script: "${tox_app} -l").trim().split('\n')
                                     def cmds = envs.collectEntries({ tox_env ->
                                         skipEnv.contains(tox_env) ? [:] : [tox_env, {
-                                            sh "${tox} --parallel--safe-build -vve $tox_env"
+                                            sh "${tox_app} --parallel--safe-build -vve $tox_env"
                                         }]
                                   })
                                   parallel(cmds)
