@@ -104,9 +104,11 @@ def devpiRunTest(pkgPropertiesFile, devpiIndex, devpiSelector, devpiUsername, de
 pipeline {
     agent none
     parameters {
-        booleanParam(name: "TEST_RUN_TOX", defaultValue: false, description: "Run Tox Tests")
+//     TODO: Make defaultValue false
+        booleanParam(name: "TEST_RUN_TOX", defaultValue: true, description: "Run Tox Tests")
         booleanParam(name: "RUN_CHECKS", defaultValue: true, description: "Run checks on code")
-        booleanParam(name: "USE_SONARQUBE", defaultValue: true, description: "Send data test data to SonarQube")
+//     TODO: Make defaultValue true
+        booleanParam(name: "USE_SONARQUBE", defaultValue: false, description: "Send data test data to SonarQube")
         booleanParam(name: "BUILD_PACKAGES", defaultValue: false, description: "Build Python packages")
         booleanParam(name: 'BUILD_CHOCOLATEY_PACKAGE', defaultValue: false, description: 'Build package for chocolatey package manager')
         booleanParam(name: "TEST_PACKAGES_ON_MAC", defaultValue: false, description: "Test Python packages on Mac")
@@ -483,11 +485,7 @@ pipeline {
 //
 //                             }
 //                         }
-                        stage("Run Tox test") {
-//                             when {
-//                                equals expected: true, actual: params.TEST_RUN_TOX
-//                                beforeAgent true
-//                             }
+                        stage("Linux") {
                             steps {
                                 script{
                                     def tox
@@ -495,10 +493,7 @@ pipeline {
                                         checkout scm
                                         tox = load("ci/jenkins/scripts/tox.groovy")
                                     }
-                                    def linux_jobs = tox.getToxTestsParallel("Linux", "linux && docker", "ci/docker/python/linux/tox/Dockerfile", "--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL")
-                                    def jobs = linux_jobs
-//                                     def windows_jobs = tox.getToxTestsParallel("Windows", "windows && docker", "ci/docker/python/linux/tox/Dockerfile", "--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE")
-//                                     def jobs = windows_jobs + linux_jobs
+                                    def jobs = tox.getToxTestsParallel("Linux", "linux && docker", "ci/docker/python/linux/tox/Dockerfile", "--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL")
                                     parallel(jobs)
                                 }
                             }
