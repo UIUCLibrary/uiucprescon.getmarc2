@@ -27,7 +27,6 @@ def generateToxReport(tox_env, toxResultFile){
     try{
         def tox_result = readJSON(file: toxResultFile)
         def checksReportText = ""
-
         def testingEnvReport = """# Testing Environment
 
 **Tox Version:** ${tox_result['toxversion']}
@@ -35,7 +34,8 @@ def generateToxReport(tox_env, toxResultFile){
 """
     if(! tox_result['testenvs'].containsKey(tox_env)){
         def w = tox_result['testenvs']
-        tox_result['testenvs'].each{test_env->
+        echo "${w}"
+        tox_result['testenvs'].each{key, test_env->
             echo "${test_env}"
             test_env.each{
                 echo "${it}"
@@ -174,7 +174,11 @@ def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
                                     title: 'Passed'
                                 )
                             cleanWs(
-                                patterns: [[pattern: TOX_RESULT_FILE_NAME, type: 'INCLUDE']]
+                                deleteDirs: true,
+                                patterns: [
+                                    [pattern: TOX_RESULT_FILE_NAME, type: 'INCLUDE'],
+                                    [pattern: ".tox/", type: 'INCLUDE'],
+                                ]
                             )
                         }
                     }
