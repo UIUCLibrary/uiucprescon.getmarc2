@@ -71,47 +71,23 @@ def generateToxReport(tox_env, toxResultFile){
     if(!fileExists(toxResultFile)){
         error "No file found for ${toxResultFile}"
     }
-    try{
-        def testingEnvReport = getBasicToxMetadataReport(toxResultFile)
-        def packageReport
-        try{
-            packageReport = getPackageToxMetadataReport(tox_env, toxResultFile)
-        }catch(e){
-            packageReport = ""
-        }
-        echo "packageReport = ${packageReport}"
-        def resultsReport = getErrorToxMetadataReport(tox_env, toxResultFile)
-        echo "resultsReport = ${resultsReport}"
+    def reportSections = []
 
-//         def errorMessages = []
-//         try{
-//             testEnv["test"].each{
-//                 if (it['retcode'] != 0){
-//                     echo "Found error ${it}"
-//                     def errorOutput =  it['output']
-//                     def failedCommand = it['command']
-//                     errorMessages += "**${failedCommand}**\n${errorOutput}"
-//                 }
-//             }
-//         }
-//         catch (e) {
-//             echo "unable to parse Error output: Reason ${e}"
-//             throw e
-//         }
-//         def resultsReport = "# Results"
-//         if (errorMessages.size() > 0){
-//             resultsReport = resultsReport + "\n" + errorMessages.join("\n") + "\n"
-//         } else{
-//             resultsReport = resultsReport + "\n" + "Success\n"
-//         }
-// //         =========
-        return testingEnvReport + " \n" + packageReport + "\n" + resultsReport
+    try{
+        reportSections += getBasicToxMetadataReport(toxResultFile)
+        try{
+            reportSections += getPackageToxMetadataReport(tox_env, toxResultFile)
+        }catch(e){
+            echo "Unable to parse installed packages info"
+
+        }
+        reportSections += getErrorToxMetadataReport(tox_env, toxResultFile)
     } catch (e){
         echo "Unable to parse json file, Falling back to reading the file as text. \nReason: ${e}"
         def data =  readFile(toxResultFile)
-        data = "``` json\n${data}\n```"
-        return data
+        reportSections += "``` json\n${data}\n```"
     }
+    return reportSections.join("\n")
 }
 
 def getToxTestsParallel(envNamePrefix, label, dockerfile, dockerArgs){
