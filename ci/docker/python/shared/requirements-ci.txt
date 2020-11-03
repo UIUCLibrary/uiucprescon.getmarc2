@@ -9,3 +9,4 @@ pylint
 pytest
 sphinx
 tox
+lxml
