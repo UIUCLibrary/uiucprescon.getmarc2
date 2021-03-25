@@ -176,10 +176,16 @@ pipeline {
             stages{
                 stage("Check Code") {
                     agent {
+//                         dockerfile {
+//                             filename 'ci/docker/python/linux/jenkins/Dockerfile'
+//                             label 'linux && docker'
+//                             additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL'
+//                         }
                         dockerfile {
                             filename 'ci/docker/python/linux/jenkins/Dockerfile'
                             label 'linux && docker'
                             additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL'
+                            args '--mount source=sonar-cache-uiucprescon-getmarc2,target=/home/user/.sonar/cache'
                         }
                     }
                     stages{
@@ -362,6 +368,68 @@ pipeline {
                                 }
                             }
                         }
+                        stage("Send to Sonarcloud for Analysis"){
+                            options{
+                                lock("uiucprescon.getmarc2-sonarscanner")
+                            }
+                            when{
+                                equals expected: true, actual: params.USE_SONARQUBE
+                                beforeAgent true
+                                beforeOptions true
+                            }
+                            steps{
+                                unstash "COVERAGE_REPORT"
+                                unstash "PYTEST_REPORT"
+                                unstash "BANDIT_REPORT"
+                                unstash "PYLINT_REPORT"
+                                unstash "FLAKE8_REPORT"
+                                script{
+                                    withSonarQubeEnv(installationName:"sonarcloud", credentialsId: 'sonarcloud-uiucprescon.getmarc2') {
+                                        if (env.CHANGE_ID){
+                                            sh(
+                                                label: "Running Sonar Scanner",
+                                                script:"sonar-scanner -Dsonar.projectVersion=${props.Version} -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.pullrequest.key=${env.CHANGE_ID} -Dsonar.pullrequest.base=${env.CHANGE_TARGET}"
+                                                )
+                                        } else {
+                                            sh(
+                                                label: "Running Sonar Scanner",
+                                                script: "sonar-scanner -Dsonar.projectVersion=${props.Version} -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.branch.name=${env.BRANCH_NAME}"
+                                                )
+                                        }
+                                    }
+                                    timeout(time: 1, unit: 'HOURS') {
+                                        def sonarqube_result = waitForQualityGate(abortPipeline: false)
+                                        if (sonarqube_result.status != 'OK') {
+                                            unstable "SonarQube quality gate: ${sonarqube_result.status}"
+                                        }
+                                        def outstandingIssues = get_sonarqube_unresolved_issues(".scannerwork/report-task.txt")
+                                        writeJSON file: 'reports/sonar-report.json', json: outstandingIssues
+                                    }
+                                }
+                            }
+                            post {
+                                always{
+                                    script{
+                                        if(fileExists('reports/sonar-report.json')){
+                                            stash includes: "reports/sonar-report.json", name: 'SONAR_REPORT'
+                                            archiveArtifacts allowEmptyArchive: true, artifacts: 'reports/sonar-report.json'
+                                            recordIssues(tools: [sonarQube(pattern: 'reports/sonar-report.json')])
+                                        }
+                                    }
+                                }
+                                cleanup{
+                                    cleanWs(
+                                        deleteDirs: true,
+                                        patterns: [
+                                            [pattern: 'reports/', type: 'INCLUDE'],
+                                            [pattern: 'logs/', type: 'INCLUDE'],
+                                            [pattern: 'uiucprescon.getmarc2.dist-info/', type: 'INCLUDE'],
+                                            [pattern: '.scannerwork/', type: 'INCLUDE'],
+                                        ]
+                                    )
+                                }
+                            }
+                        }
                     }
                     post{
                         cleanup{
@@ -374,76 +442,68 @@ pipeline {
                         }
                     }
                 }
-                stage("Send to Sonarcloud for Analysis"){
-                    agent {
-                        dockerfile {
-                            filename 'ci/docker/python/linux/jenkins/Dockerfile'
-                            label 'linux && docker'
-                            additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL'
-                            args '--mount source=sonar-cache-uiucprescon-getmarc2,target=/home/user/.sonar/cache'
-                        }
-                    }
-                    options{
-                        lock("uiucprescon.getmarc2-sonarscanner")
-                    }
-                    when{
-                        equals expected: true, actual: params.USE_SONARQUBE
-                        beforeAgent true
-                        beforeOptions true
-                    }
-                    steps{
-                        unstash "COVERAGE_REPORT"
-                        unstash "PYTEST_REPORT"
-                        unstash "BANDIT_REPORT"
-                        unstash "PYLINT_REPORT"
-                        unstash "FLAKE8_REPORT"
-                        script{
-                            withSonarQubeEnv(installationName:"sonarcloud", credentialsId: 'sonarcloud-uiucprescon.getmarc2') {
-                                if (env.CHANGE_ID){
-                                    sh(
-                                        label: "Running Sonar Scanner",
-                                        script:"sonar-scanner -Dsonar.projectVersion=${props.Version} -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.pullrequest.key=${env.CHANGE_ID} -Dsonar.pullrequest.base=${env.CHANGE_TARGET}"
-                                        )
-                                } else {
-                                    sh(
-                                        label: "Running Sonar Scanner",
-                                        script: "sonar-scanner -Dsonar.projectVersion=${props.Version} -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.branch.name=${env.BRANCH_NAME}"
-                                        )
-                                }
-                            }
-                            timeout(time: 1, unit: 'HOURS') {
-                                def sonarqube_result = waitForQualityGate(abortPipeline: false)
-                                if (sonarqube_result.status != 'OK') {
-                                    unstable "SonarQube quality gate: ${sonarqube_result.status}"
-                                }
-                                def outstandingIssues = get_sonarqube_unresolved_issues(".scannerwork/report-task.txt")
-                                writeJSON file: 'reports/sonar-report.json', json: outstandingIssues
-                            }
-                        }
-                    }
-                    post {
-                        always{
-                            script{
-                                if(fileExists('reports/sonar-report.json')){
-                                    stash includes: "reports/sonar-report.json", name: 'SONAR_REPORT'
-                                    archiveArtifacts allowEmptyArchive: true, artifacts: 'reports/sonar-report.json'
-                                    recordIssues(tools: [sonarQube(pattern: 'reports/sonar-report.json')])
-                                }
-                            }
-                        }
-                        cleanup{
-                            cleanWs(
-                                deleteDirs: true,
-                                patterns: [
-                                    [pattern: 'reports/', type: 'INCLUDE'],
-                                    [pattern: 'logs/', type: 'INCLUDE'],
-                                    [pattern: 'uiucprescon.getmarc2.dist-info/', type: 'INCLUDE'],
-                                    [pattern: '.scannerwork/', type: 'INCLUDE'],
-                                ]
-                            )
-                        }
-                    }
-                }
+//                 stage("Send to Sonarcloud for Analysis"){
+//                     options{
+//                         lock("uiucprescon.getmarc2-sonarscanner")
+//                     }
+//                     when{
+//                         equals expected: true, actual: params.USE_SONARQUBE
+//                         beforeAgent true
+//                         beforeOptions true
+//                     }
+//                     steps{
+//                         unstash "COVERAGE_REPORT"
+//                         unstash "PYTEST_REPORT"
+//                         unstash "BANDIT_REPORT"
+//                         unstash "PYLINT_REPORT"
+//                         unstash "FLAKE8_REPORT"
+//                         script{
+//                             withSonarQubeEnv(installationName:"sonarcloud", credentialsId: 'sonarcloud-uiucprescon.getmarc2') {
+//                                 if (env.CHANGE_ID){
+//                                     sh(
+//                                         label: "Running Sonar Scanner",
+//                                         script:"sonar-scanner -Dsonar.projectVersion=${props.Version} -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.pullrequest.key=${env.CHANGE_ID} -Dsonar.pullrequest.base=${env.CHANGE_TARGET}"
+//                                         )
+//                                 } else {
+//                                     sh(
+//                                         label: "Running Sonar Scanner",
+//                                         script: "sonar-scanner -Dsonar.projectVersion=${props.Version} -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.branch.name=${env.BRANCH_NAME}"
+//                                         )
+//                                 }
+//                             }
+//                             timeout(time: 1, unit: 'HOURS') {
+//                                 def sonarqube_result = waitForQualityGate(abortPipeline: false)
+//                                 if (sonarqube_result.status != 'OK') {
+//                                     unstable "SonarQube quality gate: ${sonarqube_result.status}"
+//                                 }
+//                                 def outstandingIssues = get_sonarqube_unresolved_issues(".scannerwork/report-task.txt")
+//                                 writeJSON file: 'reports/sonar-report.json', json: outstandingIssues
+//                             }
+//                         }
+//                     }
+//                     post {
+//                         always{
+//                             script{
+//                                 if(fileExists('reports/sonar-report.json')){
+//                                     stash includes: "reports/sonar-report.json", name: 'SONAR_REPORT'
+//                                     archiveArtifacts allowEmptyArchive: true, artifacts: 'reports/sonar-report.json'
+//                                     recordIssues(tools: [sonarQube(pattern: 'reports/sonar-report.json')])
+//                                 }
+//                             }
+//                         }
+//                         cleanup{
+//                             cleanWs(
+//                                 deleteDirs: true,
+//                                 patterns: [
+//                                     [pattern: 'reports/', type: 'INCLUDE'],
+//                                     [pattern: 'logs/', type: 'INCLUDE'],
+//                                     [pattern: 'uiucprescon.getmarc2.dist-info/', type: 'INCLUDE'],
+//                                     [pattern: '.scannerwork/', type: 'INCLUDE'],
+//                                 ]
+//                             )
+//                         }
+//                     }
+//                 }
                 stage("Tox") {
                     when{
                         equals expected: true, actual: params.TEST_RUN_TOX
