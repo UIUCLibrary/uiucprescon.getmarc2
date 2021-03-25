@@ -1010,9 +1010,80 @@ pipeline {
                                             )
                                         }
                                     }
+                                    parallel(linuxPackages)
                                 }
                             }
                         }
+//                         stage("Test DevPi Package") {
+//                             matrix {
+//                                 axes {
+//                                     axis {
+//                                         name 'PLATFORM'
+//                                         values(
+//                                             "linux",
+//                                             "windows"
+//                                         )
+//                                     }
+//                                     axis {
+//                                         name 'PYTHON_VERSION'
+//                                         values '3.7', '3.8'
+//                                     }
+//                                 }
+//                                 agent none
+//                                 stages{
+//                                     stage("Testing DevPi wheel Package"){
+//                                         agent {
+//                                             dockerfile {
+//                                                 filename "ci/docker/python/${PLATFORM}/jenkins/Dockerfile"
+//                                                 label "${PLATFORM} && docker"
+//                                                 additionalBuildArgs "--build-arg PYTHON_VERSION=${PYTHON_VERSION} --build-arg PIP_EXTRA_INDEX_URL"
+//                                             }
+//                                         }
+//                                         options {
+//                                             warnError('Package Testing Failed')
+//                                         }
+//                                         steps{
+//                                             timeout(10){
+//                                                 unstash "DIST-INFO"
+//                                                 devpiRunTest(
+//                                                     "uiucprescon.getmarc2.dist-info/METADATA",
+//                                                     env.devpiStagingIndex,
+//                                                     "whl",
+//                                                     DEVPI_USR,
+//                                                     DEVPI_PSW,
+//                                                     "py${PYTHON_VERSION.replace('.', '')}"
+//                                                     )
+//                                             }
+//                                         }
+//                                     }
+//                                     stage("Testing DevPi sdist Package"){
+//                                         agent {
+//                                             dockerfile {
+//                                                 filename "ci/docker/python/${PLATFORM}/jenkins/Dockerfile"
+//                                                 label "${PLATFORM} && docker"
+//                                                 additionalBuildArgs "--build-arg PYTHON_VERSION=${PYTHON_VERSION} --build-arg PIP_EXTRA_INDEX_URL"
+//                                             }
+//                                         }
+//                                         options {
+//                                             warnError('Package Testing Failed')
+//                                         }
+//                                         steps{
+//                                             timeout(10){
+//                                                 unstash "DIST-INFO"
+//                                                 devpiRunTest(
+//                                                     "uiucprescon.getmarc2.dist-info/METADATA",
+//                                                     env.devpiStagingIndex,
+//                                                     "tar.gz",
+//                                                     DEVPI_USR,
+//                                                     DEVPI_PSW,
+//                                                     "py${PYTHON_VERSION.replace('.', '')}"
+//                                                     )
+//                                             }
+//                                         }
+//                                     }
+//                                 }
+//                             }
+//                         }
                         stage("Deploy to DevPi Production") {
                             when {
                                 allOf{
