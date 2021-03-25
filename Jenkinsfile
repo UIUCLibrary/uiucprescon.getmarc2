@@ -11,6 +11,13 @@ def getDevPiStagingIndex(){
         return "${env.BRANCH_NAME}_staging"
     }
 }
+
+DEVPI_CONFIG = [
+    index: getDevPiStagingIndex(),
+    server: 'https://devpi.library.illinois.edu',
+    credentialsId: 'DS_devpi',
+]
+
 def sanitize_chocolatey_version(version){
     script{
         def dot_to_slash_pattern = '(?<=\\d)\\.?(?=(dev|b|a|rc)(\\d)?)'
@@ -923,10 +930,10 @@ pipeline {
                         beforeOptions true
                     }
                     agent none
-                    environment{
-                        DEVPI = credentials("DS_devpi")
-                        devpiStagingIndex = getDevPiStagingIndex()
-                    }
+//                     environment{
+//                         DEVPI = credentials("DS_devpi")
+//                         devpiStagingIndex = getDevPiStagingIndex()
+//                     }
                     options{
                         lock("uiucprescon.getmarc2-devpi")
                     }
@@ -954,70 +961,53 @@ pipeline {
                             }
                         }
                         stage("Test DevPi Package") {
-                            matrix {
-                                axes {
-                                    axis {
-                                        name 'PLATFORM'
-                                        values(
-                                            "linux",
-                                            "windows"
-                                        )
+                            steps{
+                                script{
+                                    node(){
+                                        checkout scm
+                                        def devpi = load('ci/jenkins/scripts/devpi.groovy')
                                     }
-                                    axis {
-                                        name 'PYTHON_VERSION'
-                                        values '3.7', '3.8'
-                                    }
-                                }
-                                agent none
-                                stages{
-                                    stage("Testing DevPi wheel Package"){
-                                        agent {
-                                            dockerfile {
-                                                filename "ci/docker/python/${PLATFORM}/jenkins/Dockerfile"
-                                                label "${PLATFORM} && docker"
-                                                additionalBuildArgs "--build-arg PYTHON_VERSION=${PYTHON_VERSION} --build-arg PIP_EXTRA_INDEX_URL"
-                                            }
+                                    linuxPackages = [:]
+                                    SUPPORTED_LINUX_VERSIONS.each{pythonVersion ->
+                                        linuxPackages["Test Python ${pythonVersion}: sdist Linux"] = {
+                                            devpi.testDevpiPackage(
+                                                agent: [
+                                                    dockerfile: [
+                                                        filename: 'ci/docker/python/linux/tox/Dockerfile',
+                                                        additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL',
+                                                        label: 'linux && docker'
+                                                    ]
+                                                ],
+                                                devpi: DEVPI_CONFIG,
+                                                package:[
+                                                    name: props.Name,
+                                                    version: props.Version,
+                                                    selector: 'tar.gz'
+                                                ],
+                                                test:[
+                                                    toxEnv: "py${pythonVersion}".replace('.',''),
+                                                ]
+                                            )
                                         }
-                                        options {
-                                            warnError('Package Testing Failed')
-                                        }
-                                        steps{
-                                            timeout(10){
-                                                unstash "DIST-INFO"
-                                                devpiRunTest(
-                                                    "uiucprescon.getmarc2.dist-info/METADATA",
-                                                    env.devpiStagingIndex,
-                                                    "whl",
-                                                    DEVPI_USR,
-                                                    DEVPI_PSW,
-                                                    "py${PYTHON_VERSION.replace('.', '')}"
-                                                    )
-                                            }
-                                        }
-                                    }
-                                    stage("Testing DevPi sdist Package"){
-                                        agent {
-                                            dockerfile {
-                                                filename "ci/docker/python/${PLATFORM}/jenkins/Dockerfile"
-                                                label "${PLATFORM} && docker"
-                                                additionalBuildArgs "--build-arg PYTHON_VERSION=${PYTHON_VERSION} --build-arg PIP_EXTRA_INDEX_URL"
-                                            }
-                                        }
-                                        options {
-                                            warnError('Package Testing Failed')
-                                        }
-                                        steps{
-                                            timeout(10){
-                                                unstash "DIST-INFO"
-                                                devpiRunTest(
-                                                    "uiucprescon.getmarc2.dist-info/METADATA",
-                                                    env.devpiStagingIndex,
-                                                    "tar.gz",
-                                                    DEVPI_USR,
-                                                    DEVPI_PSW,
-                                                    "py${PYTHON_VERSION.replace('.', '')}"
-                                                    )
-                                            }
+                                        linuxPackages["Test Python ${pythonVersion}: wheel Linux"] = {
+                                            devpi.testDevpiPackage(
+                                                agent: [
+                                                    dockerfile: [
+                                                        filename: 'ci/docker/python/linux/tox/Dockerfile',
+                                                        additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL',
+                                                        label: 'linux && docker'
+                                                    ]
+                                                ],
+                                                devpi: DEVPI_CONFIG,
+                                                package:[
+                                                    name: props.Name,
+                                                    version: props.Version,
+                                                    selector: 'whl'
+                                                ],
+                                                test:[
+                                                    toxEnv: "py${pythonVersion}".replace('.',''),
+                                                ]
+                                            )
                                         }
                                     }
                                 }
