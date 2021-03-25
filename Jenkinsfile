@@ -1063,34 +1063,38 @@ pipeline {
                     post{
                         success{
                             node('linux && docker') {
-                               script{
+                                script{
                                     if (!env.TAG_NAME?.trim()){
-                                        docker.build("getmarc:devpi",'-f ./ci/docker/python/linux/jenkins/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) --build-arg PIP_EXTRA_INDEX_URL .').inside{
-                                            sh(
-                                                label: "Moving DevPi package from staging index to index",
-                                                script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
-                                                           devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./devpi
-                                                           devpi use /DS_Jenkins/${env.devpiStagingIndex} --clientdir ./devpi
-                                                           devpi push ${props.Name}==${props.Version} DS_Jenkins/${env.BRANCH_NAME} --clientdir ./devpi
-                                                           """
+                                        checkout scm
+                                        def devpi = load('ci/jenkins/scripts/devpi.groovy')
+                                        docker.build("getmarc:devpi",'-f ./ci/docker/python/linux/jenkins/Dockerfile --build-arg PIP_EXTRA_INDEX_URL .').inside{
+                                            devpi.pushPackageToIndex(
+                                                pkgName: props.Name,
+                                                pkgVersion: props.Version,
+                                                server: 'https://devpi.library.illinois.edu',
+                                                indexSource: "DS_Jenkins/${getDevPiStagingIndex()}",
+                                                indexDestination: "DS_Jenkins/${env.BRANCH_NAME}",
+                                                credentialsId: 'DS_devpi'
                                             )
                                         }
-                                   }
+                                    }
                                }
                             }
                         }
                         cleanup{
                             node('linux && docker') {
                                script{
-                                    docker.build("getmarc:devpi",'-f ./ci/docker/python/linux/jenkins/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
-                                        sh(
-                                            label: "Removing Package from DevPi staging index",
-                                            script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
-                                                       devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./devpi
-                                                       devpi use /DS_Jenkins/${env.devpiStagingIndex} --clientdir ./devpi
-                                                       devpi remove -y ${props.Name}==${props.Version} --clientdir ./devpi
-                                                       """
-                                           )
+                                    checkout scm
+                                    def devpi = load('ci/jenkins/scripts/devpi.groovy')
+                                    docker.build("getmarc:devpi",'-f ./ci/docker/python/linux/jenkins/Dockerfile --build-arg PIP_EXTRA_INDEX_URL .').inside{
+                                        devpi.removePackage(
+                                            pkgName: props.Name,
+                                            pkgVersion: props.Version,
+                                            index: "DS_Jenkins/${getDevPiStagingIndex()}",
+                                            server: 'https://devpi.library.illinois.edu',
+                                            credentialsId: 'DS_devpi',
+
+                                        )
                                     }
                                }
                             }
