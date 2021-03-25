@@ -500,20 +500,6 @@ pipeline {
                         equals expected: true, actual: params.TEST_RUN_TOX
                     }
                     parallel{
-//                         stage("Linux"){
-//                             agent {
-//                                 dockerfile {
-//                                     filename 'ci/docker/python/linux/jenkins/Dockerfile'
-//                                     label 'linux && docker'
-//                                     additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) --build-arg PIP_EXTRA_INDEX_URL'
-//                                 }
-//                             }
-//
-//                             steps {
-//                                 sh "tox -e py"
-//
-//                             }
-//                         }
                         stage("Linux") {
                             steps {
                                 script{
@@ -806,7 +792,7 @@ pipeline {
                                                 additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE'
                                             ]
                                         ],
-                                        dockerImageName: "${currentBuild.fullProjectName}_test_no_msvc".replaceAll("-", "_").replaceAll('/', "_").replaceAll(' ', "").toLowerCase(),
+                                        dockerImageName: "${currentBuild.fullProjectName}_test".replaceAll("-", "_").replaceAll('/', "_").replaceAll(' ', "").toLowerCase(),
                                         testSetup: {
                                              checkout scm
                                              unstash 'PYTHON_PACKAGES'
@@ -843,7 +829,7 @@ pipeline {
                                                 additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE'
                                             ]
                                         ],
-                                        dockerImageName: "${currentBuild.fullProjectName}_test_with_msvc".replaceAll("-", "_").replaceAll('/', "_").replaceAll(' ', "").toLowerCase(),
+                                        dockerImageName: "${currentBuild.fullProjectName}_test".replaceAll("-", "_").replaceAll('/', "_").replaceAll(' ', "").toLowerCase(),
                                         testSetup: {
                                             checkout scm
                                             unstash 'PYTHON_PACKAGES'
@@ -994,13 +980,15 @@ pipeline {
                             steps {
                                 unstash "PYTHON_PACKAGES"
                                 unstash "DOCS_ARCHIVE"
-                                sh(
-                                    label: "Uploading to DevPi Staging",
-                                    script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
-                                               devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./devpi
-                                               devpi use /${env.DEVPI_USR}/${env.devpiStagingIndex} --clientdir ./devpi
-                                               devpi upload --from-dir dist --clientdir ./devpi"""
-                                )
+                                script{
+                                    def devpi = load('ci/jenkins/scripts/devpi.groovy')
+                                    devpi.upload(
+                                        server: 'https://devpi.library.illinois.edu',
+                                        credentialsId: 'DS_devpi',
+                                        index: getDevPiStagingIndex(),
+                                        clientDir: './devpi'
+                                    )
+                                }
                             }
                         }
                         stage("Test DevPi Package") {
