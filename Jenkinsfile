@@ -100,7 +100,64 @@ def devpiRunTest(pkgPropertiesFile, devpiIndex, devpiSelector, devpiUsername, de
     }
 }
 
+def startup(){
+    stage("Getting Distribution Info"){
+        node('linux && docker') {
+            ws{
+                checkout scm
+                try{
+                    docker.image('python').inside {
+                        timeout(2){
+                            sh(
+                               label: "Running setup.py with dist_info",
+                               script: """python --version
+                                          python setup.py dist_info
+                                       """
+                            )
+                            stash includes: "*.dist-info/**", name: 'DIST-INFO'
+                            archiveArtifacts artifacts: "*.dist-info/**"
+                        }
+                    }
+                } finally{
+                    cleanWs(
+                        deleteDirs: true,
+                        patterns: [
+                            [pattern: "*.dist-info/", type: 'INCLUDE'],
+                            [pattern: "**/__pycache__", type: 'INCLUDE'],
+                        ]
+                    )
+                }
+            }
+        }
+    }
+}
+def get_props(){
+    stage("Reading Package Metadata"){
+        node() {
+            try{
+                unstash "DIST-INFO"
+                def metadataFile = findFiles(excludes: '', glob: '*.dist-info/METADATA')[0]
+                def package_metadata = readProperties interpolate: true, file: metadataFile.path
+                echo """Metadata:
 
+    Name      ${package_metadata.Name}
+    Version   ${package_metadata.Version}
+    """
+                return package_metadata
+            } finally {
+                cleanWs(
+                    patterns: [
+                            [pattern: '*.dist-info/**', type: 'INCLUDE'],
+                        ],
+                    notFailBuild: true,
+                    deleteDirs: true
+                )
+            }
+        }
+    }
+}
+startup()
+props = get_props()
 pipeline {
     agent none
     parameters {
@@ -116,34 +173,6 @@ pipeline {
         booleanParam(name: 'DEPLOY_DOCS', defaultValue: false, description: '')
     }
     stages {
-        stage("Getting Distribution Info"){
-            agent {
-                dockerfile {
-                    filename 'ci/docker/python/linux/jenkins/Dockerfile'
-                    label 'linux && docker'
-                    additionalBuildArgs '--build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) --build-arg PIP_EXTRA_INDEX_URL'
-                }
-            }
-            steps{
-                timeout(5){
-                    sh "python setup.py dist_info"
-                }
-            }
-            post{
-                success{
-                    stash includes: "uiucprescon.getmarc2.dist-info/**", name: 'DIST-INFO'
-                    archiveArtifacts artifacts: "uiucprescon.getmarc2.dist-info/**"
-                }
-                cleanup{
-                    cleanWs(
-                        deleteDirs: true,
-                        patterns: [
-                            [pattern: "uiucprescon.getmarc2.dist-info/", type: 'INCLUDE'],
-                        ]
-                    )
-                }
-            }
-        }
         stage("Sphinx Documentation"){
             agent{
                 dockerfile {
@@ -420,8 +449,6 @@ pipeline {
                         unstash "FLAKE8_REPORT"
                         script{
                             withSonarQubeEnv(installationName:"sonarcloud", credentialsId: 'sonarcloud-uiucprescon.getmarc2') {
-                                unstash "DIST-INFO"
-                                def props = readProperties(interpolate: false, file: "uiucprescon.getmarc2.dist-info/METADATA")
                                 if (env.CHANGE_ID){
                                     sh(
                                         label: "Running Sonar Scanner",
@@ -814,8 +841,6 @@ pipeline {
                             }
                             steps{
                                 script {
-                                   unstash "DIST-INFO"
-                                    def props = readProperties interpolate: true, file: 'uiucprescon.getmarc2.dist-info/METADATA'
                                     unstash "PYTHON_PACKAGES"
                                     findFiles(glob: "dist/*.whl").each{
                                         def sanitized_packageversion=sanitize_chocolatey_version(props.Version)
@@ -847,10 +872,8 @@ pipeline {
                                   }
                             }
                             steps{
-                                unstash "DIST-INFO"
                                 unstash "CHOCOLATEY_PACKAGE"
                                 script{
-                                    def props = readProperties interpolate: true, file: 'uiucprescon.getmarc2.dist-info/METADATA'
                                     def sanitized_packageversion=sanitize_chocolatey_version(props.Version)
                                     powershell(
                                         label: "Installing Chocolatey Package",
@@ -1060,8 +1083,6 @@ pipeline {
                             node('linux && docker') {
                                script{
                                     docker.build("getmarc:devpi",'-f ./ci/docker/python/linux/jenkins/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) .').inside{
-                                        unstash "DIST-INFO"
-                                        def props = readProperties interpolate: true, file: 'uiucprescon.getmarc2.dist-info/METADATA'
                                         sh(
                                             label: "Removing Package from DevPi staging index",
                                             script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
