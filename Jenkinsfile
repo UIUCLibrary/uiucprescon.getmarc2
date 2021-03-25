@@ -50,31 +50,6 @@ def get_sonarqube_unresolved_issues(report_task_file){
 }
 
 
-// def devpiRunTest(pkgPropertiesFile, devpiIndex, devpiSelector, devpiUsername, devpiPassword, toxEnv){
-//     script{
-//         def props = readProperties interpolate: false, file: pkgPropertiesFile
-//         if (isUnix()){
-//             sh(
-//                 label: "Running test",
-//                 script: """devpi use https://devpi.library.illinois.edu --clientdir certs/
-//                            devpi login ${devpiUsername} --password ${devpiPassword} --clientdir certs/
-//                            devpi use ${devpiIndex} --clientdir certs/
-//                            devpi test --index ${devpiIndex} ${props.Name}==${props.Version} -s ${devpiSelector} --clientdir certs/ -e ${toxEnv} --tox-args=\"-vv\"
-//                 """
-//             )
-//         } else {
-//             bat(
-//                 label: "Running tests on Devpi",
-//                 script: """devpi use https://devpi.library.illinois.edu --clientdir certs\\
-//                            devpi login ${devpiUsername} --password ${devpiPassword} --clientdir certs\\
-//                            devpi use ${devpiIndex} --clientdir certs\\
-//                            devpi test --index ${devpiIndex} ${props.Name}==${props.Version} -s ${devpiSelector} --clientdir certs\\ -e ${toxEnv} --tox-args=\"-vv\"
-//                            """
-//             )
-//         }
-//     }
-// }
-
 def startup(){
     stage("Getting Distribution Info"){
         node('linux && docker') {
@@ -108,6 +83,7 @@ def startup(){
         }
     }
 }
+
 def get_props(){
     stage("Reading Package Metadata"){
         node() {
@@ -133,23 +109,21 @@ def get_props(){
         }
     }
 }
+
 startup()
 props = get_props()
+
 pipeline {
     agent none
     parameters {
+        booleanParam(name: "RUN_CHECKS", defaultValue: true, description: "Run checks on code")
         booleanParam(name: "TEST_RUN_TOX", defaultValue: false, description: "Run Tox Tests")
-//         todo: make defaultValue true
-        booleanParam(name: "RUN_CHECKS", defaultValue: false, description: "Run checks on code")
         booleanParam(name: "USE_SONARQUBE", defaultValue: true, description: "Send data test data to SonarQube")
-//         todo: make defaultValue false
-        booleanParam(name: "BUILD_PACKAGES", defaultValue: true, description: "Build Python packages")
+        booleanParam(name: "BUILD_PACKAGES", defaultValue: false, description: "Build Python packages")
         booleanParam(name: 'BUILD_CHOCOLATEY_PACKAGE', defaultValue: false, description: 'Build package for chocolatey package manager')
-//         todo: make defaultValue true
-        booleanParam(name: "TEST_PACKAGES", defaultValue: false, description: "Test Python packages by installing them and running tests on the installed package")
+        booleanParam(name: "TEST_PACKAGES", defaultValue: true, description: "Test Python packages by installing them and running tests on the installed package")
         booleanParam(name: "TEST_PACKAGES_ON_MAC", defaultValue: false, description: "Test Python packages on Mac")
-//         todo: make defaultValue false
-        booleanParam(name: "DEPLOY_DEVPI", defaultValue: true, description: "Deploy to devpi on http://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
+        booleanParam(name: "DEPLOY_DEVPI", defaultValue: false, description: "Deploy to devpi on http://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
         booleanParam(name: "DEPLOY_DEVPI_PRODUCTION", defaultValue: false, description: "Deploy to production devpi on https://devpi.library.illinois.edu/production/release. Master branch Only")
         booleanParam(name: 'DEPLOY_CHOCOLATEY', defaultValue: false, description: 'Deploy to Chocolatey repository')
         booleanParam(name: 'DEPLOY_DOCS', defaultValue: false, description: '')
@@ -500,49 +474,6 @@ pipeline {
                                 }
                             }
                         }
-//                         stage("Mac"){
-//                             agent {
-//                                 label "mac && python3.8 && python3.9"
-//                             }
-//                             when{
-//                                 equals expected: true, actual: params.TEST_PACKAGES_ON_MAC
-//                             }
-//                             steps {
-//                                 sh(label:"Installing tox",
-//                                    script: """python3 -m venv venv
-//                                               venv/bin/python -m pip install pip --upgrade
-//                                               venv/bin/python -m pip install wheel
-//                                               venv/bin/python -m pip install --upgrade setuptools
-//                                               venv/bin/python -m pip install tox
-//                                               """
-//                                 )
-//                                 script {
-//                                     def tox = load("ci/jenkins/scripts/tox.groovy")
-//                                     def tox_app = "venv/bin/tox"
-//                                     def skipEnv = ["py36"]
-//                                     def envs = tox.getToxEnvs2(tox_app)
-//                                     def cmds = envs.collectEntries({ tox_env ->
-//                                         skipEnv.contains(tox_env) ? [:] : ["MacOS ${tox_env}", {
-//                                             sh "${tox_app} --parallel--safe-build -vve $tox_env"
-//                                         }]
-//                                   })
-//                                   parallel(cmds)
-//                                 }
-//                             }
-//                             post{
-//                                 cleanup{
-//                                     cleanWs(
-//                                         deleteDirs: true,
-//                                         patterns: [
-//                                             [pattern: ".tox/", type: 'INCLUDE'],
-//                                             [pattern: "venv/", type: 'INCLUDE'],
-//                                             [pattern: ".eggs/", type: 'INCLUDE'],
-//                                             [pattern: "*.egg-info/", type: 'INCLUDE'],
-//                                         ]
-//                                     )
-//                                 }
-//                             }
-//                         }
                     }
                 }
             }
@@ -936,10 +867,6 @@ pipeline {
                         beforeOptions true
                     }
                     agent none
-//                     environment{
-//                         DEVPI = credentials("DS_devpi")
-//                         devpiStagingIndex = getDevPiStagingIndex()
-//                     }
                     options{
                         lock("uiucprescon.getmarc2-devpi")
                     }
@@ -1133,76 +1060,6 @@ pipeline {
                                 }
                             }
                         }
-//                         stage("Test DevPi Package") {
-//                             matrix {
-//                                 axes {
-//                                     axis {
-//                                         name 'PLATFORM'
-//                                         values(
-//                                             "linux",
-//                                             "windows"
-//                                         )
-//                                     }
-//                                     axis {
-//                                         name 'PYTHON_VERSION'
-//                                         values '3.7', '3.8'
-//                                     }
-//                                 }
-//                                 agent none
-//                                 stages{
-//                                     stage("Testing DevPi wheel Package"){
-//                                         agent {
-//                                             dockerfile {
-//                                                 filename "ci/docker/python/${PLATFORM}/jenkins/Dockerfile"
-//                                                 label "${PLATFORM} && docker"
-//                                                 additionalBuildArgs "--build-arg PYTHON_VERSION=${PYTHON_VERSION} --build-arg PIP_EXTRA_INDEX_URL"
-//                                             }
-//                                         }
-//                                         options {
-//                                             warnError('Package Testing Failed')
-//                                         }
-//                                         steps{
-//                                             timeout(10){
-//                                                 unstash "DIST-INFO"
-//                                                 devpiRunTest(
-//                                                     "uiucprescon.getmarc2.dist-info/METADATA",
-//                                                     env.devpiStagingIndex,
-//                                                     "whl",
-//                                                     DEVPI_USR,
-//                                                     DEVPI_PSW,
-//                                                     "py${PYTHON_VERSION.replace('.', '')}"
-//                                                     )
-//                                             }
-//                                         }
-//                                     }
-//                                     stage("Testing DevPi sdist Package"){
-//                                         agent {
-//                                             dockerfile {
-//                                                 filename "ci/docker/python/${PLATFORM}/jenkins/Dockerfile"
-//                                                 label "${PLATFORM} && docker"
-//                                                 additionalBuildArgs "--build-arg PYTHON_VERSION=${PYTHON_VERSION} --build-arg PIP_EXTRA_INDEX_URL"
-//                                             }
-//                                         }
-//                                         options {
-//                                             warnError('Package Testing Failed')
-//                                         }
-//                                         steps{
-//                                             timeout(10){
-//                                                 unstash "DIST-INFO"
-//                                                 devpiRunTest(
-//                                                     "uiucprescon.getmarc2.dist-info/METADATA",
-//                                                     env.devpiStagingIndex,
-//                                                     "tar.gz",
-//                                                     DEVPI_USR,
-//                                                     DEVPI_PSW,
-//                                                     "py${PYTHON_VERSION.replace('.', '')}"
-//                                                     )
-//                                             }
-//                                         }
-//                                     }
-//                                 }
-//                             }
-//                         }
                         stage("Deploy to DevPi Production") {
                             when {
                                 allOf{
