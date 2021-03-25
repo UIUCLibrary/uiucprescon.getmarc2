@@ -50,30 +50,30 @@ def get_sonarqube_unresolved_issues(report_task_file){
 }
 
 
-def devpiRunTest(pkgPropertiesFile, devpiIndex, devpiSelector, devpiUsername, devpiPassword, toxEnv){
-    script{
-        def props = readProperties interpolate: false, file: pkgPropertiesFile
-        if (isUnix()){
-            sh(
-                label: "Running test",
-                script: """devpi use https://devpi.library.illinois.edu --clientdir certs/
-                           devpi login ${devpiUsername} --password ${devpiPassword} --clientdir certs/
-                           devpi use ${devpiIndex} --clientdir certs/
-                           devpi test --index ${devpiIndex} ${props.Name}==${props.Version} -s ${devpiSelector} --clientdir certs/ -e ${toxEnv} --tox-args=\"-vv\"
-                """
-            )
-        } else {
-            bat(
-                label: "Running tests on Devpi",
-                script: """devpi use https://devpi.library.illinois.edu --clientdir certs\\
-                           devpi login ${devpiUsername} --password ${devpiPassword} --clientdir certs\\
-                           devpi use ${devpiIndex} --clientdir certs\\
-                           devpi test --index ${devpiIndex} ${props.Name}==${props.Version} -s ${devpiSelector} --clientdir certs\\ -e ${toxEnv} --tox-args=\"-vv\"
-                           """
-            )
-        }
-    }
-}
+// def devpiRunTest(pkgPropertiesFile, devpiIndex, devpiSelector, devpiUsername, devpiPassword, toxEnv){
+//     script{
+//         def props = readProperties interpolate: false, file: pkgPropertiesFile
+//         if (isUnix()){
+//             sh(
+//                 label: "Running test",
+//                 script: """devpi use https://devpi.library.illinois.edu --clientdir certs/
+//                            devpi login ${devpiUsername} --password ${devpiPassword} --clientdir certs/
+//                            devpi use ${devpiIndex} --clientdir certs/
+//                            devpi test --index ${devpiIndex} ${props.Name}==${props.Version} -s ${devpiSelector} --clientdir certs/ -e ${toxEnv} --tox-args=\"-vv\"
+//                 """
+//             )
+//         } else {
+//             bat(
+//                 label: "Running tests on Devpi",
+//                 script: """devpi use https://devpi.library.illinois.edu --clientdir certs\\
+//                            devpi login ${devpiUsername} --password ${devpiPassword} --clientdir certs\\
+//                            devpi use ${devpiIndex} --clientdir certs\\
+//                            devpi test --index ${devpiIndex} ${props.Name}==${props.Version} -s ${devpiSelector} --clientdir certs\\ -e ${toxEnv} --tox-args=\"-vv\"
+//                            """
+//             )
+//         }
+//     }
+// }
 
 def startup(){
     stage("Getting Distribution Info"){
