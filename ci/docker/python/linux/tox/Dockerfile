@@ -66,6 +66,7 @@ COPY --from=WHEEL_BUILDER_PY39 /wheels/* /wheels/
 ENV PIP_FIND_LINKS=/wheels
 RUN python3 -m pip install pip --upgrade && \
     pip3 install wheel && \
-    pip3 install tox devpi_client
+    pip3 install tox devpi_client && \
+    pip3 wheel -w /wheels --no-cache-dir wheel
 WORKDIR /src
 CMD tox --workdir /tmp/tox --recreate
