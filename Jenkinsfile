@@ -525,49 +525,49 @@ pipeline {
                                 }
                             }
                         }
-                        stage("Mac"){
-                            agent {
-                                label "mac && python3.8 && python3.9"
-                            }
-                            when{
-                                equals expected: true, actual: params.TEST_PACKAGES_ON_MAC
-                            }
-                            steps {
-                                sh(label:"Installing tox",
-                                   script: """python3 -m venv venv
-                                              venv/bin/python -m pip install pip --upgrade
-                                              venv/bin/python -m pip install wheel
-                                              venv/bin/python -m pip install --upgrade setuptools
-                                              venv/bin/python -m pip install tox
-                                              """
-                                )
-                                script {
-                                    def tox = load("ci/jenkins/scripts/tox.groovy")
-                                    def tox_app = "venv/bin/tox"
-                                    def skipEnv = ["py36"]
-                                    def envs = tox.getToxEnvs2(tox_app)
-                                    def cmds = envs.collectEntries({ tox_env ->
-                                        skipEnv.contains(tox_env) ? [:] : ["MacOS ${tox_env}", {
-                                            sh "${tox_app} --parallel--safe-build -vve $tox_env"
-                                        }]
-                                  })
-                                  parallel(cmds)
-                                }
-                            }
-                            post{
-                                cleanup{
-                                    cleanWs(
-                                        deleteDirs: true,
-                                        patterns: [
-                                            [pattern: ".tox/", type: 'INCLUDE'],
-                                            [pattern: "venv/", type: 'INCLUDE'],
-                                            [pattern: ".eggs/", type: 'INCLUDE'],
-                                            [pattern: "*.egg-info/", type: 'INCLUDE'],
-                                        ]
-                                    )
-                                }
-                            }
-                        }
+//                         stage("Mac"){
+//                             agent {
+//                                 label "mac && python3.8 && python3.9"
+//                             }
+//                             when{
+//                                 equals expected: true, actual: params.TEST_PACKAGES_ON_MAC
+//                             }
+//                             steps {
+//                                 sh(label:"Installing tox",
+//                                    script: """python3 -m venv venv
+//                                               venv/bin/python -m pip install pip --upgrade
+//                                               venv/bin/python -m pip install wheel
+//                                               venv/bin/python -m pip install --upgrade setuptools
+//                                               venv/bin/python -m pip install tox
+//                                               """
+//                                 )
+//                                 script {
+//                                     def tox = load("ci/jenkins/scripts/tox.groovy")
+//                                     def tox_app = "venv/bin/tox"
+//                                     def skipEnv = ["py36"]
+//                                     def envs = tox.getToxEnvs2(tox_app)
+//                                     def cmds = envs.collectEntries({ tox_env ->
+//                                         skipEnv.contains(tox_env) ? [:] : ["MacOS ${tox_env}", {
+//                                             sh "${tox_app} --parallel--safe-build -vve $tox_env"
+//                                         }]
+//                                   })
+//                                   parallel(cmds)
+//                                 }
+//                             }
+//                             post{
+//                                 cleanup{
+//                                     cleanWs(
+//                                         deleteDirs: true,
+//                                         patterns: [
+//                                             [pattern: ".tox/", type: 'INCLUDE'],
+//                                             [pattern: "venv/", type: 'INCLUDE'],
+//                                             [pattern: ".eggs/", type: 'INCLUDE'],
+//                                             [pattern: "*.egg-info/", type: 'INCLUDE'],
+//                                         ]
+//                                     )
+//                                 }
+//                             }
+//                         }
                     }
                 }
             }
