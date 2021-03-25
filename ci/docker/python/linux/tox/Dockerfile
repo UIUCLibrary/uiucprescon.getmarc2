@@ -59,10 +59,12 @@ RUN PYTHON=python3.9 && \
 FROM wheel_builder_base
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_INDEX_URL
+RUN mkdir -p /.cache/pip && chmod -R 777 /.cache/
 COPY --from=WHEEL_BUILDER_PY36 /wheels/* /wheels/
 COPY --from=WHEEL_BUILDER_PY37 /wheels/* /wheels/
 COPY --from=WHEEL_BUILDER_PY38 /wheels/* /wheels/
 COPY --from=WHEEL_BUILDER_PY39 /wheels/* /wheels/
+
 ENV PIP_FIND_LINKS=/wheels
 RUN python3 -m pip install pip --upgrade && \
     pip3 install wheel && \
