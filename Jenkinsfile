@@ -2,41 +2,6 @@ SUPPORTED_MAC_VERSIONS = ['3.8', '3.9']
 SUPPORTED_LINUX_VERSIONS = ['3.6', '3.7', '3.8', '3.9']
 SUPPORTED_WINDOWS_VERSIONS = ['3.6', '3.7', '3.8', '3.9']
 
-// def CONFIGURATIONS = [
-//     "3.7": [
-//             package_testing: [
-//                 whl: [
-//                     pkgRegex: "*.whl",
-//                 ],
-//                 sdist:[
-//                     pkgRegex: "*.zip",
-//                 ]
-//             ],
-//             test_docker_image: [
-//                 windows: "python:3.7",
-//                 linux: "python:3.7"
-//             ],
-//             tox_env: "py37",
-//             devpi_wheel_regex: "cp37"
-//         ],
-//     "3.8": [
-//             package_testing: [
-//                 whl: [
-//                     pkgRegex: "*.whl",
-//                 ],
-//                 sdist:[
-//                     pkgRegex: "*.zip",
-//                 ]
-//             ],
-//             test_docker_image: [
-//                 windows: "python:3.8",
-//                 linux: "python:3.8"
-//             ],
-//             tox_env: "py38",
-//             devpi_wheel_regex: "cp38"
-//         ]
-// ]
-
 
 def getDevPiStagingIndex(){
 
@@ -305,9 +270,6 @@ pipeline {
                                             recordIssues(tools: [myPy(name: 'MyPy', pattern: 'logs/mypy.log')])
                                             publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
                                         }
-                                         unstable {
-                                            sh "pip list"
-                                         }
                                     }
                                 }
                                 stage("Bandit") {
