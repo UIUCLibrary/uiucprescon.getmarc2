@@ -137,9 +137,11 @@ pipeline {
     agent none
     parameters {
         booleanParam(name: "TEST_RUN_TOX", defaultValue: false, description: "Run Tox Tests")
-        booleanParam(name: "RUN_CHECKS", defaultValue: true, description: "Run checks on code")
+//         todo: make defaultValue true
+        booleanParam(name: "RUN_CHECKS", defaultValue: false, description: "Run checks on code")
         booleanParam(name: "USE_SONARQUBE", defaultValue: true, description: "Send data test data to SonarQube")
-        booleanParam(name: "BUILD_PACKAGES", defaultValue: false, description: "Build Python packages")
+//         todo: make defaultValue false
+        booleanParam(name: "BUILD_PACKAGES", defaultValue: true, description: "Build Python packages")
         booleanParam(name: 'BUILD_CHOCOLATEY_PACKAGE', defaultValue: false, description: 'Build package for chocolatey package manager')
         booleanParam(name: "TEST_PACKAGES", defaultValue: true, description: "Test Python packages by installing them and running tests on the installed package")
         booleanParam(name: "TEST_PACKAGES_ON_MAC", defaultValue: false, description: "Test Python packages on Mac")
@@ -963,9 +965,10 @@ pipeline {
                         stage("Test DevPi Package") {
                             steps{
                                 script{
+                                    def devpi
                                     node(){
                                         checkout scm
-                                        def devpi = load('ci/jenkins/scripts/devpi.groovy')
+                                        devpi = load('ci/jenkins/scripts/devpi.groovy')
                                     }
                                     linuxPackages = [:]
                                     SUPPORTED_LINUX_VERSIONS.each{pythonVersion ->
