@@ -975,6 +975,7 @@ pipeline {
                                     linuxPackages = [:]
                                     SUPPORTED_LINUX_VERSIONS.each{pythonVersion ->
                                         linuxPackages["Test Python ${pythonVersion}: sdist Linux"] = {
+                                            echo "Starting Python ${pythonVersion}: sdist Linux"
                                             devpi.testDevpiPackage(
                                                 agent: [
                                                     dockerfile: [
@@ -995,6 +996,7 @@ pipeline {
                                             )
                                         }
                                         linuxPackages["Test Python ${pythonVersion}: wheel Linux"] = {
+                                            echo "Starting Python ${pythonVersion}: wheel Linux"
                                             devpi.testDevpiPackage(
                                                 agent: [
                                                     dockerfile: [
@@ -1015,6 +1017,7 @@ pipeline {
                                             )
                                         }
                                     }
+                                    echo "Starting running in parallel"
                                     parallel(linuxPackages)
                                 }
                             }
