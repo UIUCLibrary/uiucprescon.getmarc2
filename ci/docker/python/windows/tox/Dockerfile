@@ -100,6 +100,9 @@ COPY --from=WHEEL_BUilDER_PY39 c:/wheels/ c:/wheels/
 
 ENV PIP_FIND_LINKS=c:\wheels
 
-RUN python -m pip install pip --upgrade ; pip install tox
+RUN python -m pip install pip --upgrade ; `
+    python -m pip install wheel ; `
+    python -m pip wheel -w c:/wheels/ --no-cache-dir wheel ; `
+    pip install tox devpi_client
 WORKDIR C:/src
 CMD tox --workdir ${Env:TEMP}\tox\ -vv  --recreate
