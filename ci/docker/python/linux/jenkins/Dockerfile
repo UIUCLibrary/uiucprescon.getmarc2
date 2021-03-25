@@ -22,9 +22,9 @@ ARG USER_ID=1000
 ARG GROUP_ID=1000
 
 RUN groupadd -g $GROUP_ID user && \
-    useradd -u $USER_ID -s /bin/sh -m -d /home/user -g user user && \
-    mkdir -p /.cache/pip && chgrp -R  user /.cache/ && \
-    chmod -R g+w /.cache/
+    useradd -u $USER_ID -s /bin/sh -m -d /home/user -g user user
+
+RUN mkdir -p /.cache/pip && chmod -R 777 /.cache
 
 USER user
 ENV SONAR_SCANNER_VERSION=4.4.0.2170
