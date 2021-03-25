@@ -1064,8 +1064,6 @@ pipeline {
                                script{
                                     if (!env.TAG_NAME?.trim()){
                                         docker.build("getmarc:devpi",'-f ./ci/docker/python/linux/jenkins/Dockerfile --build-arg USER_ID=$(id -u) --build-arg GROUP_ID=$(id -g) --build-arg PIP_EXTRA_INDEX_URL .').inside{
-                                            unstash "DIST-INFO"
-                                            def props = readProperties interpolate: true, file: 'uiucprescon.getmarc2.dist-info/METADATA'
                                             sh(
                                                 label: "Moving DevPi package from staging index to index",
                                                 script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
