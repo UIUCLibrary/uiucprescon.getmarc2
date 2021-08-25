@@ -65,6 +65,7 @@ FROM base_image
 COPY --from=SONAR_BUILDER /opt/sonar /opt/sonar/
 
 ENV SONAR_SCANNER_VERSION=4.4.0.2170
+ENV SONAR_USER_HOME=/opt/sonar/.sonar
 ARG SONAR_SCANNER_HOME=/opt/sonar/${SONAR_SCANNER_VERSION}-linux
 RUN ln -s /opt/sonar/sonar-scanner-${SONAR_SCANNER_VERSION}-linux/bin/sonar-scanner /usr/local/bin/sonar-scanner && \
     which sonar-scanner
