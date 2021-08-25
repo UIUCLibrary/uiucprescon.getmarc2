@@ -1,8 +1,8 @@
 """Module for records."""
 try:
-    from importlib.resources import files  # type: ignore
+    from importlib import resources
 except ImportError:
-    from importlib_resources import files
+    import importlib_resources as resources
 
 from typing import Optional
 
@@ -207,7 +207,9 @@ def is_validate_xml(data: str) -> bool:
         returns True if xml matches the schema
 
     """
-    validation_file = files("uiucprescon.getmarc2").joinpath("MARC21slim.xsd")
+    validation_file = \
+        resources.files("uiucprescon.getmarc2").joinpath("MARC21slim.xsd")
+
     schema_root = etree.XML(
         validation_file.read_text()
     )
