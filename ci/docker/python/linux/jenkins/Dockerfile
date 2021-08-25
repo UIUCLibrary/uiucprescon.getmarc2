@@ -17,7 +17,7 @@ RUN pip wheel --wheel-dir=/wheels  \
 
 
 FROM python:${PYTHON_VERSION} as base_image
-RUN apt update && apt install -y libenchant1c2a
+RUN apt update && apt install -y libenchant1c2a unzip
 ARG USER_ID=1000
 ARG GROUP_ID=1000
 
@@ -46,8 +46,7 @@ ARG PIP_INDEX_URL
 
 #==============================================================================
 FROM base_image as SONAR_BUILDER
-RUN apt-get update && \
-    apt-get install -y unzip
+
 ENV SONAR_SCANNER_VERSION=4.4.0.2170
 ARG SONAR_SCANNER_HOME=/opt/sonar/${SONAR_SCANNER_VERSION}-linux
 ENV SONAR_USER_HOME=/opt/sonar/.sonar
@@ -65,6 +64,7 @@ FROM base_image
 COPY --from=SONAR_BUILDER /opt/sonar /opt/sonar/
 
 ENV SONAR_SCANNER_VERSION=4.4.0.2170
+ENV SONAR_USER_HOME=/opt/sonar/.sonar
 ARG SONAR_SCANNER_HOME=/opt/sonar/${SONAR_SCANNER_VERSION}-linux
 RUN ln -s /opt/sonar/sonar-scanner-${SONAR_SCANNER_VERSION}-linux/bin/sonar-scanner /usr/local/bin/sonar-scanner && \
     which sonar-scanner
