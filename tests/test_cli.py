@@ -120,5 +120,5 @@ def test_write_output_file(monkeypatch):
     m = mock_open()
     with patch('builtins.open', m):
         cli.run(parsed_args)
-    m.assert_called_once_with('5539966.xml', 'w')
+    m.assert_called_once_with('5539966.xml', 'w', encoding="utf-8")
 

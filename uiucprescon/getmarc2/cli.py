@@ -97,7 +97,7 @@ def run(args: Optional[argparse.Namespace] = None) -> None:
     if records.is_validate_xml(xml_result) is False:
         raise records.ValidationException("invalid xml file")
     if args.output is not None:
-        with open(args.output, "w") as xml_file:
+        with open(args.output, "w", encoding="utf-8") as xml_file:
             xml_file.write(xml_result)
     else:
         print(xml_result)
