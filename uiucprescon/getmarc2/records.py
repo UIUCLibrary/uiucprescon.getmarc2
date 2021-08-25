@@ -2,7 +2,7 @@
 try:
     from importlib import resources
 except ImportError:
-    import importlib_resources as resources
+    import importlib_resources as resources  # type: ignore
 
 from typing import Optional
 
