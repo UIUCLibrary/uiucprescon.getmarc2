@@ -1,23 +1,10 @@
-ARG PYTHON_VERSION="3.8"
-FROM python:${PYTHON_VERSION} as wheel_builder
+ARG PYTHON_VERSION="3.9"
 
-ARG PIP_EXTRA_INDEX_URL
-ARG PIP_TRUSTED_HOST
-
-RUN python -m pip install --upgrade pip &&  \
-    pip install setuptools && \
-    pip install wheel
-
-ADD requirements.txt ci/docker/python/shared/requirements-ci.txt /tmp/
-
-RUN pip wheel --wheel-dir=/wheels  \
-        -r /tmp/requirements.txt \
-        -r /tmp/requirements-ci.txt && \
-    rm -rf  /root/.cache
 
 
 FROM python:${PYTHON_VERSION} as base_image
-RUN apt update && apt install -y libenchant1c2a unzip
+RUN apt update && apt install -y unzip
+RUN #apt update && apt install -y libenchant1c2a unzip
 ARG USER_ID=1000
 ARG GROUP_ID=1000
 
@@ -44,6 +31,22 @@ ARG PIP_EXTRA_INDEX_URL
 ARG PIP_TRUSTED_HOST
 ARG PIP_INDEX_URL
 
+#==============================================================================
+FROM base_image as wheel_builder
+
+ARG PIP_EXTRA_INDEX_URL
+ARG PIP_TRUSTED_HOST
+
+RUN python -m pip install --upgrade pip &&  \
+    pip install setuptools && \
+    pip install wheel
+
+ADD requirements.txt ci/docker/python/shared/requirements-ci.txt /tmp/
+
+RUN pip wheel --wheel-dir=/wheels  \
+        -r /tmp/requirements.txt \
+        -r /tmp/requirements-ci.txt && \
+    rm -rf  /root/.cache
 #==============================================================================
 FROM base_image as SONAR_BUILDER
 
