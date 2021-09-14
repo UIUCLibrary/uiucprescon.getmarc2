@@ -1145,13 +1145,14 @@ pipeline {
                                 }
                             }
                             steps {
-                                script {
-                                    sh(
-                                        label: "Pushing to production/release index",
-                                        script: """devpi use https://devpi.library.illinois.edu --clientdir ./devpi
-                                                   devpi login $DEVPI_USR --password $DEVPI_PSW --clientdir ./devpi
-                                                   devpi push --index DS_Jenkins/${env.devpiStagingIndex} ${props.Name}==${props.Version} production/release --clientdir ./devpi
-                                                   """
+                                script{
+                                    load('ci/jenkins/scripts/devpi.groovy').pushPackageToIndex(
+                                        pkgName: props.Name,
+                                        pkgVersion: props.Version,
+                                        server: 'https://devpi.library.illinois.edu',
+                                        indexSource: "DS_Jenkins/${getDevPiStagingIndex()}",
+                                        indexDestination: 'production/release',
+                                        credentialsId: 'DS_devpi'
                                     )
                                 }
                             }
