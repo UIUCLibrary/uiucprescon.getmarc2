@@ -9,7 +9,8 @@ setup(
     package_data={
         "uiucprescon.getmarc2": [
             "MARC21slim.xsd",
-            "955_template.xml"
+            "955_template.xml",
+            "py.typed"
         ]
     },
     install_requires=[
