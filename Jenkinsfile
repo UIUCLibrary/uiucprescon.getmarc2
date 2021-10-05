@@ -906,7 +906,6 @@ pipeline {
                                     )
                                 }
                                 failure{
-                                    powershell('Get-ChildItem -Path C:\\ProgramData\\chocolatey\\logs -Recurse -Include chocolatey.log | Get-Content')
                                     powershell('Get-ChildItem -Path C:\\ProgramData\\chocolatey\\logs -Recurse -Include chocolatey.log | Copy-Item -Destination $ENV:WORKSPACE')
                                     archiveArtifacts artifacts: "chocolatey.log", allowEmptyArchive: true
                                 }
