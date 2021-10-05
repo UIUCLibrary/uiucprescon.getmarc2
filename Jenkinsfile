@@ -905,6 +905,9 @@ pipeline {
                                         ]
                                     )
                                 }
+                                failure{
+                                    powershell('Get-ChildItem -Path C:\\ProgramData\\chocolatey\\logs -Recurse -Include chocolatey.log | Get-Content')
+                                }
                             }
                         }
                     }
