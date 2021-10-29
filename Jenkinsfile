@@ -245,6 +245,11 @@ pipeline {
                                         }
                                     }
                                 }
+                                stage('Task Scanner'){
+                                    steps{
+                                        recordIssues(tools: [taskScanner(highTags: 'FIXME', includePattern: 'uiucprescon/**/*.py', normalTags: 'TODO')])
+                                    }
+                                }
                                 stage("MyPy") {
                                     steps{
                                         catchError(buildResult: 'SUCCESS', message: 'mypy found issues', stageResult: 'UNSTABLE') {
