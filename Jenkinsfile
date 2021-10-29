@@ -61,9 +61,9 @@ def startup(){
                             withEnv(['PIP_NO_CACHE_DIR=off']) {
                                 sh(
                                    label: 'Running setup.py with dist_info',
-                                   script: """python --version
+                                   script: '''python --version
                                               python setup.py dist_info
-                                           """
+                                           '''
                                 )
                             }
                             stash includes: '*.dist-info/**', name: 'DIST-INFO'
@@ -193,9 +193,7 @@ pipeline {
                             steps{
                                 sh(
                                     label: 'Creating logging and report directories',
-                                    script: """
-                                        mkdir -p logs
-                                    """
+                                    script: 'mkdir -p logs'
                                 )
                             }
                         }
@@ -216,9 +214,9 @@ pipeline {
                                     steps {
                                         sh(
                                             label:'Running doctest',
-                                            script: """mkdir -p reports/doctests
-                                                      coverage run --parallel-mode --source uiucprescon -m sphinx -b doctest -d build/docs/doctrees docs reports/doctest -w logs/doctest.log
-                                                      """
+                                            script: '''mkdir -p reports/doctests
+                                                       coverage run --parallel-mode --source uiucprescon -m sphinx -b doctest -d build/docs/doctrees docs reports/doctest -w logs/doctest.log
+                                                       '''
                                         )
                                     }
                                     post{
@@ -256,9 +254,9 @@ pipeline {
                                             tee('logs/mypy.log'){
                                                 sh(
                                                     label: 'Run mypy',
-                                                    script:"""mkdir -p reports/mypy/html
-                                                      mypy -p uiucprescon.getmarc2 --namespace-packages --html-report reports/mypy/html/
-                                                      """
+                                                    script: '''mkdir -p reports/mypy/html
+                                                               mypy -p uiucprescon.getmarc2 --namespace-packages --html-report reports/mypy/html/
+                                                               '''
                                                 )
                                             }
                                         }
@@ -344,10 +342,10 @@ pipeline {
                             post{
                                 always{
                                     sh(
-                                        label:'Combine Coverage data and generate a report',
-                                        script: """mkdir -p reports/coverage
+                                        label: 'Combine Coverage data and generate a report',
+                                        script: '''mkdir -p reports/coverage
                                                   coverage combine && coverage xml -o reports/coverage.xml
-                                                  """
+                                                  '''
                                     )
                                     publishCoverage adapters: [
                                                     coberturaAdapter('reports/coverage.xml')
