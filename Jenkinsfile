@@ -176,11 +176,6 @@ pipeline {
             stages{
                 stage('Check Code') {
                     agent {
-//                         dockerfile {
-//                             filename 'ci/docker/python/linux/jenkins/Dockerfile'
-//                             label 'linux && docker'
-//                             additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL'
-//                         }
                         dockerfile {
                             filename 'ci/docker/python/linux/jenkins/Dockerfile'
                             label 'linux && docker'
@@ -302,8 +297,7 @@ pipeline {
                                         catchError(buildResult: 'SUCCESS', message: 'Pylint found issues', stageResult: 'UNSTABLE') {
                                             tee('reports/pylint.txt'){
                                                 sh(
-                                                    script: '''pylint uiucprescon --init-hook="import sys; sys.path.insert(0, '.')" -r n --persistent=n --verbose --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}"
-                                                               ''',
+                                                    script: 'pylint uiucprescon --init-hook="import sys; sys.path.insert(0, '.')" -r n --persistent=n --verbose --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}"',
                                                     label: 'Running pylint'
                                                 )
                                             }
