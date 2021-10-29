@@ -66,16 +66,16 @@ def startup(){
                                            """
                                 )
                             }
-                            stash includes: "*.dist-info/**", name: 'DIST-INFO'
-                            archiveArtifacts artifacts: "*.dist-info/**"
+                            stash includes: '*.dist-info/**', name: 'DIST-INFO'
+                            archiveArtifacts artifacts: '*.dist-info/**'
                         }
                     }
                 } finally{
                     cleanWs(
                         deleteDirs: true,
                         patterns: [
-                            [pattern: "*.dist-info/", type: 'INCLUDE'],
-                            [pattern: "**/__pycache__", type: 'INCLUDE'],
+                            [pattern: '*.dist-info/', type: 'INCLUDE'],
+                            [pattern: '**/__pycache__', type: 'INCLUDE'],
                         ]
                     )
                 }
@@ -208,7 +208,7 @@ pipeline {
                                     post {
                                         always {
                                             junit 'reports/pytest/junit-pytest.xml'
-                                            stash includes: "reports/pytest/*.xml", name: 'PYTEST_REPORT'
+                                            stash includes: 'reports/pytest/*.xml', name: 'PYTEST_REPORT'
                                         }
                                     }
                                 }
@@ -853,7 +853,7 @@ pipeline {
                             steps{
                                 script {
                                     unstash 'PYTHON_PACKAGES'
-                                    findFiles(glob: "dist/*.whl").each{
+                                    findFiles(glob: 'dist/*.whl').each{
                                         def sanitized_packageversion=sanitize_chocolatey_version(props.Version)
                                         powershell(
                                             label: 'Configuring new package for Chocolatey',
@@ -869,7 +869,7 @@ pipeline {
                             }
                             post{
                                 always{
-                                    archiveArtifacts artifacts: "packages/**/*.nuspec"
+                                    archiveArtifacts artifacts: 'packages/**/*.nuspec'
                                     stash includes: 'packages/*.nupkg', name: 'CHOCOLATEY_PACKAGE'
                                 }
                             }
@@ -898,7 +898,7 @@ pipeline {
                             }
                             post{
                                 success{
-                                    archiveArtifacts artifacts: "packages/*.nupkg", fingerprint: true
+                                    archiveArtifacts artifacts: 'packages/*.nupkg', fingerprint: true
                                 }
                                 cleanup{
                                     cleanWs(
@@ -930,7 +930,7 @@ pipeline {
                             anyOf {
                                 equals expected: 'master', actual: env.BRANCH_NAME
                                 equals expected: 'dev', actual: env.BRANCH_NAME
-                                tag "*"
+                                tag '*'
                             }
                         }
                         beforeAgent true
@@ -1136,7 +1136,7 @@ pipeline {
                                     equals expected: true, actual: params.DEPLOY_DEVPI_PRODUCTION
                                     anyOf {
                                         branch 'master'
-                                        tag "*"
+                                        tag '*'
                                     }
                                 }
                                 beforeInput true
@@ -1246,7 +1246,7 @@ pipeline {
                                 unstash 'CHOCOLATEY_PACKAGE'
                                 script{
                                     def pkgs = []
-                                    findFiles(glob: "packages/*.nupkg").each{
+                                    findFiles(glob: 'packages/*.nupkg').each{
                                         pkgs << it.path
                                     }
                                     def deployment_options = input(
