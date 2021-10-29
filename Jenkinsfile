@@ -6,7 +6,7 @@ SUPPORTED_WINDOWS_VERSIONS = ['3.6', '3.7', '3.8', '3.9']
 def getDevPiStagingIndex(){
 
     if (env.TAG_NAME?.trim()){
-        return "tag_staging"
+        return 'tag_staging'
     } else{
         return "${env.BRANCH_NAME}_staging"
     }
@@ -22,7 +22,7 @@ def sanitize_chocolatey_version(version){
     script{
         def dot_to_slash_pattern = '(?<=\\d)\\.?(?=(dev|b|a|rc)(\\d)?)'
 
-        def dashed_version = version.replaceFirst(dot_to_slash_pattern, "-")
+        def dashed_version = version.replaceFirst(dot_to_slash_pattern, '-')
 
         def beta_pattern = "(?<=\\d(\\.?))b((?=\\d)?)"
         if(dashed_version.matches(beta_pattern)){
@@ -60,7 +60,7 @@ def startup(){
                         timeout(2){
                             withEnv(['PIP_NO_CACHE_DIR=off']) {
                                 sh(
-                                   label: "Running setup.py with dist_info",
+                                   label: 'Running setup.py with dist_info',
                                    script: """python --version
                                               python setup.py dist_info
                                            """
@@ -88,7 +88,7 @@ def get_props(){
     stage('Reading Package Metadata'){
         node() {
             try{
-                unstash "DIST-INFO"
+                unstash 'DIST-INFO'
                 def metadataFile = findFiles(excludes: '', glob: '*.dist-info/METADATA')[0]
                 def package_metadata = readProperties interpolate: true, file: metadataFile.path
                 echo """Metadata:
@@ -116,15 +116,15 @@ props = get_props()
 pipeline {
     agent none
     parameters {
-        booleanParam(name: "RUN_CHECKS", defaultValue: true, description: 'Run checks on code')
-        booleanParam(name: "TEST_RUN_TOX", defaultValue: false, description: 'Run Tox Tests')
-        booleanParam(name: "USE_SONARQUBE", defaultValue: true, description: 'Send data test data to SonarQube')
-        booleanParam(name: "BUILD_PACKAGES", defaultValue: false, description: 'Build Python packages')
+        booleanParam(name: 'RUN_CHECKS', defaultValue: true, description: 'Run checks on code')
+        booleanParam(name: 'TEST_RUN_TOX', defaultValue: false, description: 'Run Tox Tests')
+        booleanParam(name: 'USE_SONARQUBE', defaultValue: true, description: 'Send data test data to SonarQube')
+        booleanParam(name: 'BUILD_PACKAGES', defaultValue: false, description: 'Build Python packages')
         booleanParam(name: 'BUILD_CHOCOLATEY_PACKAGE', defaultValue: false, description: 'Build package for chocolatey package manager')
-        booleanParam(name: "TEST_PACKAGES", defaultValue: true, description: 'Test Python packages by installing them and running tests on the installed package')
-        booleanParam(name: "TEST_PACKAGES_ON_MAC", defaultValue: false, description: 'Test Python packages on Mac')
-        booleanParam(name: "DEPLOY_DEVPI", defaultValue: false, description: "Deploy to devpi on http://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
-        booleanParam(name: "DEPLOY_DEVPI_PRODUCTION", defaultValue: false, description: "Deploy to production devpi on https://devpi.library.illinois.edu/production/release. Master branch Only")
+        booleanParam(name: 'TEST_PACKAGES', defaultValue: true, description: 'Test Python packages by installing them and running tests on the installed package')
+        booleanParam(name: 'TEST_PACKAGES_ON_MAC', defaultValue: false, description: 'Test Python packages on Mac')
+        booleanParam(name: 'DEPLOY_DEVPI', defaultValue: false, description: "Deploy to devpi on http://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
+        booleanParam(name: 'DEPLOY_DEVPI_PRODUCTION', defaultValue: false, description: "Deploy to production devpi on https://devpi.library.illinois.edu/production/release. Master branch Only")
         booleanParam(name: 'DEPLOY_CHOCOLATEY', defaultValue: false, description: 'Deploy to Chocolatey repository')
         booleanParam(name: 'DEPLOY_DOCS', defaultValue: false, description: '')
     }
@@ -134,7 +134,7 @@ pipeline {
                 dockerfile {
                     filename 'ci/docker/python/linux/jenkins/Dockerfile'
                     label 'linux && docker'
-                    additionalBuildArgs "--build-arg PIP_EXTRA_INDEX_URL"
+                    additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL'
                 }
             }
             steps {
@@ -207,7 +207,7 @@ pipeline {
                                     }
                                     post {
                                         always {
-                                            junit "reports/pytest/junit-pytest.xml"
+                                            junit 'reports/pytest/junit-pytest.xml'
                                             stash includes: "reports/pytest/*.xml", name: 'PYTEST_REPORT'
                                         }
                                     }
@@ -295,7 +295,7 @@ pipeline {
                                             }
                                         }
                                         always {
-                                            stash includes: "reports/bandit-report.json", name: 'BANDIT_REPORT'
+                                            stash includes: 'reports/bandit-report.json', name: 'BANDIT_REPORT'
                                         }
                                     }
                                 }
@@ -375,7 +375,7 @@ pipeline {
                         }
                         stage('Send to Sonarcloud for Analysis'){
                             options{
-                                lock("uiucprescon.getmarc2-sonarscanner")
+                                lock('uiucprescon.getmarc2-sonarscanner')
                             }
                             when{
                                 equals expected: true, actual: params.USE_SONARQUBE
@@ -383,11 +383,11 @@ pipeline {
                                 beforeOptions true
                             }
                             steps{
-                                unstash "COVERAGE_REPORT"
-                                unstash "PYTEST_REPORT"
-                                unstash "BANDIT_REPORT"
-                                unstash "PYLINT_REPORT"
-                                unstash "FLAKE8_REPORT"
+                                unstash 'COVERAGE_REPORT'
+                                unstash 'PYTEST_REPORT'
+                                unstash 'BANDIT_REPORT'
+                                unstash 'PYLINT_REPORT'
+                                unstash 'FLAKE8_REPORT'
                                 script{
                                     withSonarQubeEnv(installationName:'sonarcloud', credentialsId: 'sonarcloud-uiucprescon.getmarc2') {
                                         if (env.CHANGE_ID){
@@ -407,7 +407,7 @@ pipeline {
                                         if (sonarqube_result.status != 'OK') {
                                             unstable "SonarQube quality gate: ${sonarqube_result.status}"
                                         }
-                                        def outstandingIssues = get_sonarqube_unresolved_issues(".scannerwork/report-task.txt")
+                                        def outstandingIssues = get_sonarqube_unresolved_issues('.scannerwork/report-task.txt')
                                         writeJSON file: 'reports/sonar-report.json', json: outstandingIssues
                                     }
                                 }
@@ -416,7 +416,7 @@ pipeline {
                                 always{
                                     script{
                                         if(fileExists('reports/sonar-report.json')){
-                                            stash includes: "reports/sonar-report.json", name: 'SONAR_REPORT'
+                                            stash includes: 'reports/sonar-report.json', name: 'SONAR_REPORT'
                                             archiveArtifacts allowEmptyArchive: true, artifacts: 'reports/sonar-report.json'
                                             recordIssues(tools: [sonarQube(pattern: 'reports/sonar-report.json')])
                                         }
@@ -522,7 +522,7 @@ pipeline {
                                         checkout scm
                                         tox = load('ci/jenkins/scripts/tox.groovy')
                                     }
-                                    def jobs = tox.getToxTestsParallel('Linux', 'linux && docker', 'ci/docker/python/linux/tox/Dockerfile', "--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL")
+                                    def jobs = tox.getToxTestsParallel('Linux', 'linux && docker', 'ci/docker/python/linux/tox/Dockerfile', '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL')
                                     parallel(jobs)
                                 }
                             }
@@ -535,7 +535,7 @@ pipeline {
                                         checkout scm
                                         tox = load('ci/jenkins/scripts/tox.groovy')
                                     }
-                                    parallel(tox.getToxTestsParallel('Windows', 'windows && docker', 'ci/docker/python/windows/tox/Dockerfile', "--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE"))
+                                    parallel(tox.getToxTestsParallel('Windows', 'windows && docker', 'ci/docker/python/windows/tox/Dockerfile', '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE'))
                                 }
                             }
                         }
@@ -569,7 +569,7 @@ pipeline {
                     }
                     post {
                         always{
-                            stash includes: 'dist/*.*', name: "PYTHON_PACKAGES"
+                            stash includes: 'dist/*.*', name: 'PYTHON_PACKAGES'
                         }
                         success {
                             archiveArtifacts artifacts: "dist/*.whl,dist/*.tar.gz,dist/*.zip", fingerprint: true
@@ -763,7 +763,7 @@ pipeline {
                                                 additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE'
                                             ]
                                         ],
-                                        dockerImageName: "${currentBuild.fullProjectName}_test".replaceAll("-", "_").replaceAll('/', "_").replaceAll(' ', '').toLowerCase(),
+                                        dockerImageName: "${currentBuild.fullProjectName}_test".replaceAll('-', '_').replaceAll('/', '_').replaceAll(' ', '').toLowerCase(),
                                         testSetup: {
                                              checkout scm
                                              unstash 'PYTHON_PACKAGES'
@@ -800,7 +800,7 @@ pipeline {
                                                 additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE'
                                             ]
                                         ],
-                                        dockerImageName: "${currentBuild.fullProjectName}_test".replaceAll("-", "_").replaceAll('/', "_").replaceAll(' ', '').toLowerCase(),
+                                        dockerImageName: "${currentBuild.fullProjectName}_test".replaceAll('-', '_').replaceAll('/', '_').replaceAll(' ', '').toLowerCase(),
                                         testSetup: {
                                             checkout scm
                                             unstash 'PYTHON_PACKAGES'
@@ -847,12 +847,12 @@ pipeline {
                                 dockerfile {
                                     filename 'ci/docker/chocolatey_package/Dockerfile'
                                     label 'windows && docker'
-                                    additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
+                                    additionalBuildArgs '--build-arg CHOCOLATEY_SOURCE'
                                   }
                             }
                             steps{
                                 script {
-                                    unstash "PYTHON_PACKAGES"
+                                    unstash 'PYTHON_PACKAGES'
                                     findFiles(glob: "dist/*.whl").each{
                                         def sanitized_packageversion=sanitize_chocolatey_version(props.Version)
                                         powershell(
@@ -870,7 +870,7 @@ pipeline {
                             post{
                                 always{
                                     archiveArtifacts artifacts: "packages/**/*.nuspec"
-                                    stash includes: 'packages/*.nupkg', name: "CHOCOLATEY_PACKAGE"
+                                    stash includes: 'packages/*.nupkg', name: 'CHOCOLATEY_PACKAGE'
                                 }
                             }
                         }
@@ -879,11 +879,11 @@ pipeline {
                                 dockerfile {
                                     filename 'ci/docker/chocolatey_package/Dockerfile'
                                     label 'windows && docker'
-                                    additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
+                                    additionalBuildArgs '--build-arg CHOCOLATEY_SOURCE'
                                   }
                             }
                             steps{
-                                unstash "CHOCOLATEY_PACKAGE"
+                                unstash 'CHOCOLATEY_PACKAGE'
                                 script{
                                     def sanitized_packageversion=sanitize_chocolatey_version(props.Version)
                                     powershell(
@@ -893,7 +893,7 @@ pipeline {
                                                   """
                                     )
                                 }
-                                bat "getmarc --help"
+                                bat 'getmarc --help'
 
                             }
                             post{
@@ -938,7 +938,7 @@ pipeline {
                     }
                     agent none
                     options{
-                        lock("uiucprescon.getmarc2-devpi")
+                        lock('uiucprescon.getmarc2-devpi')
                     }
                     stages{
                         stage('Deploy to Devpi Staging') {
@@ -950,8 +950,8 @@ pipeline {
                                 }
                             }
                             steps {
-                                unstash "PYTHON_PACKAGES"
-                                unstash "DOCS_ARCHIVE"
+                                unstash 'PYTHON_PACKAGES'
+                                unstash 'DOCS_ARCHIVE'
                                 script{
                                     def devpi = load('ci/jenkins/scripts/devpi.groovy')
                                     devpi.upload(
@@ -1090,7 +1090,7 @@ pipeline {
                                                 agent: [
                                                     dockerfile: [
                                                         filename: 'ci/docker/python/windows/tox/Dockerfile',
-                                                        additionalBuildArgs: "--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE",
+                                                        additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE',
                                                         label: 'windows && docker'
                                                     ]
                                                 ],
@@ -1110,7 +1110,7 @@ pipeline {
                                                 agent: [
                                                     dockerfile: [
                                                         filename: 'ci/docker/python/windows/tox/Dockerfile',
-                                                        additionalBuildArgs: "--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE",
+                                                        additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE',
                                                         label: 'windows && docker'
                                                     ]
                                                 ],
@@ -1221,7 +1221,7 @@ pipeline {
                                 dockerfile {
                                     filename 'ci/docker/chocolatey_package/Dockerfile'
                                     label 'windows && docker'
-                                    additionalBuildArgs "--build-arg CHOCOLATEY_SOURCE"
+                                    additionalBuildArgs '--build-arg CHOCOLATEY_SOURCE'
                                   }
                             }
                             options{
@@ -1243,7 +1243,7 @@ pipeline {
                                 }
                             }
                             steps{
-                                unstash "CHOCOLATEY_PACKAGE"
+                                unstash 'CHOCOLATEY_PACKAGE'
                                 script{
                                     def pkgs = []
                                     findFiles(glob: "packages/*.nupkg").each{
@@ -1289,7 +1289,7 @@ pipeline {
                             }
                             agent any
                             steps{
-                                unstash "DOCS_ARCHIVE"
+                                unstash 'DOCS_ARCHIVE'
                                 sshPublisher(
                                     publishers: [
                                         sshPublisherDesc(
