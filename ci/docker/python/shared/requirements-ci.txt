@@ -3,6 +3,7 @@ coverage
 devpi-client
 flake8
 mypy
+paramiko
 pep517
 pydocstyle
 pylint
