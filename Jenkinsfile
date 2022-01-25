@@ -1447,47 +1447,30 @@ pipeline {
                                 }
                             }
                         }
-                        stage('Deploy Documentation'){
+                        stage('Deploy Online Documentation') {
                             when{
                                 equals expected: true, actual: params.DEPLOY_DOCS
+                                beforeAgent true
                                 beforeInput true
                             }
-                            input {
-                                message 'Deploy documentation'
-                                id 'DEPLOY_DOCUMENTATION'
-                                parameters {
-                                    string defaultValue: 'getmarc2', description: '', name: 'DEPLOY_DOCS_URL_SUBFOLDER', trim: true
+                            agent {
+                                dockerfile {
+                                    filename 'ci/docker/python/linux/jenkins/Dockerfile'
+                                    label 'linux && docker'
+                                    additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL'
                                 }
                             }
-                            agent any
+                            options{
+                                timeout(time: 1, unit: 'DAYS')
+                            }
+                            input {
+                                message 'Update project documentation?'
+                            }
                             steps{
                                 unstash 'DOCS_ARCHIVE'
-                                sshPublisher(
-                                    publishers: [
-                                        sshPublisherDesc(
-                                            configName: 'apache-ns - lib-dccuser-updater',
-                                            transfers: [
-                                                sshTransfer(
-                                                    cleanRemote: false,
-                                                    excludes: '',
-                                                    execCommand: '',
-                                                    execTimeout: 120000,
-                                                    flatten: false,
-                                                    makeEmptyDirs: false,
-                                                    noDefaultExcludes: false,
-                                                    patternSeparator: '[, ]+',
-                                                    remoteDirectory: "${DEPLOY_DOCS_URL_SUBFOLDER}",
-                                                    remoteDirectorySDF: false,
-                                                    removePrefix: 'build/docs/html',
-                                                    sourceFiles: 'build/docs/html/**'
-                                                )
-                                            ],
-                                            usePromotionTimestamp: false,
-                                            useWorkspaceInPromotion: false,
-                                            verbose: false
-                                        )
-                                    ]
-                                )
+                                withCredentials([usernamePassword(credentialsId: 'dccdocs-server', passwordVariable: 'docsPassword', usernameVariable: 'docsUsername')]) {
+                                    sh 'python utils/upload_docs.py --username=$docsUsername --password=$docsPassword --subroute=getmarc2 build/docs/html apache-ns.library.illinois.edu'
+                                }
                             }
                             post{
                                 cleanup{
@@ -1501,6 +1484,60 @@ pipeline {
                                 }
                             }
                         }
+//                         stage('Deploy Documentation'){
+//                             when{
+//                                 equals expected: true, actual: params.DEPLOY_DOCS
+//                                 beforeInput true
+//                             }
+//                             input {
+//                                 message 'Deploy documentation'
+//                                 id 'DEPLOY_DOCUMENTATION'
+//                                 parameters {
+//                                     string defaultValue: 'getmarc2', description: '', name: 'DEPLOY_DOCS_URL_SUBFOLDER', trim: true
+//                                 }
+//                             }
+//                             agent any
+//                             steps{
+//                                 unstash 'DOCS_ARCHIVE'
+//                                 sshPublisher(
+//                                     publishers: [
+//                                         sshPublisherDesc(
+//                                             configName: 'apache-ns - lib-dccuser-updater',
+//                                             transfers: [
+//                                                 sshTransfer(
+//                                                     cleanRemote: false,
+//                                                     excludes: '',
+//                                                     execCommand: '',
+//                                                     execTimeout: 120000,
+//                                                     flatten: false,
+//                                                     makeEmptyDirs: false,
+//                                                     noDefaultExcludes: false,
+//                                                     patternSeparator: '[, ]+',
+//                                                     remoteDirectory: "${DEPLOY_DOCS_URL_SUBFOLDER}",
+//                                                     remoteDirectorySDF: false,
+//                                                     removePrefix: 'build/docs/html',
+//                                                     sourceFiles: 'build/docs/html/**'
+//                                                 )
+//                                             ],
+//                                             usePromotionTimestamp: false,
+//                                             useWorkspaceInPromotion: false,
+//                                             verbose: false
+//                                         )
+//                                     ]
+//                                 )
+//                             }
+//                             post{
+//                                 cleanup{
+//                                     cleanWs(
+//                                         deleteDirs: true,
+//                                         patterns: [
+//                                             [pattern: 'build/', type: 'INCLUDE'],
+//                                             [pattern: 'dist/', type: 'INCLUDE'],
+//                                         ]
+//                                     )
+//                                 }
+//                             }
+//                         }
                     }
                 }
             }
