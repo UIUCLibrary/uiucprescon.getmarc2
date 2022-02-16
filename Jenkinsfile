@@ -1223,6 +1223,7 @@ pipeline {
                                                         label: 'linux && docker'
                                                     ]
                                                 ],
+                                                retryTimes: 3,
                                                 devpi: DEVPI_CONFIG,
                                                 package:[
                                                     name: props.Name,
@@ -1243,6 +1244,7 @@ pipeline {
                                                         label: 'linux && docker'
                                                     ]
                                                 ],
+                                                retryTimes: 3,
                                                 devpi: DEVPI_CONFIG,
                                                 package:[
                                                     name: props.Name,
@@ -1266,6 +1268,7 @@ pipeline {
                                                         label: 'windows && docker'
                                                     ]
                                                 ],
+                                                retryTimes: 3,
                                                 devpi: DEVPI_CONFIG,
                                                 package:[
                                                     name: props.Name,
@@ -1286,6 +1289,7 @@ pipeline {
                                                         label: 'windows && docker'
                                                     ]
                                                 ],
+                                                retryTimes: 3,
                                                 devpi: DEVPI_CONFIG,
                                                 package:[
                                                     name: props.Name,
