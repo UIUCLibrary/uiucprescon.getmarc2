@@ -411,11 +411,11 @@ pipeline {
             }
         }
         stage('Checks') {
-            when{
-                equals expected: true, actual: params.RUN_CHECKS
-            }
             stages{
                 stage('Check Code') {
+                    when{
+                        equals expected: true, actual: params.RUN_CHECKS
+                    }
                     agent {
                         dockerfile {
                             filename 'ci/docker/python/linux/jenkins/Dockerfile'
