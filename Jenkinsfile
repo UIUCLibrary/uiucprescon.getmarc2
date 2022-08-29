@@ -1,6 +1,6 @@
 SUPPORTED_MAC_VERSIONS = ['3.8', '3.9', '3.10']
-SUPPORTED_LINUX_VERSIONS = ['3.6', '3.7', '3.8', '3.9', '3.10']
-SUPPORTED_WINDOWS_VERSIONS = ['3.6', '3.7', '3.8', '3.9', '3.10']
+SUPPORTED_LINUX_VERSIONS = ['3.7', '3.8', '3.9', '3.10']
+SUPPORTED_WINDOWS_VERSIONS = ['3.7', '3.8', '3.9', '3.10']
 
 
 def getDevPiStagingIndex(){
@@ -411,11 +411,11 @@ pipeline {
             }
         }
         stage('Checks') {
-            when{
-                equals expected: true, actual: params.RUN_CHECKS
-            }
             stages{
                 stage('Check Code') {
+                    when{
+                        equals expected: true, actual: params.RUN_CHECKS
+                    }
                     agent {
                         dockerfile {
                             filename 'ci/docker/python/linux/jenkins/Dockerfile'
@@ -1281,7 +1281,10 @@ pipeline {
                                                 ],
                                                 test:[
                                                     toxEnv: "py${pythonVersion}".replace('.',''),
-                                                ]
+                                                    teardown: {
+                                                        bat('python -m pip list')
+                                                    }
+                                                ],
                                             )
                                         }
                                         windowsPackages["Test Python ${pythonVersion}: wheel Windows"] = {
@@ -1302,7 +1305,10 @@ pipeline {
                                                 ],
                                                 test:[
                                                     toxEnv: "py${pythonVersion}".replace('.',''),
-                                                ]
+                                                    teardown: {
+                                                        bat('python -m pip list')
+                                                    }
+                                                ],
                                             )
                                         }
                                     }
