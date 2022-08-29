@@ -1281,7 +1281,10 @@ pipeline {
                                                 ],
                                                 test:[
                                                     toxEnv: "py${pythonVersion}".replace('.',''),
-                                                ]
+                                                    teardown: {
+                                                        bat('python -m pip list')
+                                                    }
+                                                ],
                                             )
                                         }
                                         windowsPackages["Test Python ${pythonVersion}: wheel Windows"] = {
@@ -1302,7 +1305,10 @@ pipeline {
                                                 ],
                                                 test:[
                                                     toxEnv: "py${pythonVersion}".replace('.',''),
-                                                ]
+                                                    teardown: {
+                                                        bat('python -m pip list')
+                                                    }
+                                                ],
                                             )
                                         }
                                     }
