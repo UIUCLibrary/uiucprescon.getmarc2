@@ -369,6 +369,10 @@ pipeline {
         booleanParam(name: 'DEPLOY_CHOCOLATEY', defaultValue: false, description: 'Deploy to Chocolatey repository')
         booleanParam(name: 'DEPLOY_DOCS', defaultValue: false, description: '')
     }
+    options {
+        timeout(time: 1, unit: 'DAYS')
+    }
+
     stages {
         stage('Sphinx Documentation'){
             agent{
