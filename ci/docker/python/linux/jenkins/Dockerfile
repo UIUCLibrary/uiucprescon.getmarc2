@@ -4,14 +4,6 @@ ARG PYTHON_VERSION="3.9"
 
 FROM python:${PYTHON_VERSION} as base_image
 RUN apt update && apt install -y unzip
-RUN #apt update && apt install -y libenchant1c2a unzip
-ARG USER_ID=1000
-ARG GROUP_ID=1000
-
-RUN groupadd -g $GROUP_ID user && \
-    useradd -u $USER_ID -s /bin/sh -m -d /home/user -g user user
-
-RUN mkdir -p /.cache/pip && chmod -R 777 /.cache
 
 ENV SONAR_SCANNER_OPTS="-server"
 ENV CONAN_NON_INTERACTIVE=1
@@ -30,7 +22,7 @@ RUN python -m pip install --upgrade pip &&  \
     pip install wheel
 
 ADD requirements.txt ci/docker/python/shared/requirements-ci.txt /tmp/
-
+COPY requirements/ /tmp/requirements/
 RUN pip wheel --wheel-dir=/wheels  \
         -r /tmp/requirements.txt \
         -r /tmp/requirements-ci.txt && \
@@ -62,6 +54,7 @@ RUN ln -s /opt/sonar/sonar-scanner-${SONAR_SCANNER_VERSION}-linux/bin/sonar-scan
 
 COPY --from=wheel_builder /wheels /wheels/
 ADD requirements.txt ci/docker/python/shared/requirements-ci.txt /tmp/
+COPY requirements/ /tmp/requirements/
 ENV PIP_FIND_LINKS=/wheels
 RUN pip install --no-index --find-links=/wheels \
     -r /tmp/requirements.txt \
