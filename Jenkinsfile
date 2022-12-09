@@ -3,20 +3,23 @@ SUPPORTED_LINUX_VERSIONS = ['3.7', '3.8', '3.9', '3.10']
 SUPPORTED_WINDOWS_VERSIONS = ['3.7', '3.8', '3.9', '3.10']
 
 
-def getDevPiStagingIndex(){
-
-    if (env.TAG_NAME?.trim()){
-        return 'tag_staging'
-    } else{
-        return "${env.BRANCH_NAME}_staging"
+def getDevpiConfig() {
+    node(){
+        configFileProvider([configFile(fileId: 'devpi_config', variable: 'CONFIG_FILE')]) {
+            def configProperties = readProperties(file: CONFIG_FILE)
+            configProperties.stagingIndex = {
+                if (env.TAG_NAME?.trim()){
+                    return 'tag_staging'
+                } else{
+                    return "${env.BRANCH_NAME}_staging"
+                }
+            }()
+            return configProperties
+        }
     }
 }
 
-DEVPI_CONFIG = [
-    index: getDevPiStagingIndex(),
-    server: 'https://devpi.library.illinois.edu',
-    credentialsId: 'DS_devpi',
-]
+def DEVPI_CONFIG = getDevpiConfig()
 
 def sanitize_chocolatey_version(version){
     script{
@@ -49,6 +52,169 @@ def get_sonarqube_unresolved_issues(report_task_file){
     }
 }
 
+def get_mac_devpi_stages(packageName, packageVersion, devpiServer, devpiCredentials, stagingIndex, supportedPythonVersions){
+    def devpi
+     node('') {
+        checkout scm
+        devpi = load('ci/jenkins/scripts/devpi.groovy')
+     }
+    def macPackages = [:]
+    supportedPythonVersions.each{pythonVersion ->
+        macPackages["MacOS x86_64 - Python ${pythonVersion}: wheel"] = {
+            withEnv([
+                'PATH+EXTRA=./venv/bin'
+            ]) {
+                devpi.testDevpiPackage(
+                    agent: [
+                        label: "mac && python${pythonVersion} && x86 && devpi-access"
+                    ],
+                    devpi: [
+                        index: stagingIndex,
+                        server: devpiServer,
+                        credentialsId: devpiCredentials,
+                        devpiExec: 'venv/bin/devpi'
+                    ],
+                    package:[
+                        name: packageName,
+                        version: packageVersion,
+                        selector: "whl"
+                    ],
+                    test:[
+                        setup: {
+                            checkout scm
+                            sh(
+                                label: 'Installing Devpi client',
+                                script: '''python3 -m venv venv
+                                           . ./venv/bin/activate
+                                            python -m pip install pip --upgrade
+                                            python -m pip install devpi_client  -r requirements/requirements_tox.txt
+                                            '''
+                            )
+                        },
+                        toxEnv: "py${pythonVersion}".replace('.',''),
+                        teardown: {
+                            sh( label: 'Remove Devpi client', script: 'rm -r venv')
+                        }
+                    ]
+                )
+            }
+        }
+        macPackages["MacOS m1 - Python ${pythonVersion}: wheel"] = {
+            withEnv(['PATH+EXTRA=./venv/bin']) {
+                devpi.testDevpiPackage(
+                    agent: [
+                        label: "mac && python${pythonVersion} && m1 && devpi-access"
+                    ],
+                    devpi: [
+                        index: stagingIndex,
+                        server: devpiServer,
+                        credentialsId: devpiCredentials,
+                        devpiExec: 'venv/bin/devpi'
+                    ],
+                    package:[
+                        name: packageName,
+                        version: packageVersion,
+                        selector: 'whl'
+                    ],
+                    test:[
+                        setup: {
+                           checkout scm
+                           sh(
+                               label: 'Installing Devpi client',
+                               script: '''python3 -m venv venv
+                                          . ./venv/bin/activate
+                                           python -m pip install pip --upgrade
+                                           python -m pip install devpi_client  -r requirements/requirements_tox.txt
+                                           '''
+                           )
+                        },
+                        toxEnv: "py${pythonVersion}".replace('.',''),
+                        teardown: {
+                            sh( label: 'Remove Devpi client', script: 'rm -r venv')
+                        }
+                    ]
+                )
+            }
+        }
+        macPackages["MacOS x86_64 - Python ${pythonVersion}: sdist"]= {
+            withEnv([
+                'PATH+EXTRA=./venv/bin'
+
+            ]) {
+                devpi.testDevpiPackage(
+                    agent: [
+                        label: "mac && python${pythonVersion} && x86 && devpi-access"
+                    ],
+                    devpi: [
+                        index: stagingIndex,
+                        server: devpiServer,
+                        credentialsId: devpiCredentials,
+                        devpiExec: 'venv/bin/devpi'
+                    ],
+                    package:[
+                        name: packageName,
+                        version: packageVersion,
+                        selector: 'tar.gz'
+                    ],
+                    test:[
+                        setup: {
+                            checkout scm
+                            sh(
+                                label: 'Installing Devpi client',
+                                script: '''python3 -m venv venv
+                                            venv/bin/python -m pip install pip --upgrade
+                                            venv/bin/python -m pip install devpi_client -r requirements/requirements_tox.txt
+                                            '''
+                            )
+                        },
+                        toxEnv: "py${pythonVersion}".replace('.',''),
+                        teardown: {
+                            sh( label: 'Remove Devpi client', script: 'rm -r venv')
+                        }
+                    ]
+                )
+            }
+        }
+        macPackages["MacOS m1 - Python ${pythonVersion}: sdist"]= {
+            withEnv(['PATH+EXTRA=./venv/bin']) {
+                devpi.testDevpiPackage(
+                    agent: [
+                        label: "mac && python${pythonVersion} && m1 && devpi-access"
+                    ],
+                    devpi: [
+                        index: stagingIndex,
+                        server: devpiServer,
+                        credentialsId: devpiCredentials,
+                        devpiExec: 'venv/bin/devpi'
+                    ],
+                    package:[
+                        name: packageName,
+                        version: packageVersion,
+                        selector: 'tar.gz'
+                    ],
+                    test:[
+                        setup: {
+                            checkout scm
+                            sh(
+                                label:'Installing Devpi client',
+                                script: '''python3 -m venv venv
+                                            venv/bin/python -m pip install pip --upgrade
+                                            venv/bin/python -m pip install devpi_client -r requirements/requirements_tox.txt
+                                            '''
+                            )
+                        },
+                        toxEnv: "py${pythonVersion}".replace('.',''),
+                        teardown: {
+                            sh( label: 'Remove Devpi client', script: 'rm -r venv')
+                        }
+                    ]
+                )
+            }
+        }
+    }
+    return macPackages
+}
+
 def test_packages(){
     script{
         def packages
@@ -58,7 +224,6 @@ def test_packages(){
         }
         def linuxTestStages = [:]
         SUPPORTED_LINUX_VERSIONS.each{ pythonVersion ->
-
             linuxTestStages["Linux - Python ${pythonVersion}: wheel"] = {
                 packages.testPkg2(
                     agent: [
@@ -150,9 +315,10 @@ def test_packages(){
                         findFiles(glob: 'dist/*.whl').each{
                             sh(label: 'Running Tox',
                                script: """python${pythonVersion} -m venv venv
-                               ./venv/bin/python -m pip install --upgrade pip
-                               ./venv/bin/pip install tox
-                               ./venv/bin/tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}"""
+                               . ./venv/bin/activate
+                               python -m pip install --upgrade pip
+                               pip install devpi_client -r requirements/requirements_tox.txt
+                               tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}"""
                             )
                         }
 
@@ -188,9 +354,11 @@ def test_packages(){
                         findFiles(glob: 'dist/*.tar.gz').each{
                             sh(label: 'Running Tox',
                                script: """python${pythonVersion} -m venv venv
-                               ./venv/bin/python -m pip install --upgrade pip
-                               ./venv/bin/pip install tox
-                               ./venv/bin/tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}"""
+                                          . ./venv/bin/activate
+                                          python -m pip install --upgrade pip
+                                          pip install devpi_client -r requirements/requirements_tox.txt
+                                          tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}
+                                       """
                             )
                         }
 
@@ -372,345 +540,364 @@ pipeline {
     options {
         timeout(time: 1, unit: 'DAYS')
     }
-
     stages {
-        stage('Sphinx Documentation'){
-            agent{
-                dockerfile {
-                    filename 'ci/docker/python/linux/jenkins/Dockerfile'
-                    label 'linux && docker && x86'
-                    additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL'
+        stage('Building and Testing'){
+            when{
+                anyOf{
+                    equals expected: true, actual: params.RUN_CHECKS
+                    equals expected: true, actual: params.TEST_RUN_TOX
+                    equals expected: true, actual: params.DEPLOY_DEVPI
+                    equals expected: true, actual: params.DEPLOY_DOCS
                 }
             }
-            steps {
-                sh(
-                    label: 'Building docs',
-                    script: '''mkdir -p logs
-                               python -m sphinx docs build/docs/html -d build/docs/.doctrees -w logs/build_sphinx.log
-                               '''
-                )
-            }
-            post{
-                always {
-                    recordIssues(tools: [sphinxBuild(pattern: 'logs/build_sphinx.log')])
-                }
-                success{
-                    publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
-                    script{
-                        zip archive: true, dir: 'build/docs/html', glob: '', zipFile: "dist/${props.Name}-${props.Version}.doc.zip"
-                        stash includes: "dist/*.doc.zip,build/docs/html/**", name: 'DOCS_ARCHIVE'
-                    }
-
-                }
-                cleanup{
-                    cleanWs(
-                        patterns: [
-                            [pattern: 'logs/', type: 'INCLUDE'],
-                            [pattern: 'build/docs/', type: 'INCLUDE'],
-                            [pattern: 'dist/', type: 'INCLUDE']
-                        ],
-                        deleteDirs: true
-                    )
-                }
-            }
-        }
-        stage('Checks') {
             stages{
-                stage('Check Code') {
-                    when{
-                        equals expected: true, actual: params.RUN_CHECKS
-                    }
-                    agent {
+                stage('Sphinx Documentation'){
+                    agent{
                         dockerfile {
                             filename 'ci/docker/python/linux/jenkins/Dockerfile'
                             label 'linux && docker && x86'
                             additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL'
-                            args '--mount source=sonar-cache-uiucprescon-getmarc2,target=/opt/sonar/.sonar/cache'
                         }
                     }
-                    stages{
-                        stage('Configuring Testing Environment'){
-                            steps{
-                                sh(
-                                    label: 'Creating logging and report directories',
-                                    script: 'mkdir -p logs'
-                                )
-                            }
+                    when{
+                        anyOf{
+                            equals expected: true, actual: params.RUN_CHECKS
+                            equals expected: true, actual: params.DEPLOY_DEVPI
+                            equals expected: true, actual: params.DEPLOY_DOCS
                         }
-                        stage('Running Tests'){
-                            parallel {
-                                stage('PyTest'){
-                                    steps{
-                                        sh "coverage run --parallel-mode --source uiucprescon -m pytest --junitxml=reports/pytest/junit-pytest.xml "
-                                    }
-                                    post {
-                                        always {
-                                            junit 'reports/pytest/junit-pytest.xml'
-                                            stash includes: 'reports/pytest/*.xml', name: 'PYTEST_REPORT'
-                                        }
-                                    }
+                        beforeAgent true
+                    }
+                    steps {
+                        sh(
+                            label: 'Building docs',
+                            script: '''mkdir -p logs
+                                       python -m sphinx docs build/docs/html -d build/docs/.doctrees -w logs/build_sphinx.log
+                                    '''
+                        )
+                    }
+                    post{
+                        always {
+                            recordIssues(tools: [sphinxBuild(pattern: 'logs/build_sphinx.log')])
+                        }
+                        success{
+                            publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
+                            script{
+                                zip archive: true, dir: 'build/docs/html', glob: '', zipFile: "dist/${props.Name}-${props.Version}.doc.zip"
+                                stash includes: "dist/*.doc.zip,build/docs/html/**", name: 'DOCS_ARCHIVE'
+                            }
+
+                        }
+                        cleanup{
+                            cleanWs(
+                                patterns: [
+                                    [pattern: 'logs/', type: 'INCLUDE'],
+                                    [pattern: 'build/docs/', type: 'INCLUDE'],
+                                    [pattern: 'dist/', type: 'INCLUDE']
+                                ],
+                                deleteDirs: true
+                            )
+                        }
+                    }
+                }
+                stage('Checks') {
+                    stages{
+                        stage('Check Code') {
+                            when{
+                                equals expected: true, actual: params.RUN_CHECKS
+                            }
+                            agent {
+                                dockerfile {
+                                    filename 'ci/docker/python/linux/jenkins/Dockerfile'
+                                    label 'linux && docker && x86'
+                                    additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL'
+                                    args '--mount source=sonar-cache-uiucprescon-getmarc2,target=/opt/sonar/.sonar/cache'
                                 }
-                                stage('Doctest'){
-                                    steps {
+                            }
+                            stages{
+                                stage('Configuring Testing Environment'){
+                                    steps{
                                         sh(
-                                            label:'Running doctest',
-                                            script: '''mkdir -p reports/doctests
-                                                       coverage run --parallel-mode --source uiucprescon -m sphinx -b doctest -d build/docs/doctrees docs reports/doctest -w logs/doctest.log
-                                                       '''
+                                            label: 'Creating logging and report directories',
+                                            script: 'mkdir -p logs'
                                         )
                                     }
-                                    post{
-                                        always {
-                                            recordIssues(tools: [sphinxBuild(name: 'Sphinx Doctest', pattern: 'logs/doctest.log', id: 'doctest')])
-                                        }
-
-                                    }
                                 }
-                                stage('pyDocStyle'){
-                                    steps{
-                                        catchError(buildResult: 'SUCCESS', message: 'Did not pass all pyDocStyle tests', stageResult: 'UNSTABLE') {
-                                            sh(
-                                                label: 'Run pydocstyle',
-                                                script: '''mkdir -p reports
-                                                           pydocstyle uiucprescon > reports/pydocstyle-report.txt
-                                                           '''
-                                            )
-                                        }
-                                    }
-                                    post {
-                                        always{
-                                            recordIssues(tools: [pyDocStyle(pattern: 'reports/pydocstyle-report.txt')])
-                                        }
-                                    }
-                                }
-                                stage('Task Scanner'){
-                                    steps{
-                                        recordIssues(tools: [taskScanner(highTags: 'FIXME', includePattern: 'uiucprescon/**/*.py', normalTags: 'TODO')])
-                                    }
-                                }
-                                stage('MyPy') {
-                                    steps{
-                                        catchError(buildResult: 'SUCCESS', message: 'mypy found issues', stageResult: 'UNSTABLE') {
-                                            tee('logs/mypy.log'){
-                                                sh(
-                                                    label: 'Run mypy',
-                                                    script: '''mkdir -p reports/mypy/html
-                                                               mypy -p uiucprescon.getmarc2 --namespace-packages --html-report reports/mypy/html/
-                                                               '''
-                                                )
+                                stage('Running Tests'){
+                                    parallel {
+                                        stage('PyTest'){
+                                            steps{
+                                                sh "coverage run --parallel-mode --source uiucprescon -m pytest --junitxml=reports/pytest/junit-pytest.xml "
                                             }
-                                        }
-                                    }
-                                    post {
-                                        always {
-                                            recordIssues(tools: [myPy(name: 'MyPy', pattern: 'logs/mypy.log')])
-                                            publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
-                                        }
-                                    }
-                                }
-                                stage('Bandit') {
-                                    steps{
-                                        catchError(buildResult: 'SUCCESS', message: 'Bandit found issues', stageResult: 'UNSTABLE') {
-                                            sh(
-                                                label: 'Running bandit',
-                                                script: "bandit --format json --output reports/bandit-report.json --recursive uiucprescon || bandit -f html --recursive uiucprescon --output reports/bandit-report.html"
-                                            )
-                                        }
-                                    }
-                                    post {
-                                        unstable{
-                                            script{
-                                                if(fileExists('reports/bandit-report.html')){
-                                                    publishHTML([
-                                                        allowMissing: false,
-                                                        alwaysLinkToLastBuild: false,
-                                                        keepAll: false,
-                                                        reportDir: 'reports',
-                                                        reportFiles: 'bandit-report.html',
-                                                        reportName: 'Bandit Report', reportTitles: ''
-                                                        ])
+                                            post {
+                                                always {
+                                                    junit 'reports/pytest/junit-pytest.xml'
+                                                    stash includes: 'reports/pytest/*.xml', name: 'PYTEST_REPORT'
                                                 }
                                             }
                                         }
-                                        always {
-                                            stash includes: 'reports/bandit-report.json', name: 'BANDIT_REPORT'
-                                        }
-                                    }
-                                }
-                                stage('PyLint') {
-                                    steps{
-                                        catchError(buildResult: 'SUCCESS', message: 'Pylint found issues', stageResult: 'UNSTABLE') {
-                                            tee('reports/pylint.txt'){
+                                        stage('Doctest'){
+                                            steps {
                                                 sh(
-                                                    script: 'pylint uiucprescon --init-hook="import sys; sys.path.insert(0, '.')" -r n --persistent=n --verbose --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}"',
-                                                    label: 'Running pylint'
+                                                    label:'Running doctest',
+                                                    script: '''mkdir -p reports/doctests
+                                                               coverage run --parallel-mode --source uiucprescon -m sphinx -b doctest -d build/docs/doctrees docs reports/doctest -w logs/doctest.log
+                                                               '''
                                                 )
                                             }
+                                            post{
+                                                always {
+                                                    recordIssues(tools: [sphinxBuild(name: 'Sphinx Doctest', pattern: 'logs/doctest.log', id: 'doctest')])
+                                                }
+
+                                            }
                                         }
-                                        sh(
-                                            script: '''pylint uiucprescon --init-hook="import sys; sys.path.insert(0, '.')" -r n --persistent=n --msg-template="{path}:{module}:{line}: [{msg_id}({symbol}), {obj}] {msg}" > reports/pylint_issues.txt''',
-                                            label: 'Running pylint for sonarqube',
-                                            returnStatus: true
-                                        )
+                                        stage('pyDocStyle'){
+                                            steps{
+                                                catchError(buildResult: 'SUCCESS', message: 'Did not pass all pyDocStyle tests', stageResult: 'UNSTABLE') {
+                                                    sh(
+                                                        label: 'Run pydocstyle',
+                                                        script: '''mkdir -p reports
+                                                                   pydocstyle uiucprescon > reports/pydocstyle-report.txt
+                                                                   '''
+                                                    )
+                                                }
+                                            }
+                                            post {
+                                                always{
+                                                    recordIssues(tools: [pyDocStyle(pattern: 'reports/pydocstyle-report.txt')])
+                                                }
+                                            }
+                                        }
+                                        stage('Task Scanner'){
+                                            steps{
+                                                recordIssues(tools: [taskScanner(highTags: 'FIXME', includePattern: 'uiucprescon/**/*.py', normalTags: 'TODO')])
+                                            }
+                                        }
+                                        stage('MyPy') {
+                                            steps{
+                                                catchError(buildResult: 'SUCCESS', message: 'mypy found issues', stageResult: 'UNSTABLE') {
+                                                    tee('logs/mypy.log'){
+                                                        sh(
+                                                            label: 'Run mypy',
+                                                            script: '''mkdir -p reports/mypy/html
+                                                                       mypy -p uiucprescon.getmarc2 --namespace-packages --html-report reports/mypy/html/
+                                                                       '''
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                            post {
+                                                always {
+                                                    recordIssues(tools: [myPy(name: 'MyPy', pattern: 'logs/mypy.log')])
+                                                    publishHTML([allowMissing: false, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'reports/mypy/html/', reportFiles: 'index.html', reportName: 'MyPy HTML Report', reportTitles: ''])
+                                                }
+                                            }
+                                        }
+                                        stage('Bandit') {
+                                            steps{
+                                                catchError(buildResult: 'SUCCESS', message: 'Bandit found issues', stageResult: 'UNSTABLE') {
+                                                    sh(
+                                                        label: 'Running bandit',
+                                                        script: "bandit --format json --output reports/bandit-report.json --recursive uiucprescon || bandit -f html --recursive uiucprescon --output reports/bandit-report.html"
+                                                    )
+                                                }
+                                            }
+                                            post {
+                                                unstable{
+                                                    script{
+                                                        if(fileExists('reports/bandit-report.html')){
+                                                            publishHTML([
+                                                                allowMissing: false,
+                                                                alwaysLinkToLastBuild: false,
+                                                                keepAll: false,
+                                                                reportDir: 'reports',
+                                                                reportFiles: 'bandit-report.html',
+                                                                reportName: 'Bandit Report', reportTitles: ''
+                                                                ])
+                                                        }
+                                                    }
+                                                }
+                                                always {
+                                                    stash includes: 'reports/bandit-report.json', name: 'BANDIT_REPORT'
+                                                }
+                                            }
+                                        }
+                                        stage('PyLint') {
+                                            steps{
+                                                catchError(buildResult: 'SUCCESS', message: 'Pylint found issues', stageResult: 'UNSTABLE') {
+                                                    tee('reports/pylint.txt'){
+                                                        sh(
+                                                            script: 'pylint uiucprescon --init-hook="import sys; sys.path.insert(0, '.')" -r n --persistent=n --verbose --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}"',
+                                                            label: 'Running pylint'
+                                                        )
+                                                    }
+                                                }
+                                                sh(
+                                                    script: '''pylint uiucprescon --init-hook="import sys; sys.path.insert(0, '.')" -r n --persistent=n --msg-template="{path}:{module}:{line}: [{msg_id}({symbol}), {obj}] {msg}" > reports/pylint_issues.txt''',
+                                                    label: 'Running pylint for sonarqube',
+                                                    returnStatus: true
+                                                )
+                                            }
+                                            post{
+                                                always{
+                                                    stash includes: 'reports/pylint_issues.txt,reports/pylint.txt', name: 'PYLINT_REPORT'
+                                                    recordIssues(tools: [pyLint(pattern: 'reports/pylint.txt')])
+                                                }
+                                            }
+                                        }
+                                        stage('Flake8') {
+                                            steps{
+                                                catchError(buildResult: 'SUCCESS', message: 'Flake8 found issues', stageResult: 'UNSTABLE') {
+                                                    sh(label: 'Running Flake8',
+                                                       script: '''mkdir -p logs
+                                                                  flake8 uiucprescon --tee --output-file=logs/flake8.log
+                                                               '''
+                                                       )
+                                                }
+                                            }
+                                            post {
+                                                always {
+                                                    recordIssues(tools: [flake8(name: 'Flake8', pattern: 'logs/flake8.log')])
+                                                    stash includes: 'logs/flake8.log', name: 'FLAKE8_REPORT'
+                                                }
+                                            }
+                                        }
                                     }
                                     post{
                                         always{
-                                            stash includes: 'reports/pylint_issues.txt,reports/pylint.txt', name: 'PYLINT_REPORT'
-                                            recordIssues(tools: [pyLint(pattern: 'reports/pylint.txt')])
+                                            sh(
+                                                label: 'Combine Coverage data and generate a report',
+                                                script: '''mkdir -p reports/coverage
+                                                          coverage combine && coverage xml -o reports/coverage.xml
+                                                          '''
+                                            )
+                                            publishCoverage adapters: [
+                                                            coberturaAdapter('reports/coverage.xml')
+                                                            ],
+                                                        sourceFileResolver: sourceFiles('STORE_ALL_BUILD')
+                                            stash includes: 'reports/coverage.xml', name: 'COVERAGE_REPORT'
+                                        }
+                                        cleanup{
+                                            cleanWs(
+                                                deleteDirs: true,
+                                                patterns: [
+                                                    [pattern: 'dist/', type: 'INCLUDE'],
+                                                    [pattern: 'build/', type: 'INCLUDE'],
+                                                    [pattern: '.pytest_cache/', type: 'INCLUDE'],
+                                                    [pattern: '.mypy_cache/', type: 'INCLUDE'],
+                                                    [pattern: '.tox/', type: 'INCLUDE'],
+                                                    [pattern: 'uiucprescon1.stats', type: 'INCLUDE'],
+                                                    [pattern: 'uiucprescon.packager.egg-info/', type: 'INCLUDE'],
+                                                    [pattern: 'reports/', type: 'INCLUDE'],
+                                                    [pattern: 'logs/', type: 'INCLUDE']
+                                                    ]
+                                            )
                                         }
                                     }
                                 }
-                                stage('Flake8') {
+                                stage('Send to Sonarcloud for Analysis'){
+                                    options{
+                                        lock('uiucprescon.getmarc2-sonarscanner')
+                                    }
+                                    when{
+                                        equals expected: true, actual: params.USE_SONARQUBE
+                                        beforeAgent true
+                                        beforeOptions true
+                                    }
                                     steps{
-                                        catchError(buildResult: 'SUCCESS', message: 'Flake8 found issues', stageResult: 'UNSTABLE') {
-                                            sh(label: 'Running Flake8',
-                                               script: '''mkdir -p logs
-                                                          flake8 uiucprescon --tee --output-file=logs/flake8.log
-                                                       '''
-                                               )
+                                        unstash 'COVERAGE_REPORT'
+                                        unstash 'PYTEST_REPORT'
+                                        unstash 'BANDIT_REPORT'
+                                        unstash 'PYLINT_REPORT'
+                                        unstash 'FLAKE8_REPORT'
+                                        script{
+                                            withSonarQubeEnv(installationName:'sonarcloud', credentialsId: 'sonarcloud-uiucprescon.getmarc2') {
+                                                if (env.CHANGE_ID){
+                                                    sh(
+                                                        label: 'Running Sonar Scanner',
+                                                        script:"sonar-scanner -Dsonar.projectVersion=${props.Version} -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.pullrequest.key=${env.CHANGE_ID} -Dsonar.pullrequest.base=${env.CHANGE_TARGET}"
+                                                        )
+                                                } else {
+                                                    sh(
+                                                        label: 'Running Sonar Scanner',
+                                                        script: "sonar-scanner -Dsonar.projectVersion=${props.Version} -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.branch.name=${env.BRANCH_NAME}"
+                                                        )
+                                                }
+                                            }
+                                            timeout(time: 1, unit: 'HOURS') {
+                                                def sonarqube_result = waitForQualityGate(abortPipeline: false)
+                                                if (sonarqube_result.status != 'OK') {
+                                                    unstable "SonarQube quality gate: ${sonarqube_result.status}"
+                                                }
+                                                def outstandingIssues = get_sonarqube_unresolved_issues('.scannerwork/report-task.txt')
+                                                writeJSON file: 'reports/sonar-report.json', json: outstandingIssues
+                                            }
                                         }
                                     }
                                     post {
-                                        always {
-                                            recordIssues(tools: [flake8(name: 'Flake8', pattern: 'logs/flake8.log')])
-                                            stash includes: 'logs/flake8.log', name: 'FLAKE8_REPORT'
+                                        always{
+                                            script{
+                                                if(fileExists('reports/sonar-report.json')){
+                                                    stash includes: 'reports/sonar-report.json', name: 'SONAR_REPORT'
+                                                    archiveArtifacts allowEmptyArchive: true, artifacts: 'reports/sonar-report.json'
+                                                    recordIssues(tools: [sonarQube(pattern: 'reports/sonar-report.json')])
+                                                }
+                                            }
+                                        }
+                                        cleanup{
+                                            cleanWs(
+                                                deleteDirs: true,
+                                                patterns: [
+                                                    [pattern: 'reports/', type: 'INCLUDE'],
+                                                    [pattern: 'logs/', type: 'INCLUDE'],
+                                                    [pattern: 'uiucprescon.getmarc2.dist-info/', type: 'INCLUDE'],
+                                                    [pattern: '.scannerwork/', type: 'INCLUDE'],
+                                                ]
+                                            )
                                         }
                                     }
                                 }
                             }
                             post{
-                                always{
-                                    sh(
-                                        label: 'Combine Coverage data and generate a report',
-                                        script: '''mkdir -p reports/coverage
-                                                  coverage combine && coverage xml -o reports/coverage.xml
-                                                  '''
-                                    )
-                                    publishCoverage adapters: [
-                                                    coberturaAdapter('reports/coverage.xml')
-                                                    ],
-                                                sourceFileResolver: sourceFiles('STORE_ALL_BUILD')
-                                    stash includes: 'reports/coverage.xml', name: 'COVERAGE_REPORT'
-                                }
                                 cleanup{
                                     cleanWs(
                                         deleteDirs: true,
                                         patterns: [
-                                            [pattern: 'dist/', type: 'INCLUDE'],
-                                            [pattern: 'build/', type: 'INCLUDE'],
-                                            [pattern: '.pytest_cache/', type: 'INCLUDE'],
-                                            [pattern: '.mypy_cache/', type: 'INCLUDE'],
-                                            [pattern: '.tox/', type: 'INCLUDE'],
-                                            [pattern: 'uiucprescon1.stats', type: 'INCLUDE'],
-                                            [pattern: 'uiucprescon.packager.egg-info/', type: 'INCLUDE'],
-                                            [pattern: 'reports/', type: 'INCLUDE'],
-                                            [pattern: 'logs/', type: 'INCLUDE']
-                                            ]
-                                    )
+                                            [pattern: 'reports/coverage.xml', type: 'INCLUDE'],
+                                            [pattern: 'reports/coverage', type: 'INCLUDE'],
+                                        ])
                                 }
                             }
                         }
-                        stage('Send to Sonarcloud for Analysis'){
-                            options{
-                                lock('uiucprescon.getmarc2-sonarscanner')
-                            }
+                        stage('Tox') {
                             when{
-                                equals expected: true, actual: params.USE_SONARQUBE
-                                beforeAgent true
-                                beforeOptions true
+                                equals expected: true, actual: params.TEST_RUN_TOX
                             }
-                            steps{
-                                unstash 'COVERAGE_REPORT'
-                                unstash 'PYTEST_REPORT'
-                                unstash 'BANDIT_REPORT'
-                                unstash 'PYLINT_REPORT'
-                                unstash 'FLAKE8_REPORT'
-                                script{
-                                    withSonarQubeEnv(installationName:'sonarcloud', credentialsId: 'sonarcloud-uiucprescon.getmarc2') {
-                                        if (env.CHANGE_ID){
-                                            sh(
-                                                label: 'Running Sonar Scanner',
-                                                script:"sonar-scanner -Dsonar.projectVersion=${props.Version} -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.pullrequest.key=${env.CHANGE_ID} -Dsonar.pullrequest.base=${env.CHANGE_TARGET}"
-                                                )
-                                        } else {
-                                            sh(
-                                                label: 'Running Sonar Scanner',
-                                                script: "sonar-scanner -Dsonar.projectVersion=${props.Version} -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.branch.name=${env.BRANCH_NAME}"
-                                                )
-                                        }
-                                    }
-                                    timeout(time: 1, unit: 'HOURS') {
-                                        def sonarqube_result = waitForQualityGate(abortPipeline: false)
-                                        if (sonarqube_result.status != 'OK') {
-                                            unstable "SonarQube quality gate: ${sonarqube_result.status}"
-                                        }
-                                        def outstandingIssues = get_sonarqube_unresolved_issues('.scannerwork/report-task.txt')
-                                        writeJSON file: 'reports/sonar-report.json', json: outstandingIssues
-                                    }
-                                }
-                            }
-                            post {
-                                always{
-                                    script{
-                                        if(fileExists('reports/sonar-report.json')){
-                                            stash includes: 'reports/sonar-report.json', name: 'SONAR_REPORT'
-                                            archiveArtifacts allowEmptyArchive: true, artifacts: 'reports/sonar-report.json'
-                                            recordIssues(tools: [sonarQube(pattern: 'reports/sonar-report.json')])
+                            parallel{
+                                stage('Linux') {
+                                    steps {
+                                        script{
+                                            def tox
+                                            node(){
+                                                checkout scm
+                                                tox = load('ci/jenkins/scripts/tox.groovy')
+                                            }
+                                            def jobs = tox.getToxTestsParallel('Linux', 'linux && docker && x86', 'ci/docker/python/linux/tox/Dockerfile', '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL')
+                                            parallel(jobs)
                                         }
                                     }
                                 }
-                                cleanup{
-                                    cleanWs(
-                                        deleteDirs: true,
-                                        patterns: [
-                                            [pattern: 'reports/', type: 'INCLUDE'],
-                                            [pattern: 'logs/', type: 'INCLUDE'],
-                                            [pattern: 'uiucprescon.getmarc2.dist-info/', type: 'INCLUDE'],
-                                            [pattern: '.scannerwork/', type: 'INCLUDE'],
-                                        ]
-                                    )
-                                }
-                            }
-                        }
-                    }
-                    post{
-                        cleanup{
-                            cleanWs(
-                                deleteDirs: true,
-                                patterns: [
-                                    [pattern: 'reports/coverage.xml', type: 'INCLUDE'],
-                                    [pattern: 'reports/coverage', type: 'INCLUDE'],
-                                ])
-                        }
-                    }
-                }
-                stage('Tox') {
-                    when{
-                        equals expected: true, actual: params.TEST_RUN_TOX
-                    }
-                    parallel{
-                        stage('Linux') {
-                            steps {
-                                script{
-                                    def tox
-                                    node(){
-                                        checkout scm
-                                        tox = load('ci/jenkins/scripts/tox.groovy')
+                                stage('Windows') {
+                                    steps {
+                                        script{
+                                            def tox
+                                            node(){
+                                                checkout scm
+                                                tox = load('ci/jenkins/scripts/tox.groovy')
+                                            }
+                                            parallel(tox.getToxTestsParallel('Windows', 'windows && docker && x86', 'ci/docker/python/windows/tox/Dockerfile', '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE'))
+                                        }
                                     }
-                                    def jobs = tox.getToxTestsParallel('Linux', 'linux && docker && x86', 'ci/docker/python/linux/tox/Dockerfile', '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL')
-                                    parallel(jobs)
-                                }
-                            }
-                        }
-                        stage('Windows') {
-                            steps {
-                                script{
-                                    def tox
-                                    node(){
-                                        checkout scm
-                                        tox = load('ci/jenkins/scripts/tox.groovy')
-                                    }
-                                    parallel(tox.getToxTestsParallel('Windows', 'windows && docker && x86', 'ci/docker/python/windows/tox/Dockerfile', '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE'))
                                 }
                             }
                         }
@@ -767,246 +954,6 @@ pipeline {
                     }
                     steps{
                         test_packages()
-//                         script{
-//                             def packages
-//                             node(){
-//                                 checkout scm
-//                                 packages = load 'ci/jenkins/scripts/packaging.groovy'
-//                             }
-//                             def linuxTestStages = [:]
-//                             SUPPORTED_LINUX_VERSIONS.each{ pythonVersion ->
-//
-//                                 linuxTestStages["Linux - Python ${pythonVersion}: wheel"] = {
-//                                     packages.testPkg2(
-//                                         agent: [
-//                                             dockerfile: [
-//                                                 label: 'linux && docker && x86',
-//                                                 filename: 'ci/docker/python/linux/tox/Dockerfile',
-//                                                 additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
-//                                             ]
-//                                         ],
-//                                         testSetup: {
-//                                             checkout scm
-//                                             unstash 'PYTHON_PACKAGES'
-//                                         },
-//                                         testCommand: {
-//                                             findFiles(glob: 'dist/*.whl').each{
-//                                                 timeout(5){
-//                                                     sh(
-//                                                         label: 'Running Tox',
-//                                                         script: "tox --installpkg ${it.path} --workdir /tmp/tox -e py${pythonVersion.replace('.', '')}"
-//                                                         )
-//                                                 }
-//                                             }
-//                                         },
-//                                         post:[
-//                                             cleanup: {
-//                                                 cleanWs(
-//                                                     patterns: [
-//                                                             [pattern: 'dist/', type: 'INCLUDE'],
-//                                                             [pattern: '**/__pycache__/', type: 'INCLUDE'],
-//                                                         ],
-//                                                     notFailBuild: true,
-//                                                     deleteDirs: true
-//                                                 )
-//                                             },
-//                                             success: {
-//                                                 archiveArtifacts artifacts: 'dist/*.whl'
-//                                             },
-//                                         ]
-//                                     )
-//                                 }
-//                                 linuxTestStages["Linux - Python ${pythonVersion}: sdist"] = {
-//                                     packages.testPkg2(
-//                                         agent: [
-//                                             dockerfile: [
-//                                                 label: 'linux && docker && x86',
-//                                                 filename: 'ci/docker/python/linux/tox/Dockerfile',
-//                                                 additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
-//                                             ]
-//                                         ],
-//                                         testSetup: {
-//                                             checkout scm
-//                                             unstash 'PYTHON_PACKAGES'
-//                                         },
-//                                         testCommand: {
-//                                             findFiles(glob: 'dist/*.tar.gz').each{
-//                                                 sh(
-//                                                     label: 'Running Tox',
-//                                                     script: "tox --installpkg ${it.path} --workdir /tmp/tox -e py${pythonVersion.replace('.', '')}"
-//                                                     )
-//                                             }
-//                                         },
-//                                         post:[
-//                                             cleanup: {
-//                                                 cleanWs(
-//                                                     patterns: [
-//                                                             [pattern: 'dist/', type: 'INCLUDE'],
-//                                                             [pattern: '**/__pycache__/', type: 'INCLUDE'],
-//                                                         ],
-//                                                     notFailBuild: true,
-//                                                     deleteDirs: true
-//                                                 )
-//                                             },
-//                                         ]
-//                                     )
-//                                 }
-//                             }
-//                             def macTestStages = [:]
-//                             SUPPORTED_MAC_VERSIONS.each{ pythonVersion ->
-//                                 macTestStages["MacOS - Python ${pythonVersion}: wheel"] = {
-//                                     packages.testPkg2(
-//                                         agent: [
-//                                             label: "mac && python${pythonVersion}",
-//                                         ],
-//                                         testSetup: {
-//                                             checkout scm
-//                                             unstash 'PYTHON_PACKAGES'
-//                                         },
-//                                         testCommand: {
-//                                             findFiles(glob: 'dist/*.whl').each{
-//                                                 sh(label: 'Running Tox',
-//                                                    script: """python${pythonVersion} -m venv venv
-//                                                    ./venv/bin/python -m pip install --upgrade pip
-//                                                    ./venv/bin/pip install tox
-//                                                    ./venv/bin/tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}"""
-//                                                 )
-//                                             }
-//
-//                                         },
-//                                         post:[
-//                                             cleanup: {
-//                                                 cleanWs(
-//                                                     patterns: [
-//                                                             [pattern: 'dist/', type: 'INCLUDE'],
-//                                                             [pattern: 'venv/', type: 'INCLUDE'],
-//                                                             [pattern: '.tox/', type: 'INCLUDE'],
-//                                                         ],
-//                                                     notFailBuild: true,
-//                                                     deleteDirs: true
-//                                                 )
-//                                             },
-//                                             success: {
-//                                                  archiveArtifacts artifacts: 'dist/*.whl'
-//                                             }
-//                                         ]
-//                                     )
-//                                 }
-//                                 macTestStages["MacOS - Python ${pythonVersion}: sdist"] = {
-//                                     packages.testPkg2(
-//                                         agent: [
-//                                             label: "mac && python${pythonVersion}",
-//                                         ],
-//                                         testSetup: {
-//                                             checkout scm
-//                                             unstash 'PYTHON_PACKAGES'
-//                                         },
-//                                         testCommand: {
-//                                             findFiles(glob: 'dist/*.tar.gz').each{
-//                                                 sh(label: 'Running Tox',
-//                                                    script: """python${pythonVersion} -m venv venv
-//                                                    ./venv/bin/python -m pip install --upgrade pip
-//                                                    ./venv/bin/pip install tox
-//                                                    ./venv/bin/tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}"""
-//                                                 )
-//                                             }
-//
-//                                         },
-//                                         post:[
-//                                             cleanup: {
-//                                                 cleanWs(
-//                                                     patterns: [
-//                                                             [pattern: 'dist/', type: 'INCLUDE'],
-//                                                             [pattern: 'venv/', type: 'INCLUDE'],
-//                                                             [pattern: '.tox/', type: 'INCLUDE'],
-//                                                         ],
-//                                                     notFailBuild: true,
-//                                                     deleteDirs: true
-//                                                 )
-//                                             },
-//                                         ]
-//                                     )
-//                                 }
-//                             }
-//                             def windowsTestStages = [:]
-//                             SUPPORTED_WINDOWS_VERSIONS.each{ pythonVersion ->
-//                                 windowsTestStages["Windows - Python ${pythonVersion}: wheel"] = {
-//                                     packages.testPkg2(
-//                                         agent: [
-//                                             dockerfile: [
-//                                                 label: 'windows && docker && x86',
-//                                                 filename: 'ci/docker/python/windows/tox/Dockerfile',
-//                                                 additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE'
-//                                             ]
-//                                         ],
-//                                         dockerImageName: "${currentBuild.fullProjectName}_test".replaceAll('-', '_').replaceAll('/', '_').replaceAll(' ', '').toLowerCase(),
-//                                         testSetup: {
-//                                              checkout scm
-//                                              unstash 'PYTHON_PACKAGES'
-//                                         },
-//                                         testCommand: {
-//                                              findFiles(glob: 'dist/*.whl').each{
-//                                                  powershell(label: 'Running Tox', script: "tox --installpkg ${it.path} --workdir \$env:TEMP\\tox  -e py${pythonVersion.replace('.', '')}")
-//                                              }
-//
-//                                         },
-//                                         post:[
-//                                             cleanup: {
-//                                                 cleanWs(
-//                                                     patterns: [
-//                                                             [pattern: 'dist/', type: 'INCLUDE'],
-//                                                             [pattern: '**/__pycache__/', type: 'INCLUDE'],
-//                                                         ],
-//                                                     notFailBuild: true,
-//                                                     deleteDirs: true
-//                                                 )
-//                                             },
-//                                             success: {
-//                                                 archiveArtifacts artifacts: 'dist/*.whl'
-//                                             }
-//                                         ]
-//                                     )
-//                                 }
-//                                 windowsTestStages["Windows - Python ${pythonVersion}: sdist"] = {
-//                                     packages.testPkg2(
-//                                         agent: [
-//                                             dockerfile: [
-//                                                 label: 'windows && docker && x86',
-//                                                 filename: 'ci/docker/python/windows/tox/Dockerfile',
-//                                                 additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE'
-//                                             ]
-//                                         ],
-//                                         dockerImageName: "${currentBuild.fullProjectName}_test".replaceAll('-', '_').replaceAll('/', '_').replaceAll(' ', '').toLowerCase(),
-//                                         testSetup: {
-//                                             checkout scm
-//                                             unstash 'PYTHON_PACKAGES'
-//                                         },
-//                                         testCommand: {
-//                                             findFiles(glob: 'dist/*.tar.gz').each{
-//                                                 bat(label: 'Running Tox', script: "tox --workdir %TEMP%\\tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')} -v")
-//                                             }
-//                                         },
-//                                         post:[
-//                                             cleanup: {
-//                                                 cleanWs(
-//                                                     patterns: [
-//                                                             [pattern: 'dist/', type: 'INCLUDE'],
-//                                                             [pattern: '**/__pycache__/', type: 'INCLUDE'],
-//                                                         ],
-//                                                     notFailBuild: true,
-//                                                     deleteDirs: true
-//                                                 )
-//                                             },
-//                                         ]
-//                                     )
-//                                 }
-//                             }
-//                             def testingStages = windowsTestStages + linuxTestStages
-//                             if(params.TEST_PACKAGES_ON_MAC == true){
-//                                 testingStages = testingStages + macTestStages
-//                             }
-//                             parallel(testingStages)
-//                         }
                     }
                 }
                 stage('Chocolatey'){
@@ -1131,9 +1078,9 @@ pipeline {
                                 script{
                                     def devpi = load('ci/jenkins/scripts/devpi.groovy')
                                     devpi.upload(
-                                        server: 'https://devpi.library.illinois.edu',
-                                        credentialsId: 'DS_devpi',
-                                        index: getDevPiStagingIndex(),
+                                        server: DEVPI_CONFIG.server,
+                                        credentialsId: DEVPI_CONFIG.credentialsId,
+                                        index: DEVPI_CONFIG.stagingIndex,
                                         clientDir: './devpi'
                                     )
                                 }
@@ -1147,79 +1094,7 @@ pipeline {
                                         checkout scm
                                         devpi = load('ci/jenkins/scripts/devpi.groovy')
                                     }
-                                    def macPackages = [:]
-                                    SUPPORTED_MAC_VERSIONS.each{pythonVersion ->
-                                        macPackages["Test Python ${pythonVersion}: wheel Mac"] = {
-                                            withEnv(['PATH+EXTRA=./venv/bin']) {
-                                                devpi.testDevpiPackage(
-                                                    agent: [
-                                                        label: "mac && python${pythonVersion} && x86 && devpi-access"
-                                                    ],
-                                                    devpi: [
-                                                        index: DEVPI_CONFIG.index,
-                                                        server: DEVPI_CONFIG.server,
-                                                        credentialsId: DEVPI_CONFIG.credentialsId,
-                                                        devpiExec: 'venv/bin/devpi'
-                                                    ],
-                                                    package:[
-                                                        name: props.Name,
-                                                        version: props.Version,
-                                                        selector: 'whl'
-                                                    ],
-                                                    test:[
-                                                        setup: {
-                                                            sh(
-                                                                label:'Installing Devpi client',
-                                                                script: '''python3 -m venv venv
-                                                                            venv/bin/python -m pip install pip --upgrade
-                                                                            venv/bin/python -m pip install devpi_client tox
-                                                                            '''
-                                                            )
-                                                        },
-                                                        toxEnv: "py${pythonVersion}".replace('.',''),
-                                                        teardown: {
-                                                            sh( label: 'Remove Devpi client', script: 'rm -r venv')
-                                                        }
-                                                    ]
-                                                )
-                                            }
-                                        }
-                                        macPackages["Test Python ${pythonVersion}: sdist Mac"]= {
-                                            withEnv(['PATH+EXTRA=./venv/bin']) {
-                                                devpi.testDevpiPackage(
-                                                    agent: [
-                                                        label: "mac && python${pythonVersion} && x86 && devpi-access"
-                                                    ],
-                                                    devpi: [
-                                                        index: DEVPI_CONFIG.index,
-                                                        server: DEVPI_CONFIG.server,
-                                                        credentialsId: DEVPI_CONFIG.credentialsId,
-                                                        devpiExec: 'venv/bin/devpi'
-                                                    ],
-                                                    package:[
-                                                        name: props.Name,
-                                                        version: props.Version,
-                                                        selector: 'tar.gz'
-                                                    ],
-                                                    test:[
-                                                        setup: {
-                                                            sh(
-                                                                label:'Installing Devpi client',
-                                                                script: '''python3 -m venv venv
-                                                                            venv/bin/python -m pip install pip --upgrade
-                                                                            venv/bin/python -m pip install devpi_client tox
-                                                                            '''
-                                                            )
-                                                        },
-                                                        toxEnv: "py${pythonVersion}".replace('.',''),
-                                                        teardown: {
-                                                            sh( label: 'Remove Devpi client', script: 'rm -r venv')
-                                                        }
-                                                    ]
-                                                )
-                                            }
-                                        }
-                                    }
+                                    def macPackages = get_mac_devpi_stages(props.Name, props.Version, DEVPI_CONFIG.server, DEVPI_CONFIG.credentialsId, DEVPI_CONFIG.stagingIndex, SUPPORTED_MAC_VERSIONS)
                                     linuxPackages = [:]
                                     SUPPORTED_LINUX_VERSIONS.each{pythonVersion ->
                                         linuxPackages["Test Python ${pythonVersion}: sdist Linux"] = {
@@ -1232,7 +1107,11 @@ pipeline {
                                                     ]
                                                 ],
                                                 retryTimes: 3,
-                                                devpi: DEVPI_CONFIG,
+                                                devpi: [
+                                                    index: DEVPI_CONFIG.stagingIndex,
+                                                    server: DEVPI_CONFIG.server,
+                                                    credentialsId: DEVPI_CONFIG.credentialsId,
+                                                ],
                                                 package:[
                                                     name: props.Name,
                                                     version: props.Version,
@@ -1253,7 +1132,11 @@ pipeline {
                                                     ]
                                                 ],
                                                 retryTimes: 3,
-                                                devpi: DEVPI_CONFIG,
+                                                devpi: [
+                                                    index: DEVPI_CONFIG.stagingIndex,
+                                                    server: DEVPI_CONFIG.server,
+                                                    credentialsId: DEVPI_CONFIG.credentialsId,
+                                                ],
                                                 package:[
                                                     name: props.Name,
                                                     version: props.Version,
@@ -1277,7 +1160,11 @@ pipeline {
                                                     ]
                                                 ],
                                                 retryTimes: 3,
-                                                devpi: DEVPI_CONFIG,
+                                                devpi: [
+                                                    index: DEVPI_CONFIG.stagingIndex,
+                                                    server: DEVPI_CONFIG.server,
+                                                    credentialsId: DEVPI_CONFIG.credentialsId,
+                                                ],
                                                 package:[
                                                     name: props.Name,
                                                     version: props.Version,
@@ -1301,7 +1188,11 @@ pipeline {
                                                     ]
                                                 ],
                                                 retryTimes: 3,
-                                                devpi: DEVPI_CONFIG,
+                                                devpi: [
+                                                    index: DEVPI_CONFIG.stagingIndex,
+                                                    server: DEVPI_CONFIG.server,
+                                                    credentialsId: DEVPI_CONFIG.credentialsId,
+                                                ],
                                                 package:[
                                                     name: props.Name,
                                                     version: props.Version,
@@ -1349,10 +1240,10 @@ pipeline {
                                     load('ci/jenkins/scripts/devpi.groovy').pushPackageToIndex(
                                         pkgName: props.Name,
                                         pkgVersion: props.Version,
-                                        server: 'https://devpi.library.illinois.edu',
-                                        indexSource: "DS_Jenkins/${getDevPiStagingIndex()}",
+                                        server: DEVPI_CONFIG.server,
+                                        indexSource: DEVPI_CONFIG.stagingIndex,
                                         indexDestination: 'production/release',
-                                        credentialsId: 'DS_devpi'
+                                        credentialsId: DEVPI_CONFIG.credentialsId
                                     )
                                 }
                             }
@@ -1369,10 +1260,10 @@ pipeline {
                                             devpi.pushPackageToIndex(
                                                 pkgName: props.Name,
                                                 pkgVersion: props.Version,
-                                                server: 'https://devpi.library.illinois.edu',
-                                                indexSource: "DS_Jenkins/${getDevPiStagingIndex()}",
+                                                server: DEVPI_CONFIG.server,
+                                                indexSource: DEVPI_CONFIG.stagingIndex,
                                                 indexDestination: "DS_Jenkins/${env.BRANCH_NAME}",
-                                                credentialsId: 'DS_devpi'
+                                                credentialsId: DEVPI_CONFIG.credentialsId
                                             )
                                         }
                                     }
@@ -1388,9 +1279,9 @@ pipeline {
                                         devpi.removePackage(
                                             pkgName: props.Name,
                                             pkgVersion: props.Version,
-                                            index: "DS_Jenkins/${getDevPiStagingIndex()}",
-                                            server: 'https://devpi.library.illinois.edu',
-                                            credentialsId: 'DS_devpi',
+                                            index: DEVPI_CONFIG.stagingIndex,
+                                            server: DEVPI_CONFIG.server,
+                                            credentialsId: DEVPI_CONFIG.credentialsId,
 
                                         )
                                     }

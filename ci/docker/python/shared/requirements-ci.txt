@@ -11,5 +11,5 @@ pytest
 pytest-runner
 types-requests
 sphinx
-tox
+-r requirements/requirements_tox.txt
 lxml
