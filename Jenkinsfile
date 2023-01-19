@@ -877,11 +877,13 @@ pipeline {
                                 stage('Linux') {
                                     steps {
                                         script{
-                                            def tox
-                                            node(){
-                                                checkout scm
-                                                tox = load('ci/jenkins/scripts/tox.groovy')
-                                            }
+                                            def tox = fileLoader.fromGit(
+                                                'tox',
+                                                'https://github.com/UIUCLibrary/jenkins_helper_scripts.git',
+                                                '4',
+                                                null,
+                                                ''
+                                            )
                                             def jobs = tox.getToxTestsParallel(
                                                                             envNamePrefix: 'Tox Linux',
                                                                             label: 'linux && docker',
@@ -896,11 +898,13 @@ pipeline {
                                 stage('Windows') {
                                     steps {
                                         script{
-                                            def tox
-                                            node(){
-                                                checkout scm
-                                                tox = load('ci/jenkins/scripts/tox.groovy')
-                                            }
+                                            def tox = fileLoader.fromGit(
+                                                'tox',
+                                                'https://github.com/UIUCLibrary/jenkins_helper_scripts.git',
+                                                '4',
+                                                null,
+                                                ''
+                                            )
                                              parallel(
                                                 tox.getToxTestsParallel(
                                                     envNamePrefix: 'Tox Windows',
