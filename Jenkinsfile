@@ -882,7 +882,13 @@ pipeline {
                                                 checkout scm
                                                 tox = load('ci/jenkins/scripts/tox.groovy')
                                             }
-                                            def jobs = tox.getToxTestsParallel('Linux', 'linux && docker && x86', 'ci/docker/python/linux/tox/Dockerfile', '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL')
+                                            def jobs = tox.getToxTestsParallel(
+                                                                            envNamePrefix: 'Tox Linux',
+                                                                            label: 'linux && docker',
+                                                                            dockerfile: 'ci/docker/python/linux/tox/Dockerfile',
+                                                                            dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL',
+                                                                            dockerRunArgs: "-v pipcache_uiucprescon_getmarc2:/.cache/pip"
+                                                                        )
                                             parallel(jobs)
                                         }
                                     }
@@ -895,7 +901,15 @@ pipeline {
                                                 checkout scm
                                                 tox = load('ci/jenkins/scripts/tox.groovy')
                                             }
-                                            parallel(tox.getToxTestsParallel('Windows', 'windows && docker && x86', 'ci/docker/python/windows/tox/Dockerfile', '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE'))
+                                             parallel(
+                                                tox.getToxTestsParallel(
+                                                    envNamePrefix: 'Tox Windows',
+                                                    label: 'windows && docker && x86',
+                                                    dockerfile: 'ci/docker/python/windows/tox/Dockerfile',
+                                                    dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE',
+                                                    dockerRunArgs: "-v pipcache_uiucprescon_getmarc2:c:/users/containeradministrator/appdata/local/pip"
+                                                )
+                                            )
                                         }
                                     }
                                 }
