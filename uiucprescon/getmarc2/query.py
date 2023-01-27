@@ -10,7 +10,7 @@ class AbsAlmaQueryIdentityStrategy(abc.ABC):
     def make_query_fragment(self, identifier) -> str:
         """Generate the query string for a given identity type."""
 
-    def is_valid_identifier(self, identifier) -> bool:  # pylint: disable=R0201
+    def is_valid_identifier(self, identifier) -> bool:
         """Validate the formatting of an identifier."""
         if identifier is None:
             return False
