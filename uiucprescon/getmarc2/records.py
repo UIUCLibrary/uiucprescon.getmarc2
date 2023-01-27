@@ -113,9 +113,7 @@ class RecordServer:
         }.get(identifier_type)
 
         if id_strategy is None:
-            raise AttributeError(
-                "Unknown identifier type, {}".format(identifier_type)
-            )
+            raise AttributeError(f"Unknown identifier type, {identifier_type}")
 
         url = self.build_request_url(identifier, id_strategy)
         response = requests.request("GET", url)
@@ -200,7 +198,7 @@ class RecordServer:
             return int(xml.attrib['total_record_count'])
         except etree.XMLSyntaxError as error:
             raise ValueError(
-                "Unable to parse data. Reason {}".format(error)
+                f"Unable to parse data. Reason {error}"
             ) from error
 
 
