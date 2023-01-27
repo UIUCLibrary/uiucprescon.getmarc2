@@ -13,6 +13,26 @@ from . import query
 from .query import AbsAlmaQueryIdentityStrategy
 
 
+class NoRecordsFound(ValueError):
+    """NoRecordsFound is when no records were located."""
+
+    def __init__(
+            self,
+            response: requests.Response,
+            message="No record found"
+    ) -> None:
+        """Create a new NoRecordsFound exception."""
+        self.message = message
+        self._response = response
+        self.record_identifier: Optional[str] = None
+        self.identifier_type: Optional[str] = None
+        super().__init__(message)
+
+    def get_response(self):
+        """Get the request response used."""
+        return self._response
+
+
 class ValidationException(Exception):
     """Raises if validation check fails."""
 
@@ -107,7 +127,7 @@ class RecordServer:
         request_data = response.text.encode("utf-8")
         record_count = self.parse_record_count(request_data)
         if record_count == 0:
-            raise ValueError("No record found")
+            raise NoRecordsFound(response)
         my_record = self._process_record(request_data)
         return self.add_record_decorations(record_data=my_record)
 

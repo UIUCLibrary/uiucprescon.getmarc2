@@ -118,7 +118,26 @@ def test_get_record_count_zero():
     number = records.RecordServer.parse_record_count(test_data)
     assert number == 0
 
+
 def test_record_server_get_record_invalid_raises():
     server = records.RecordServer("dummy", "dummy")
     with pytest.raises(AttributeError):
         server.get_record("eggs", "spam")
+
+
+def test_no_record_in_get_record_raise_exception(monkeypatch):
+    server = records.RecordServer("dummy", "dummy")
+    monkeypatch.setattr(
+        records.requests,
+        "request",
+        lambda *_, **__:Mock(status_code=200)
+    )
+
+    monkeypatch.setattr(
+        records.RecordServer,
+        "parse_record_count",
+        lambda *_, **__: 0
+    )
+
+    with pytest.raises(records.NoRecordsFound):
+        server.get_record('someinvalidrecord', "mmsid")
