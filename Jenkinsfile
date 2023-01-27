@@ -224,80 +224,86 @@ def test_packages(){
         }
         def linuxTestStages = [:]
         SUPPORTED_LINUX_VERSIONS.each{ pythonVersion ->
-            linuxTestStages["Linux - Python ${pythonVersion}: wheel"] = {
-                packages.testPkg2(
-                    agent: [
-                        dockerfile: [
-                            label: 'linux && docker && x86',
-                            filename: 'ci/docker/python/linux/tox/Dockerfile',
-                            additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
+            def architectures = ['x86']
+            if(params.INCLUDE_ARM_LINUX == true){
+                architectures.add("arm64")
+            }
+            architectures.each{ processorArchitecture ->
+                linuxTestStages["Linux-${processorArchitecture} - Python ${pythonVersion}: wheel"] = {
+                    packages.testPkg2(
+                        agent: [
+                            dockerfile: [
+                                label: "linux && docker && ${processorArchitecture}",
+                                filename: 'ci/docker/python/linux/tox/Dockerfile',
+                                additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
+                            ]
+                        ],
+                        testSetup: {
+                            checkout scm
+                            unstash 'PYTHON_PACKAGES'
+                        },
+                        testCommand: {
+                            findFiles(glob: 'dist/*.whl').each{
+                                timeout(5){
+                                    sh(
+                                        label: 'Running Tox',
+                                        script: "tox --installpkg ${it.path} --workdir /tmp/tox -e py${pythonVersion.replace('.', '')}"
+                                        )
+                                }
+                            }
+                        },
+                        post:[
+                            cleanup: {
+                                cleanWs(
+                                    patterns: [
+                                            [pattern: 'dist/', type: 'INCLUDE'],
+                                            [pattern: '**/__pycache__/', type: 'INCLUDE'],
+                                        ],
+                                    notFailBuild: true,
+                                    deleteDirs: true
+                                )
+                            },
+                            success: {
+                                archiveArtifacts artifacts: 'dist/*.whl'
+                            },
                         ]
-                    ],
-                    testSetup: {
-                        checkout scm
-                        unstash 'PYTHON_PACKAGES'
-                    },
-                    testCommand: {
-                        findFiles(glob: 'dist/*.whl').each{
-                            timeout(5){
+                    )
+                }
+                linuxTestStages["Linux-${processorArchitecture} - Python ${pythonVersion}: sdist"] = {
+                    packages.testPkg2(
+                        agent: [
+                            dockerfile: [
+                                label: "linux && docker && ${processorArchitecture}",
+                                filename: 'ci/docker/python/linux/tox/Dockerfile',
+                                additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
+                            ]
+                        ],
+                        testSetup: {
+                            checkout scm
+                            unstash 'PYTHON_PACKAGES'
+                        },
+                        testCommand: {
+                            findFiles(glob: 'dist/*.tar.gz').each{
                                 sh(
                                     label: 'Running Tox',
                                     script: "tox --installpkg ${it.path} --workdir /tmp/tox -e py${pythonVersion.replace('.', '')}"
                                     )
                             }
-                        }
-                    },
-                    post:[
-                        cleanup: {
-                            cleanWs(
-                                patterns: [
-                                        [pattern: 'dist/', type: 'INCLUDE'],
-                                        [pattern: '**/__pycache__/', type: 'INCLUDE'],
-                                    ],
-                                notFailBuild: true,
-                                deleteDirs: true
-                            )
                         },
-                        success: {
-                            archiveArtifacts artifacts: 'dist/*.whl'
-                        },
-                    ]
-                )
-            }
-            linuxTestStages["Linux - Python ${pythonVersion}: sdist"] = {
-                packages.testPkg2(
-                    agent: [
-                        dockerfile: [
-                            label: 'linux && docker && x86',
-                            filename: 'ci/docker/python/linux/tox/Dockerfile',
-                            additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
-                        ]
-                    ],
-                    testSetup: {
-                        checkout scm
-                        unstash 'PYTHON_PACKAGES'
-                    },
-                    testCommand: {
-                        findFiles(glob: 'dist/*.tar.gz').each{
-                            sh(
-                                label: 'Running Tox',
-                                script: "tox --installpkg ${it.path} --workdir /tmp/tox -e py${pythonVersion.replace('.', '')}"
+                        post:[
+                            cleanup: {
+                                cleanWs(
+                                    patterns: [
+                                            [pattern: 'dist/', type: 'INCLUDE'],
+                                            [pattern: '**/__pycache__/', type: 'INCLUDE'],
+                                        ],
+                                    notFailBuild: true,
+                                    deleteDirs: true
                                 )
-                        }
-                    },
-                    post:[
-                        cleanup: {
-                            cleanWs(
-                                patterns: [
-                                        [pattern: 'dist/', type: 'INCLUDE'],
-                                        [pattern: '**/__pycache__/', type: 'INCLUDE'],
-                                    ],
-                                notFailBuild: true,
-                                deleteDirs: true
-                            )
-                        },
-                    ]
-                )
+                            },
+                        ]
+                    )
+                }
             }
         }
         def macTestStages = [:]
@@ -538,6 +544,7 @@ pipeline {
         booleanParam(name: 'TEST_PACKAGES', defaultValue: true, description: 'Test Python packages by installing them and running tests on the installed package')
         booleanParam(name: 'INCLUDE_ARM_MACOS', defaultValue: false, description: 'Include ARM(m1) architecture for Mac')
         booleanParam(name: 'INCLUDE_X86_64_MACOS', defaultValue: false, description: 'Include x86_64 architecture for Mac')
+        booleanParam(name: 'INCLUDE_ARM_LINUX', defaultValue: false, description: 'Include ARM architecture for Linux')
         booleanParam(name: 'DEPLOY_DEVPI', defaultValue: false, description: "Deploy to devpi on http://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
         booleanParam(name: 'DEPLOY_DEVPI_PRODUCTION', defaultValue: false, description: "Deploy to production devpi on https://devpi.library.illinois.edu/production/release. Master branch Only")
         booleanParam(name: 'DEPLOY_CHOCOLATEY', defaultValue: false, description: 'Deploy to Chocolatey repository')
