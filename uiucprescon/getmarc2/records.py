@@ -227,7 +227,7 @@ def is_validate_xml(data: str) -> bool:
     """
     validation_file = files("uiucprescon.getmarc2").joinpath("MARC21slim.xsd")
     schema_root = etree.XML(
-        validation_file.read_text()
+        validation_file.read_text(encoding="utf-8")
     )
 
     schema = etree.XMLSchema(schema_root)
