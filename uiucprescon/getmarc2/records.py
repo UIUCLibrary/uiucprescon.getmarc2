@@ -116,7 +116,7 @@ class RecordServer:
             raise AttributeError(f"Unknown identifier type, {identifier_type}")
 
         url = self.build_request_url(identifier, id_strategy)
-        response = requests.request("GET", url)
+        response = requests.request("GET", url, timeout=30)
         if response.status_code != 200:
             raise ConnectionError(
                 f"Failed to access from server: Reason {response.reason}"
