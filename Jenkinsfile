@@ -720,19 +720,21 @@ pipeline {
                                         }
                                         stage('PyLint') {
                                             steps{
-                                                catchError(buildResult: 'SUCCESS', message: 'Pylint found issues', stageResult: 'UNSTABLE') {
-                                                    tee('reports/pylint.txt'){
-                                                        sh(
-                                                            script: 'pylint uiucprescon --init-hook="import sys; sys.path.insert(0, '.')" -r n --persistent=n --verbose --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}"',
-                                                            label: 'Running pylint'
-                                                        )
+                                                withEnv(['PYLINTHOME=.']) {
+                                                    catchError(buildResult: 'SUCCESS', message: 'Pylint found issues', stageResult: 'UNSTABLE') {
+                                                        tee('reports/pylint.txt'){
+                                                            sh(
+                                                                script: 'pylint uiucprescon.getmarc2 -r n --persistent=n --verbose --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}"',
+                                                                label: 'Running pylint'
+                                                            )
+                                                        }
                                                     }
+                                                    sh(
+                                                        script: '''pylint uiucprescon.getmarc2 -r n --persistent=n --msg-template="{path}:{module}:{line}: [{msg_id}({symbol}), {obj}] {msg}" > reports/pylint_issues.txt''',
+                                                        label: 'Running pylint for sonarqube',
+                                                        returnStatus: true
+                                                    )
                                                 }
-                                                sh(
-                                                    script: '''pylint uiucprescon --init-hook="import sys; sys.path.insert(0, '.')" -r n --persistent=n --msg-template="{path}:{module}:{line}: [{msg_id}({symbol}), {obj}] {msg}" > reports/pylint_issues.txt''',
-                                                    label: 'Running pylint for sonarqube',
-                                                    returnStatus: true
-                                                )
                                             }
                                             post{
                                                 always{
