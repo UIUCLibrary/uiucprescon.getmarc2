@@ -60,155 +60,93 @@ def get_mac_devpi_stages(packageName, packageVersion, devpiServer, devpiCredenti
      }
     def macPackages = [:]
     supportedPythonVersions.each{pythonVersion ->
-        macPackages["MacOS x86_64 - Python ${pythonVersion}: wheel"] = {
-            withEnv([
-                'PATH+EXTRA=./venv/bin'
-            ]) {
-                devpi.testDevpiPackage(
-                    agent: [
-                        label: "mac && python${pythonVersion} && x86 && devpi-access"
-                    ],
-                    devpi: [
-                        index: stagingIndex,
-                        server: devpiServer,
-                        credentialsId: devpiCredentials,
-                        devpiExec: 'venv/bin/devpi'
-                    ],
-                    package:[
-                        name: packageName,
-                        version: packageVersion,
-                        selector: "whl"
-                    ],
-                    test:[
-                        setup: {
-                            checkout scm
-                            sh(
-                                label: 'Installing Devpi client',
-                                script: '''python3 -m venv venv
-                                           . ./venv/bin/activate
-                                            python -m pip install pip --upgrade
-                                            python -m pip install devpi_client  -r requirements/requirements_tox.txt
-                                            '''
-                            )
-                        },
-                        toxEnv: "py${pythonVersion}".replace('.',''),
-                        teardown: {
-                            sh( label: 'Remove Devpi client', script: 'rm -r venv')
-                        }
-                    ]
-                )
-            }
+        def architectures = []
+        if(params.INCLUDE_X86_64_MACOS == true){
+            architectures.add('x86_64')
         }
-        macPackages["MacOS m1 - Python ${pythonVersion}: wheel"] = {
-            withEnv(['PATH+EXTRA=./venv/bin']) {
-                devpi.testDevpiPackage(
-                    agent: [
-                        label: "mac && python${pythonVersion} && m1 && devpi-access"
-                    ],
-                    devpi: [
-                        index: stagingIndex,
-                        server: devpiServer,
-                        credentialsId: devpiCredentials,
-                        devpiExec: 'venv/bin/devpi'
-                    ],
-                    package:[
-                        name: packageName,
-                        version: packageVersion,
-                        selector: 'whl'
-                    ],
-                    test:[
-                        setup: {
-                           checkout scm
-                           sh(
-                               label: 'Installing Devpi client',
-                               script: '''python3 -m venv venv
-                                          . ./venv/bin/activate
-                                           python -m pip install pip --upgrade
-                                           python -m pip install devpi_client  -r requirements/requirements_tox.txt
-                                           '''
-                           )
-                        },
-                        toxEnv: "py${pythonVersion}".replace('.',''),
-                        teardown: {
-                            sh( label: 'Remove Devpi client', script: 'rm -r venv')
-                        }
-                    ]
-                )
-            }
+        if(params.INCLUDE_ARM_MACOS == true){
+            architectures.add("m1")
         }
-        macPackages["MacOS x86_64 - Python ${pythonVersion}: sdist"]= {
-            withEnv([
-                'PATH+EXTRA=./venv/bin'
+        architectures.each{ processorArchitecture ->
+            macPackages["MacOS-${processorArchitecture} - Python ${pythonVersion}: wheel"] = {
+                withEnv([
+                    'PATH+EXTRA=./venv/bin'
+                ]) {
+                    devpi.testDevpiPackage(
+                        agent: [
+                            label: "mac && python${pythonVersion} && devpi-access && ${processorArchitecture}"
+                        ],
+                        retryTimes: 2,
+                        devpi: [
+                            index: stagingIndex,
+                            server: devpiServer,
+                            credentialsId: devpiCredentials,
+                            devpiExec: 'venv/bin/devpi'
+                        ],
+                        package:[
+                            name: packageName,
+                            version: packageVersion,
+                            selector: "whl"
+                        ],
+                        test:[
+                            setup: {
+                                checkout scm
+                                sh(
+                                    label: 'Installing Devpi client',
+                                    script: '''python3 -m venv venv
+                                               . ./venv/bin/activate
+                                                python -m pip install pip --upgrade
+                                                python -m pip install devpi_client  -r requirements/requirements_tox.txt
+                                                '''
+                                )
+                            },
+                            toxEnv: "py${pythonVersion}".replace('.',''),
+                            teardown: {
+                                sh( label: 'Remove Devpi client', script: 'rm -r venv')
+                            }
+                        ]
+                    )
+                }
+            }
+            macPackages["MacOS-${processorArchitecture} - Python ${pythonVersion}: sdist"]= {
+                withEnv([
+                    'PATH+EXTRA=./venv/bin'
 
-            ]) {
-                devpi.testDevpiPackage(
-                    agent: [
-                        label: "mac && python${pythonVersion} && x86 && devpi-access"
-                    ],
-                    devpi: [
-                        index: stagingIndex,
-                        server: devpiServer,
-                        credentialsId: devpiCredentials,
-                        devpiExec: 'venv/bin/devpi'
-                    ],
-                    package:[
-                        name: packageName,
-                        version: packageVersion,
-                        selector: 'tar.gz'
-                    ],
-                    test:[
-                        setup: {
-                            checkout scm
-                            sh(
-                                label: 'Installing Devpi client',
-                                script: '''python3 -m venv venv
-                                            venv/bin/python -m pip install pip --upgrade
-                                            venv/bin/python -m pip install devpi_client -r requirements/requirements_tox.txt
-                                            '''
-                            )
-                        },
-                        toxEnv: "py${pythonVersion}".replace('.',''),
-                        teardown: {
-                            sh( label: 'Remove Devpi client', script: 'rm -r venv')
-                        }
-                    ]
-                )
-            }
-        }
-        macPackages["MacOS m1 - Python ${pythonVersion}: sdist"]= {
-            withEnv(['PATH+EXTRA=./venv/bin']) {
-                devpi.testDevpiPackage(
-                    agent: [
-                        label: "mac && python${pythonVersion} && m1 && devpi-access"
-                    ],
-                    devpi: [
-                        index: stagingIndex,
-                        server: devpiServer,
-                        credentialsId: devpiCredentials,
-                        devpiExec: 'venv/bin/devpi'
-                    ],
-                    package:[
-                        name: packageName,
-                        version: packageVersion,
-                        selector: 'tar.gz'
-                    ],
-                    test:[
-                        setup: {
-                            checkout scm
-                            sh(
-                                label:'Installing Devpi client',
-                                script: '''python3 -m venv venv
-                                            venv/bin/python -m pip install pip --upgrade
-                                            venv/bin/python -m pip install devpi_client -r requirements/requirements_tox.txt
-                                            '''
-                            )
-                        },
-                        toxEnv: "py${pythonVersion}".replace('.',''),
-                        teardown: {
-                            sh( label: 'Remove Devpi client', script: 'rm -r venv')
-                        }
-                    ]
-                )
+                ]) {
+                    devpi.testDevpiPackage(
+                        agent: [
+                            label: "mac && python${pythonVersion} && devpi-access && ${processorArchitecture}"
+                        ],
+                        retryTimes: 2,
+                        devpi: [
+                            index: stagingIndex,
+                            server: devpiServer,
+                            credentialsId: devpiCredentials,
+                            devpiExec: 'venv/bin/devpi'
+                        ],
+                        package:[
+                            name: packageName,
+                            version: packageVersion,
+                            selector: 'tar.gz'
+                        ],
+                        test:[
+                            setup: {
+                                checkout scm
+                                sh(
+                                    label: 'Installing Devpi client',
+                                    script: '''python3 -m venv venv
+                                                venv/bin/python -m pip install pip --upgrade
+                                                venv/bin/python -m pip install devpi_client -r requirements/requirements_tox.txt
+                                                '''
+                                )
+                            },
+                            toxEnv: "py${pythonVersion}".replace('.',''),
+                            teardown: {
+                                sh( label: 'Remove Devpi client', script: 'rm -r venv')
+                            }
+                        ]
+                    )
+                }
             }
         }
     }
@@ -224,159 +162,174 @@ def test_packages(){
         }
         def linuxTestStages = [:]
         SUPPORTED_LINUX_VERSIONS.each{ pythonVersion ->
-            linuxTestStages["Linux - Python ${pythonVersion}: wheel"] = {
-                packages.testPkg2(
-                    agent: [
-                        dockerfile: [
-                            label: 'linux && docker && x86',
-                            filename: 'ci/docker/python/linux/tox/Dockerfile',
-                            additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
+            def architectures = ['x86']
+            if(params.INCLUDE_ARM_LINUX == true){
+                architectures.add("arm64")
+            }
+            architectures.each{ processorArchitecture ->
+                linuxTestStages["Linux-${processorArchitecture} - Python ${pythonVersion}: wheel"] = {
+                    packages.testPkg2(
+                        agent: [
+                            dockerfile: [
+                                label: "linux && docker && ${processorArchitecture}",
+                                filename: 'ci/docker/python/linux/tox/Dockerfile',
+                                additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
+                            ]
+                        ],
+                        testSetup: {
+                            checkout scm
+                            unstash 'PYTHON_PACKAGES'
+                        },
+                        testCommand: {
+                            findFiles(glob: 'dist/*.whl').each{
+                                timeout(5){
+                                    sh(
+                                        label: 'Running Tox',
+                                        script: "tox --installpkg ${it.path} --workdir /tmp/tox -e py${pythonVersion.replace('.', '')}"
+                                        )
+                                }
+                            }
+                        },
+                        post:[
+                            cleanup: {
+                                cleanWs(
+                                    patterns: [
+                                            [pattern: 'dist/', type: 'INCLUDE'],
+                                            [pattern: '**/__pycache__/', type: 'INCLUDE'],
+                                        ],
+                                    notFailBuild: true,
+                                    deleteDirs: true
+                                )
+                            },
+                            success: {
+                                archiveArtifacts artifacts: 'dist/*.whl'
+                            },
                         ]
-                    ],
-                    testSetup: {
-                        checkout scm
-                        unstash 'PYTHON_PACKAGES'
-                    },
-                    testCommand: {
-                        findFiles(glob: 'dist/*.whl').each{
-                            timeout(5){
+                    )
+                }
+                linuxTestStages["Linux-${processorArchitecture} - Python ${pythonVersion}: sdist"] = {
+                    packages.testPkg2(
+                        agent: [
+                            dockerfile: [
+                                label: "linux && docker && ${processorArchitecture}",
+                                filename: 'ci/docker/python/linux/tox/Dockerfile',
+                                additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
+                            ]
+                        ],
+                        testSetup: {
+                            checkout scm
+                            unstash 'PYTHON_PACKAGES'
+                        },
+                        testCommand: {
+                            findFiles(glob: 'dist/*.tar.gz').each{
                                 sh(
                                     label: 'Running Tox',
                                     script: "tox --installpkg ${it.path} --workdir /tmp/tox -e py${pythonVersion.replace('.', '')}"
                                     )
                             }
-                        }
-                    },
-                    post:[
-                        cleanup: {
-                            cleanWs(
-                                patterns: [
-                                        [pattern: 'dist/', type: 'INCLUDE'],
-                                        [pattern: '**/__pycache__/', type: 'INCLUDE'],
-                                    ],
-                                notFailBuild: true,
-                                deleteDirs: true
-                            )
                         },
-                        success: {
-                            archiveArtifacts artifacts: 'dist/*.whl'
-                        },
-                    ]
-                )
-            }
-            linuxTestStages["Linux - Python ${pythonVersion}: sdist"] = {
-                packages.testPkg2(
-                    agent: [
-                        dockerfile: [
-                            label: 'linux && docker && x86',
-                            filename: 'ci/docker/python/linux/tox/Dockerfile',
-                            additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
-                        ]
-                    ],
-                    testSetup: {
-                        checkout scm
-                        unstash 'PYTHON_PACKAGES'
-                    },
-                    testCommand: {
-                        findFiles(glob: 'dist/*.tar.gz').each{
-                            sh(
-                                label: 'Running Tox',
-                                script: "tox --installpkg ${it.path} --workdir /tmp/tox -e py${pythonVersion.replace('.', '')}"
+                        post:[
+                            cleanup: {
+                                cleanWs(
+                                    patterns: [
+                                            [pattern: 'dist/', type: 'INCLUDE'],
+                                            [pattern: '**/__pycache__/', type: 'INCLUDE'],
+                                        ],
+                                    notFailBuild: true,
+                                    deleteDirs: true
                                 )
-                        }
-                    },
-                    post:[
-                        cleanup: {
-                            cleanWs(
-                                patterns: [
-                                        [pattern: 'dist/', type: 'INCLUDE'],
-                                        [pattern: '**/__pycache__/', type: 'INCLUDE'],
-                                    ],
-                                notFailBuild: true,
-                                deleteDirs: true
-                            )
-                        },
-                    ]
-                )
+                            },
+                        ]
+                    )
+                }
             }
         }
         def macTestStages = [:]
         SUPPORTED_MAC_VERSIONS.each{ pythonVersion ->
-            macTestStages["MacOS - Python ${pythonVersion}: wheel"] = {
-                packages.testPkg2(
-                    agent: [
-                        label: "mac && python${pythonVersion}",
-                    ],
-                    testSetup: {
-                        checkout scm
-                        unstash 'PYTHON_PACKAGES'
-                    },
-                    testCommand: {
-                        findFiles(glob: 'dist/*.whl').each{
-                            sh(label: 'Running Tox',
-                               script: """python${pythonVersion} -m venv venv
-                               . ./venv/bin/activate
-                               python -m pip install --upgrade pip
-                               pip install devpi_client -r requirements/requirements_tox.txt
-                               tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}"""
-                            )
-                        }
-
-                    },
-                    post:[
-                        cleanup: {
-                            cleanWs(
-                                patterns: [
-                                        [pattern: 'dist/', type: 'INCLUDE'],
-                                        [pattern: 'venv/', type: 'INCLUDE'],
-                                        [pattern: '.tox/', type: 'INCLUDE'],
-                                    ],
-                                notFailBuild: true,
-                                deleteDirs: true
-                            )
-                        },
-                        success: {
-                             archiveArtifacts artifacts: 'dist/*.whl'
-                        }
-                    ]
-                )
+            def architectures = []
+            if(params.INCLUDE_X86_64_MACOS == true){
+                architectures.add('x86_64')
             }
-            macTestStages["MacOS - Python ${pythonVersion}: sdist"] = {
-                packages.testPkg2(
-                    agent: [
-                        label: "mac && python${pythonVersion}",
-                    ],
-                    testSetup: {
-                        checkout scm
-                        unstash 'PYTHON_PACKAGES'
-                    },
-                    testCommand: {
-                        findFiles(glob: 'dist/*.tar.gz').each{
-                            sh(label: 'Running Tox',
-                               script: """python${pythonVersion} -m venv venv
-                                          . ./venv/bin/activate
-                                          python -m pip install --upgrade pip
-                                          pip install devpi_client -r requirements/requirements_tox.txt
-                                          tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}
-                                       """
-                            )
-                        }
-
-                    },
-                    post:[
-                        cleanup: {
-                            cleanWs(
-                                patterns: [
-                                        [pattern: 'dist/', type: 'INCLUDE'],
-                                        [pattern: 'venv/', type: 'INCLUDE'],
-                                        [pattern: '.tox/', type: 'INCLUDE'],
-                                    ],
-                                notFailBuild: true,
-                                deleteDirs: true
-                            )
+            if(params.INCLUDE_ARM_MACOS == true){
+                architectures.add("m1")
+            }
+            architectures.each{ processorArchitecture ->
+                macTestStages["MacOS-${processorArchitecture} - Python ${pythonVersion}: wheel"] = {
+                    packages.testPkg2(
+                        agent: [
+                            label: "mac && python${pythonVersion} && ${processorArchitecture}",
+                        ],
+                        testSetup: {
+                            checkout scm
+                            unstash 'PYTHON_PACKAGES'
                         },
-                    ]
-                )
+                        testCommand: {
+                            findFiles(glob: 'dist/*.whl').each{
+                                sh(label: 'Running Tox',
+                                   script: """python${pythonVersion} -m venv venv
+                                   . ./venv/bin/activate
+                                   python -m pip install --upgrade pip
+                                   pip install devpi_client -r requirements/requirements_tox.txt
+                                   tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}"""
+                                )
+                            }
+
+                        },
+                        post:[
+                            cleanup: {
+                                cleanWs(
+                                    patterns: [
+                                            [pattern: 'dist/', type: 'INCLUDE'],
+                                            [pattern: 'venv/', type: 'INCLUDE'],
+                                            [pattern: '.tox/', type: 'INCLUDE'],
+                                        ],
+                                    notFailBuild: true,
+                                    deleteDirs: true
+                                )
+                            },
+                            success: {
+                                 archiveArtifacts artifacts: 'dist/*.whl'
+                            }
+                        ]
+                    )
+                }
+                macTestStages["MacOS-${processorArchitecture} - Python ${pythonVersion}: sdist"] = {
+                    packages.testPkg2(
+                        agent: [
+                            label: "mac && python${pythonVersion} && ${processorArchitecture}",
+                        ],
+                        testSetup: {
+                            checkout scm
+                            unstash 'PYTHON_PACKAGES'
+                        },
+                        testCommand: {
+                            findFiles(glob: 'dist/*.tar.gz').each{
+                                sh(label: 'Running Tox',
+                                   script: """python${pythonVersion} -m venv venv
+                                              . ./venv/bin/activate
+                                              python -m pip install --upgrade pip
+                                              pip install devpi_client -r requirements/requirements_tox.txt
+                                              tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}
+                                           """
+                                )
+                            }
+
+                        },
+                        post:[
+                            cleanup: {
+                                cleanWs(
+                                    patterns: [
+                                            [pattern: 'dist/', type: 'INCLUDE'],
+                                            [pattern: 'venv/', type: 'INCLUDE'],
+                                            [pattern: '.tox/', type: 'INCLUDE'],
+                                        ],
+                                    notFailBuild: true,
+                                    deleteDirs: true
+                                )
+                            },
+                        ]
+                    )
+                }
             }
         }
         def windowsTestStages = [:]
@@ -452,11 +405,7 @@ def test_packages(){
                 )
             }
         }
-        def testingStages = windowsTestStages + linuxTestStages
-        if(params.TEST_PACKAGES_ON_MAC == true){
-            testingStages = testingStages + macTestStages
-        }
-        parallel(testingStages)
+        parallel(windowsTestStages + linuxTestStages + macTestStages)
     }
 }
 def startup(){
@@ -531,7 +480,9 @@ pipeline {
         booleanParam(name: 'BUILD_PACKAGES', defaultValue: false, description: 'Build Python packages')
         booleanParam(name: 'BUILD_CHOCOLATEY_PACKAGE', defaultValue: false, description: 'Build package for chocolatey package manager')
         booleanParam(name: 'TEST_PACKAGES', defaultValue: true, description: 'Test Python packages by installing them and running tests on the installed package')
-        booleanParam(name: 'TEST_PACKAGES_ON_MAC', defaultValue: false, description: 'Test Python packages on Mac')
+        booleanParam(name: 'INCLUDE_ARM_MACOS', defaultValue: false, description: 'Include ARM(m1) architecture for Mac')
+        booleanParam(name: 'INCLUDE_X86_64_MACOS', defaultValue: false, description: 'Include x86_64 architecture for Mac')
+        booleanParam(name: 'INCLUDE_ARM_LINUX', defaultValue: false, description: 'Include ARM architecture for Linux')
         booleanParam(name: 'DEPLOY_DEVPI', defaultValue: false, description: "Deploy to devpi on http://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
         booleanParam(name: 'DEPLOY_DEVPI_PRODUCTION', defaultValue: false, description: "Deploy to production devpi on https://devpi.library.illinois.edu/production/release. Master branch Only")
         booleanParam(name: 'DEPLOY_CHOCOLATEY', defaultValue: false, description: 'Deploy to Chocolatey repository')
@@ -631,7 +582,6 @@ pipeline {
                                             post {
                                                 always {
                                                     junit 'reports/pytest/junit-pytest.xml'
-                                                    stash includes: 'reports/pytest/*.xml', name: 'PYTEST_REPORT'
                                                 }
                                             }
                                         }
@@ -717,30 +667,28 @@ pipeline {
                                                         }
                                                     }
                                                 }
-                                                always {
-                                                    stash includes: 'reports/bandit-report.json', name: 'BANDIT_REPORT'
-                                                }
                                             }
                                         }
                                         stage('PyLint') {
                                             steps{
-                                                catchError(buildResult: 'SUCCESS', message: 'Pylint found issues', stageResult: 'UNSTABLE') {
-                                                    tee('reports/pylint.txt'){
-                                                        sh(
-                                                            script: 'pylint uiucprescon --init-hook="import sys; sys.path.insert(0, '.')" -r n --persistent=n --verbose --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}"',
-                                                            label: 'Running pylint'
-                                                        )
+                                                withEnv(['PYLINTHOME=.']) {
+                                                    catchError(buildResult: 'SUCCESS', message: 'Pylint found issues', stageResult: 'UNSTABLE') {
+                                                        tee('reports/pylint.txt'){
+                                                            sh(
+                                                                script: 'pylint uiucprescon.getmarc2 -r n --persistent=n --verbose --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}"',
+                                                                label: 'Running pylint'
+                                                            )
+                                                        }
                                                     }
+                                                    sh(
+                                                        script: '''pylint uiucprescon.getmarc2 -r n --persistent=n --msg-template="{path}:{module}:{line}: [{msg_id}({symbol}), {obj}] {msg}" > reports/pylint_issues.txt''',
+                                                        label: 'Running pylint for sonarqube',
+                                                        returnStatus: true
+                                                    )
                                                 }
-                                                sh(
-                                                    script: '''pylint uiucprescon --init-hook="import sys; sys.path.insert(0, '.')" -r n --persistent=n --msg-template="{path}:{module}:{line}: [{msg_id}({symbol}), {obj}] {msg}" > reports/pylint_issues.txt''',
-                                                    label: 'Running pylint for sonarqube',
-                                                    returnStatus: true
-                                                )
                                             }
                                             post{
                                                 always{
-                                                    stash includes: 'reports/pylint_issues.txt,reports/pylint.txt', name: 'PYLINT_REPORT'
                                                     recordIssues(tools: [pyLint(pattern: 'reports/pylint.txt')])
                                                 }
                                             }
@@ -758,7 +706,6 @@ pipeline {
                                             post {
                                                 always {
                                                     recordIssues(tools: [flake8(name: 'Flake8', pattern: 'logs/flake8.log')])
-                                                    stash includes: 'logs/flake8.log', name: 'FLAKE8_REPORT'
                                                 }
                                             }
                                         }
@@ -775,23 +722,6 @@ pipeline {
                                                             coberturaAdapter('reports/coverage.xml')
                                                             ],
                                                         sourceFileResolver: sourceFiles('STORE_ALL_BUILD')
-                                            stash includes: 'reports/coverage.xml', name: 'COVERAGE_REPORT'
-                                        }
-                                        cleanup{
-                                            cleanWs(
-                                                deleteDirs: true,
-                                                patterns: [
-                                                    [pattern: 'dist/', type: 'INCLUDE'],
-                                                    [pattern: 'build/', type: 'INCLUDE'],
-                                                    [pattern: '.pytest_cache/', type: 'INCLUDE'],
-                                                    [pattern: '.mypy_cache/', type: 'INCLUDE'],
-                                                    [pattern: '.tox/', type: 'INCLUDE'],
-                                                    [pattern: 'uiucprescon1.stats', type: 'INCLUDE'],
-                                                    [pattern: 'uiucprescon.packager.egg-info/', type: 'INCLUDE'],
-                                                    [pattern: 'reports/', type: 'INCLUDE'],
-                                                    [pattern: 'logs/', type: 'INCLUDE']
-                                                    ]
-                                            )
                                         }
                                     }
                                 }
@@ -805,11 +735,6 @@ pipeline {
                                         beforeOptions true
                                     }
                                     steps{
-                                        unstash 'COVERAGE_REPORT'
-                                        unstash 'PYTEST_REPORT'
-                                        unstash 'BANDIT_REPORT'
-                                        unstash 'PYLINT_REPORT'
-                                        unstash 'FLAKE8_REPORT'
                                         script{
                                             withSonarQubeEnv(installationName:'sonarcloud', credentialsId: 'sonarcloud-uiucprescon.getmarc2') {
                                                 if (env.CHANGE_ID){
@@ -844,17 +769,6 @@ pipeline {
                                                 }
                                             }
                                         }
-                                        cleanup{
-                                            cleanWs(
-                                                deleteDirs: true,
-                                                patterns: [
-                                                    [pattern: 'reports/', type: 'INCLUDE'],
-                                                    [pattern: 'logs/', type: 'INCLUDE'],
-                                                    [pattern: 'uiucprescon.getmarc2.dist-info/', type: 'INCLUDE'],
-                                                    [pattern: '.scannerwork/', type: 'INCLUDE'],
-                                                ]
-                                            )
-                                        }
                                     }
                                 }
                             }
@@ -863,9 +777,19 @@ pipeline {
                                     cleanWs(
                                         deleteDirs: true,
                                         patterns: [
-                                            [pattern: 'reports/coverage.xml', type: 'INCLUDE'],
-                                            [pattern: 'reports/coverage', type: 'INCLUDE'],
-                                        ])
+                                            [pattern: 'dist/', type: 'INCLUDE'],
+                                            [pattern: 'build/', type: 'INCLUDE'],
+                                            [pattern: '.pytest_cache/', type: 'INCLUDE'],
+                                            [pattern: '.mypy_cache/', type: 'INCLUDE'],
+                                            [pattern: '.tox/', type: 'INCLUDE'],
+                                            [pattern: 'uiucprescon1.stats', type: 'INCLUDE'],
+                                            [pattern: 'uiucprescon.getmarc2.egg-info/', type: 'INCLUDE'],
+                                            [pattern: 'uiucprescon.getmarc2.dist-info/', type: 'INCLUDE'],
+                                            [pattern: 'reports/', type: 'INCLUDE'],
+                                            [pattern: 'logs/', type: 'INCLUDE'],
+                                            [pattern: '.scannerwork/', type: 'INCLUDE'],
+                                            ]
+                                    )
                                 }
                             }
                         }
@@ -928,7 +852,6 @@ pipeline {
                 anyOf{
                     equals expected: true, actual: params.BUILD_PACKAGES
                     equals expected: true, actual: params.BUILD_CHOCOLATEY_PACKAGE
-                    equals expected: true, actual: params.TEST_PACKAGES_ON_MAC
                     equals expected: true, actual: params.DEPLOY_DEVPI
                     equals expected: true, actual: params.DEPLOY_DEVPI_PRODUCTION
                     equals expected: true, actual: params.DEPLOY_CHOCOLATEY

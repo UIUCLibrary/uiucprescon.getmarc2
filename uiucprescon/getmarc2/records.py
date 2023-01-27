@@ -113,12 +113,10 @@ class RecordServer:
         }.get(identifier_type)
 
         if id_strategy is None:
-            raise AttributeError(
-                "Unknown identifier type, {}".format(identifier_type)
-            )
+            raise AttributeError(f"Unknown identifier type, {identifier_type}")
 
         url = self.build_request_url(identifier, id_strategy)
-        response = requests.request("GET", url)
+        response = requests.request("GET", url, timeout=30)
         if response.status_code != 200:
             raise ConnectionError(
                 f"Failed to access from server: Reason {response.reason}"
@@ -200,7 +198,7 @@ class RecordServer:
             return int(xml.attrib['total_record_count'])
         except etree.XMLSyntaxError as error:
             raise ValueError(
-                "Unable to parse data. Reason {}".format(error)
+                f"Unable to parse data. Reason {error}"
             ) from error
 
 
@@ -229,7 +227,7 @@ def is_validate_xml(data: str) -> bool:
     """
     validation_file = files("uiucprescon.getmarc2").joinpath("MARC21slim.xsd")
     schema_root = etree.XML(
-        validation_file.read_text()
+        validation_file.read_text(encoding="utf-8")
     )
 
     schema = etree.XMLSchema(schema_root)
