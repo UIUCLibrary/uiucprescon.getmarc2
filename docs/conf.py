@@ -15,7 +15,10 @@
 import os
 import re
 import sys
-from setuptools.config import read_configuration
+try:
+    from setuptools.config.setupcfg import read_configuration
+except ImportError:
+    from setuptools.config import read_configuration
 
 sys.path.insert(0, os.path.abspath('..'))
 
