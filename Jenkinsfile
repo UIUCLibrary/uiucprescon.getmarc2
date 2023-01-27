@@ -302,81 +302,90 @@ def test_packages(){
         }
         def macTestStages = [:]
         SUPPORTED_MAC_VERSIONS.each{ pythonVersion ->
-            macTestStages["MacOS - Python ${pythonVersion}: wheel"] = {
-                packages.testPkg2(
-                    agent: [
-                        label: "mac && python${pythonVersion}",
-                    ],
-                    testSetup: {
-                        checkout scm
-                        unstash 'PYTHON_PACKAGES'
-                    },
-                    testCommand: {
-                        findFiles(glob: 'dist/*.whl').each{
-                            sh(label: 'Running Tox',
-                               script: """python${pythonVersion} -m venv venv
-                               . ./venv/bin/activate
-                               python -m pip install --upgrade pip
-                               pip install devpi_client -r requirements/requirements_tox.txt
-                               tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}"""
-                            )
-                        }
-
-                    },
-                    post:[
-                        cleanup: {
-                            cleanWs(
-                                patterns: [
-                                        [pattern: 'dist/', type: 'INCLUDE'],
-                                        [pattern: 'venv/', type: 'INCLUDE'],
-                                        [pattern: '.tox/', type: 'INCLUDE'],
-                                    ],
-                                notFailBuild: true,
-                                deleteDirs: true
-                            )
-                        },
-                        success: {
-                             archiveArtifacts artifacts: 'dist/*.whl'
-                        }
-                    ]
-                )
+            def architectures = []
+            if(params.INCLUDE_X86_64_MACOS == true){
+                architectures.add('x86_64')
             }
-            macTestStages["MacOS - Python ${pythonVersion}: sdist"] = {
-                packages.testPkg2(
-                    agent: [
-                        label: "mac && python${pythonVersion}",
-                    ],
-                    testSetup: {
-                        checkout scm
-                        unstash 'PYTHON_PACKAGES'
-                    },
-                    testCommand: {
-                        findFiles(glob: 'dist/*.tar.gz').each{
-                            sh(label: 'Running Tox',
-                               script: """python${pythonVersion} -m venv venv
-                                          . ./venv/bin/activate
-                                          python -m pip install --upgrade pip
-                                          pip install devpi_client -r requirements/requirements_tox.txt
-                                          tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}
-                                       """
-                            )
-                        }
-
-                    },
-                    post:[
-                        cleanup: {
-                            cleanWs(
-                                patterns: [
-                                        [pattern: 'dist/', type: 'INCLUDE'],
-                                        [pattern: 'venv/', type: 'INCLUDE'],
-                                        [pattern: '.tox/', type: 'INCLUDE'],
-                                    ],
-                                notFailBuild: true,
-                                deleteDirs: true
-                            )
+            if(params.INCLUDE_ARM_MACOS == true){
+                architectures.add("m1")
+            }
+            architectures.each{ processorArchitecture ->
+                macTestStages["MacOS-${processorArchitecture} - Python ${pythonVersion}: wheel"] = {
+                    packages.testPkg2(
+                        agent: [
+                            label: "mac && python${pythonVersion} && ${processorArchitecture}",
+                        ],
+                        testSetup: {
+                            checkout scm
+                            unstash 'PYTHON_PACKAGES'
                         },
-                    ]
-                )
+                        testCommand: {
+                            findFiles(glob: 'dist/*.whl').each{
+                                sh(label: 'Running Tox',
+                                   script: """python${pythonVersion} -m venv venv
+                                   . ./venv/bin/activate
+                                   python -m pip install --upgrade pip
+                                   pip install devpi_client -r requirements/requirements_tox.txt
+                                   tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}"""
+                                )
+                            }
+
+                        },
+                        post:[
+                            cleanup: {
+                                cleanWs(
+                                    patterns: [
+                                            [pattern: 'dist/', type: 'INCLUDE'],
+                                            [pattern: 'venv/', type: 'INCLUDE'],
+                                            [pattern: '.tox/', type: 'INCLUDE'],
+                                        ],
+                                    notFailBuild: true,
+                                    deleteDirs: true
+                                )
+                            },
+                            success: {
+                                 archiveArtifacts artifacts: 'dist/*.whl'
+                            }
+                        ]
+                    )
+                }
+                macTestStages["MacOS-${processorArchitecture} - Python ${pythonVersion}: sdist"] = {
+                    packages.testPkg2(
+                        agent: [
+                            label: "mac && python${pythonVersion} && ${processorArchitecture}",
+                        ],
+                        testSetup: {
+                            checkout scm
+                            unstash 'PYTHON_PACKAGES'
+                        },
+                        testCommand: {
+                            findFiles(glob: 'dist/*.tar.gz').each{
+                                sh(label: 'Running Tox',
+                                   script: """python${pythonVersion} -m venv venv
+                                              . ./venv/bin/activate
+                                              python -m pip install --upgrade pip
+                                              pip install devpi_client -r requirements/requirements_tox.txt
+                                              tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}
+                                           """
+                                )
+                            }
+
+                        },
+                        post:[
+                            cleanup: {
+                                cleanWs(
+                                    patterns: [
+                                            [pattern: 'dist/', type: 'INCLUDE'],
+                                            [pattern: 'venv/', type: 'INCLUDE'],
+                                            [pattern: '.tox/', type: 'INCLUDE'],
+                                        ],
+                                    notFailBuild: true,
+                                    deleteDirs: true
+                                )
+                            },
+                        ]
+                    )
+                }
             }
         }
         def windowsTestStages = [:]
@@ -452,11 +461,7 @@ def test_packages(){
                 )
             }
         }
-        def testingStages = windowsTestStages + linuxTestStages
-        if(params.TEST_PACKAGES_ON_MAC == true){
-            testingStages = testingStages + macTestStages
-        }
-        parallel(testingStages)
+        parallel(windowsTestStages + linuxTestStages + macTestStages)
     }
 }
 def startup(){
@@ -531,7 +536,8 @@ pipeline {
         booleanParam(name: 'BUILD_PACKAGES', defaultValue: false, description: 'Build Python packages')
         booleanParam(name: 'BUILD_CHOCOLATEY_PACKAGE', defaultValue: false, description: 'Build package for chocolatey package manager')
         booleanParam(name: 'TEST_PACKAGES', defaultValue: true, description: 'Test Python packages by installing them and running tests on the installed package')
-        booleanParam(name: 'TEST_PACKAGES_ON_MAC', defaultValue: false, description: 'Test Python packages on Mac')
+        booleanParam(name: 'INCLUDE_ARM_MACOS', defaultValue: false, description: 'Include ARM(m1) architecture for Mac')
+        booleanParam(name: 'INCLUDE_X86_64_MACOS', defaultValue: false, description: 'Include x86_64 architecture for Mac')
         booleanParam(name: 'DEPLOY_DEVPI', defaultValue: false, description: "Deploy to devpi on http://devpi.library.illinois.edu/DS_Jenkins/${env.BRANCH_NAME}")
         booleanParam(name: 'DEPLOY_DEVPI_PRODUCTION', defaultValue: false, description: "Deploy to production devpi on https://devpi.library.illinois.edu/production/release. Master branch Only")
         booleanParam(name: 'DEPLOY_CHOCOLATEY', defaultValue: false, description: 'Deploy to Chocolatey repository')
@@ -901,7 +907,6 @@ pipeline {
                 anyOf{
                     equals expected: true, actual: params.BUILD_PACKAGES
                     equals expected: true, actual: params.BUILD_CHOCOLATEY_PACKAGE
-                    equals expected: true, actual: params.TEST_PACKAGES_ON_MAC
                     equals expected: true, actual: params.DEPLOY_DEVPI
                     equals expected: true, actual: params.DEPLOY_DEVPI_PRODUCTION
                     equals expected: true, actual: params.DEPLOY_CHOCOLATEY
