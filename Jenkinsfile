@@ -631,7 +631,6 @@ pipeline {
                                             post {
                                                 always {
                                                     junit 'reports/pytest/junit-pytest.xml'
-                                                    stash includes: 'reports/pytest/*.xml', name: 'PYTEST_REPORT'
                                                 }
                                             }
                                         }
@@ -717,9 +716,6 @@ pipeline {
                                                         }
                                                     }
                                                 }
-                                                always {
-                                                    stash includes: 'reports/bandit-report.json', name: 'BANDIT_REPORT'
-                                                }
                                             }
                                         }
                                         stage('PyLint') {
@@ -740,7 +736,6 @@ pipeline {
                                             }
                                             post{
                                                 always{
-                                                    stash includes: 'reports/pylint_issues.txt,reports/pylint.txt', name: 'PYLINT_REPORT'
                                                     recordIssues(tools: [pyLint(pattern: 'reports/pylint.txt')])
                                                 }
                                             }
@@ -758,7 +753,6 @@ pipeline {
                                             post {
                                                 always {
                                                     recordIssues(tools: [flake8(name: 'Flake8', pattern: 'logs/flake8.log')])
-                                                    stash includes: 'logs/flake8.log', name: 'FLAKE8_REPORT'
                                                 }
                                             }
                                         }
@@ -775,23 +769,6 @@ pipeline {
                                                             coberturaAdapter('reports/coverage.xml')
                                                             ],
                                                         sourceFileResolver: sourceFiles('STORE_ALL_BUILD')
-                                            stash includes: 'reports/coverage.xml', name: 'COVERAGE_REPORT'
-                                        }
-                                        cleanup{
-                                            cleanWs(
-                                                deleteDirs: true,
-                                                patterns: [
-                                                    [pattern: 'dist/', type: 'INCLUDE'],
-                                                    [pattern: 'build/', type: 'INCLUDE'],
-                                                    [pattern: '.pytest_cache/', type: 'INCLUDE'],
-                                                    [pattern: '.mypy_cache/', type: 'INCLUDE'],
-                                                    [pattern: '.tox/', type: 'INCLUDE'],
-                                                    [pattern: 'uiucprescon1.stats', type: 'INCLUDE'],
-                                                    [pattern: 'uiucprescon.packager.egg-info/', type: 'INCLUDE'],
-                                                    [pattern: 'reports/', type: 'INCLUDE'],
-                                                    [pattern: 'logs/', type: 'INCLUDE']
-                                                    ]
-                                            )
                                         }
                                     }
                                 }
@@ -805,11 +782,6 @@ pipeline {
                                         beforeOptions true
                                     }
                                     steps{
-                                        unstash 'COVERAGE_REPORT'
-                                        unstash 'PYTEST_REPORT'
-                                        unstash 'BANDIT_REPORT'
-                                        unstash 'PYLINT_REPORT'
-                                        unstash 'FLAKE8_REPORT'
                                         script{
                                             withSonarQubeEnv(installationName:'sonarcloud', credentialsId: 'sonarcloud-uiucprescon.getmarc2') {
                                                 if (env.CHANGE_ID){
@@ -844,17 +816,6 @@ pipeline {
                                                 }
                                             }
                                         }
-                                        cleanup{
-                                            cleanWs(
-                                                deleteDirs: true,
-                                                patterns: [
-                                                    [pattern: 'reports/', type: 'INCLUDE'],
-                                                    [pattern: 'logs/', type: 'INCLUDE'],
-                                                    [pattern: 'uiucprescon.getmarc2.dist-info/', type: 'INCLUDE'],
-                                                    [pattern: '.scannerwork/', type: 'INCLUDE'],
-                                                ]
-                                            )
-                                        }
                                     }
                                 }
                             }
@@ -863,9 +824,19 @@ pipeline {
                                     cleanWs(
                                         deleteDirs: true,
                                         patterns: [
-                                            [pattern: 'reports/coverage.xml', type: 'INCLUDE'],
-                                            [pattern: 'reports/coverage', type: 'INCLUDE'],
-                                        ])
+                                            [pattern: 'dist/', type: 'INCLUDE'],
+                                            [pattern: 'build/', type: 'INCLUDE'],
+                                            [pattern: '.pytest_cache/', type: 'INCLUDE'],
+                                            [pattern: '.mypy_cache/', type: 'INCLUDE'],
+                                            [pattern: '.tox/', type: 'INCLUDE'],
+                                            [pattern: 'uiucprescon1.stats', type: 'INCLUDE'],
+                                            [pattern: 'uiucprescon.getmarc2.egg-info/', type: 'INCLUDE'],
+                                            [pattern: 'uiucprescon.getmarc2.dist-info/', type: 'INCLUDE'],
+                                            [pattern: 'reports/', type: 'INCLUDE'],
+                                            [pattern: 'logs/', type: 'INCLUDE'],
+                                            [pattern: '.scannerwork/', type: 'INCLUDE'],
+                                            ]
+                                    )
                                 }
                             }
                         }
