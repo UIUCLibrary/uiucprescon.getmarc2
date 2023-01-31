@@ -60,6 +60,19 @@ RUN PYTHON=python3.10 && \
     $PYTHON -m pip install wheel && \
     $PYTHON -m pip wheel -w /wheels --no-cache-dir -r /tmp/requirements-ci.txt && \
     $PYTHON -m pip wheel -w /wheels --no-cache-dir -v -r /tmp/requirements.txt
+# ==============================================================================
+FROM wheel_builder_base as WHEEL_BUILDER_PY311
+ARG PIP_EXTRA_INDEX_URL
+ARG PIP_INDEX_URL
+
+COPY ci/docker/python/shared/requirements-ci.txt  requirements.txt  /tmp/
+COPY requirements/ /tmp/requirements
+RUN PYTHON=python3.11 && \
+    $PYTHON -m ensurepip --upgrade && \
+    $PYTHON -m pip install pip --upgrade pip && \
+    $PYTHON -m pip install wheel && \
+    $PYTHON -m pip wheel -w /wheels --no-cache-dir -r /tmp/requirements-ci.txt && \
+    $PYTHON -m pip wheel -w /wheels --no-cache-dir -v -r /tmp/requirements.txt
 
 # ==============================================================================
 FROM wheel_builder_base
@@ -70,6 +83,7 @@ COPY --from=WHEEL_BUILDER_PY37 /wheels/* /wheels/
 COPY --from=WHEEL_BUILDER_PY38 /wheels/* /wheels/
 COPY --from=WHEEL_BUILDER_PY39 /wheels/* /wheels/
 COPY --from=WHEEL_BUILDER_PY310 /wheels/* /wheels/
+COPY --from=WHEEL_BUILDER_PY311 /wheels/* /wheels/
 
 ENV PIP_FIND_LINKS=/wheels
 COPY requirements/ /tmp/requirements
