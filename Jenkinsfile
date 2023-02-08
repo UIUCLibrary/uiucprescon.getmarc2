@@ -825,7 +825,7 @@ pipeline {
                                             def tox = fileLoader.fromGit(
                                                 'tox',
                                                 'https://github.com/UIUCLibrary/jenkins_helper_scripts.git',
-                                                '4',
+                                                '7',
                                                 null,
                                                 ''
                                             )
