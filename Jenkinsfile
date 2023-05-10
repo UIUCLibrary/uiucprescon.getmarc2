@@ -813,7 +813,8 @@ pipeline {
                                                                             label: 'linux && docker',
                                                                             dockerfile: 'ci/docker/python/linux/tox/Dockerfile',
                                                                             dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL',
-                                                                            dockerRunArgs: "-v pipcache_uiucprescon_getmarc2:/.cache/pip"
+                                                                            dockerRunArgs: "-v pipcache_uiucprescon_getmarc2:/.cache/pip",
+                                                                            retry: 2
                                                                         )
                                             parallel(jobs)
                                         }
@@ -835,7 +836,8 @@ pipeline {
                                                     label: 'windows && docker && x86',
                                                     dockerfile: 'ci/docker/python/windows/tox/Dockerfile',
                                                     dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE',
-                                                    dockerRunArgs: "-v pipcache_uiucprescon_getmarc2:c:/users/containeradministrator/appdata/local/pip"
+                                                    dockerRunArgs: "-v pipcache_uiucprescon_getmarc2:c:/users/containeradministrator/appdata/local/pip",
+                                                    retry: 2
                                                 )
                                             )
                                         }
