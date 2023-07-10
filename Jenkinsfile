@@ -173,7 +173,8 @@ def test_packages(){
                             dockerfile: [
                                 label: "linux && docker && ${processorArchitecture}",
                                 filename: 'ci/docker/python/linux/tox/Dockerfile',
-                                additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
+                                additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg PIP_DOWNLOAD_CACHE=/.cache/pip',
+                                args: '-v pipcache_uiucprescon_getmarc2:/.cache/pip',
                             ]
                         ],
                         testSetup: {
@@ -213,7 +214,8 @@ def test_packages(){
                             dockerfile: [
                                 label: "linux && docker && ${processorArchitecture}",
                                 filename: 'ci/docker/python/linux/tox/Dockerfile',
-                                additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL'
+                                additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg PIP_DOWNLOAD_CACHE=/.cache/pip',
+                                args: '-v pipcache_uiucprescon_getmarc2:/.cache/pip',
                             ]
                         ],
                         testSetup: {
@@ -340,7 +342,8 @@ def test_packages(){
                         dockerfile: [
                             label: 'windows && docker && x86',
                             filename: 'ci/docker/python/windows/tox/Dockerfile',
-                            additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE'
+                            additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip',
+                            args: '-v pipcache_uiucprescon_getmarc2:c:/users/containeradministrator/appdata/local/pip',
                         ]
                     ],
                     dockerImageName: "${currentBuild.fullProjectName}_test".replaceAll('-', '_').replaceAll('/', '_').replaceAll(' ', '').toLowerCase(),
@@ -377,7 +380,8 @@ def test_packages(){
                         dockerfile: [
                             label: 'windows && docker && x86',
                             filename: 'ci/docker/python/windows/tox/Dockerfile',
-                            additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE'
+                            additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip',
+                            args: '-v pipcache_uiucprescon_getmarc2:c:/users/containeradministrator/appdata/local/pip',
                         ]
                     ],
                     dockerImageName: "${currentBuild.fullProjectName}_test".replaceAll('-', '_').replaceAll('/', '_').replaceAll(' ', '').toLowerCase(),
@@ -812,8 +816,8 @@ pipeline {
                                                                             envNamePrefix: 'Tox Linux',
                                                                             label: 'linux && docker',
                                                                             dockerfile: 'ci/docker/python/linux/tox/Dockerfile',
-                                                                            dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL',
-                                                                            dockerRunArgs: "-v pipcache_uiucprescon_getmarc2:/.cache/pip",
+                                                                            dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg PIP_DOWNLOAD_CACHE=/.cache/pip',
+                                                                            dockerRunArgs: '-v pipcache_uiucprescon_getmarc2:/.cache/pip',
                                                                             retry: 2
                                                                         )
                                             parallel(jobs)
@@ -835,8 +839,8 @@ pipeline {
                                                     envNamePrefix: 'Tox Windows',
                                                     label: 'windows && docker && x86',
                                                     dockerfile: 'ci/docker/python/windows/tox/Dockerfile',
-                                                    dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE',
-                                                    dockerRunArgs: "-v pipcache_uiucprescon_getmarc2:c:/users/containeradministrator/appdata/local/pip",
+                                                    dockerArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip',
+                                                    dockerRunArgs: "-v pipcache_uiucprescon_getmarc2:c:/users/containeradministrator/appdata/local/pip ",
                                                     retry: 2
                                                 )
                                             )
@@ -1045,7 +1049,7 @@ pipeline {
                                                 agent: [
                                                     dockerfile: [
                                                         filename: 'ci/docker/python/linux/tox/Dockerfile',
-                                                        additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL',
+                                                        additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg PIP_DOWNLOAD_CACHE=/.cache/pip',
                                                         label: 'linux && docker && x86 && devpi-access'
                                                     ]
                                                 ],
@@ -1070,7 +1074,7 @@ pipeline {
                                                 agent: [
                                                     dockerfile: [
                                                         filename: 'ci/docker/python/linux/tox/Dockerfile',
-                                                        additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL',
+                                                        additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg PIP_DOWNLOAD_CACHE=/.cache/pip',
                                                         label: 'linux && docker && x86 && devpi-access'
                                                     ]
                                                 ],
@@ -1098,7 +1102,7 @@ pipeline {
                                                 agent: [
                                                     dockerfile: [
                                                         filename: 'ci/docker/python/windows/tox/Dockerfile',
-                                                        additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE',
+                                                        additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip',
                                                         label: 'windows && docker && x86 && devpi-access'
                                                     ]
                                                 ],
@@ -1126,7 +1130,7 @@ pipeline {
                                                 agent: [
                                                     dockerfile: [
                                                         filename: 'ci/docker/python/windows/tox/Dockerfile',
-                                                        additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE',
+                                                        additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip',
                                                         label: 'windows && docker && x86 && devpi-access'
                                                     ]
                                                 ],
