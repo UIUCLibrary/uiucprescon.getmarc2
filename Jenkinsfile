@@ -740,7 +740,7 @@ pipeline {
                                     }
                                     steps{
                                         script{
-                                            withSonarQubeEnv(installationName:'sonarcloud', credentialsId: 'sonarcloud-uiucprescon.getmarc2') {
+                                            withSonarQubeEnv(installationName:'sonarcloud', credentialsId: 'sonarcloud_token') {
                                                 if (env.CHANGE_ID){
                                                     sh(
                                                         label: 'Running Sonar Scanner',
