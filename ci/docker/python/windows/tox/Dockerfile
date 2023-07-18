@@ -38,11 +38,12 @@ COPY --from=certsgen c:/roots.sst roots.sst
 RUN certutil -addstore -f root roots.sst ; `
     del roots.sst
 
-COPY requirements requirements
-RUN python -m pip install pip --upgrade ; `
-    python -m pip install wheel ; `
-    python -m pip wheel -w c:/wheels/ --no-cache-dir wheel ; `
-    pip install -r requirements/requirements_tox.txt devpi_client
+ARG PIP_EXTRA_INDEX_URL
+ARG PIP_INDEX_URL
+COPY requirements-ci.txt c:/python_requirments/
+COPY requirements/ c:/python_requirments/requirements
+RUN python -m pip install pip --upgrade ; pip install --no-cache-dir -r c:/python_requirments/requirements-ci.txt
+
 
 ARG PIP_DOWNLOAD_CACHE
 RUN New-Item -type directory -path ${Env:PIP_DOWNLOAD_CACHE} -Force
