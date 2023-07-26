@@ -1,6 +1,6 @@
 bandit
 coverage
-devpi-client<6.0
+devpi-client
 flake8
 mypy
 paramiko
