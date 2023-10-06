@@ -1,6 +1,6 @@
-SUPPORTED_MAC_VERSIONS = ['3.8', '3.9', '3.10', '3.11']
-SUPPORTED_LINUX_VERSIONS = ['3.8', '3.9', '3.10', '3.11']
-SUPPORTED_WINDOWS_VERSIONS = ['3.8', '3.9', '3.10', '3.11']
+SUPPORTED_MAC_VERSIONS = ['3.8', '3.9', '3.10', '3.11', '3.12']
+SUPPORTED_LINUX_VERSIONS = ['3.8', '3.9', '3.10', '3.11', '3.12']
+SUPPORTED_WINDOWS_VERSIONS = ['3.8', '3.9', '3.10', '3.11', '3.12']
 
 
 def getDevpiConfig() {
@@ -1044,7 +1044,7 @@ pipeline {
                                     def macPackages = get_mac_devpi_stages(props.Name, props.Version, DEVPI_CONFIG.server, DEVPI_CONFIG.credentialsId, DEVPI_CONFIG.stagingIndex, SUPPORTED_MAC_VERSIONS)
                                     linuxPackages = [:]
                                     SUPPORTED_LINUX_VERSIONS.each{pythonVersion ->
-                                        linuxPackages["Test Python ${pythonVersion}: sdist Linux"] = {
+                                        linuxPackages["Linux - Python ${pythonVersion}: sdist "] = {
                                             devpi.testDevpiPackage(
                                                 agent: [
                                                     dockerfile: [
@@ -1069,7 +1069,7 @@ pipeline {
                                                 ]
                                             )
                                         }
-                                        linuxPackages["Test Python ${pythonVersion}: wheel Linux"] = {
+                                        linuxPackages["Linux - Python ${pythonVersion}: wheel"] = {
                                             devpi.testDevpiPackage(
                                                 agent: [
                                                     dockerfile: [
@@ -1097,7 +1097,7 @@ pipeline {
                                     }
                                     def windowsPackages = [:]
                                     SUPPORTED_WINDOWS_VERSIONS.each{pythonVersion ->
-                                        windowsPackages["Test Python ${pythonVersion}: sdist Windows"] = {
+                                        windowsPackages["Windows - Python ${pythonVersion}: sdist"] = {
                                             devpi.testDevpiPackage(
                                                 agent: [
                                                     dockerfile: [
@@ -1125,7 +1125,7 @@ pipeline {
                                                 ],
                                             )
                                         }
-                                        windowsPackages["Test Python ${pythonVersion}: wheel Windows"] = {
+                                        windowsPackages["Windows - ${pythonVersion}: wheel"] = {
                                             devpi.testDevpiPackage(
                                                 agent: [
                                                     dockerfile: [
