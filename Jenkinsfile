@@ -96,7 +96,7 @@ def get_mac_devpi_stages(packageName, packageVersion, devpiServer, devpiCredenti
                                     script: '''python3 -m venv venv
                                                . ./venv/bin/activate
                                                 python -m pip install pip --upgrade
-                                                python -m pip install devpi_client  -r requirements/requirements_tox.txt
+                                                python -m pip install 'devpi-client<7.0'  -r requirements/requirements_tox.txt
                                                 '''
                                 )
                             },
@@ -136,7 +136,7 @@ def get_mac_devpi_stages(packageName, packageVersion, devpiServer, devpiCredenti
                                     label: 'Installing Devpi client',
                                     script: '''python3 -m venv venv
                                                 venv/bin/python -m pip install pip --upgrade
-                                                venv/bin/python -m pip install devpi_client -r requirements/requirements_tox.txt
+                                                venv/bin/python -m pip install 'devpi-client<7.0' -r requirements/requirements_tox.txt
                                                 '''
                                 )
                             },
@@ -271,7 +271,7 @@ def test_packages(){
                                    script: """python${pythonVersion} -m venv venv
                                    . ./venv/bin/activate
                                    python -m pip install --upgrade pip
-                                   pip install devpi_client -r requirements/requirements_tox.txt
+                                   pip install 'devpi-client<7.0' -r requirements/requirements_tox.txt
                                    tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}"""
                                 )
                             }
@@ -310,7 +310,7 @@ def test_packages(){
                                    script: """python${pythonVersion} -m venv venv
                                               . ./venv/bin/activate
                                               python -m pip install --upgrade pip
-                                              pip install devpi_client -r requirements/requirements_tox.txt
+                                              pip install 'devpi-client<7.0' -r requirements/requirements_tox.txt
                                               tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}
                                            """
                                 )

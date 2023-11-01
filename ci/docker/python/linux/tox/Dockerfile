@@ -1,3 +1,4 @@
+ARG PIPX_HOME=/pipx
 ARG PIP_DOWNLOAD_CACHE=/.cache/pip
 FROM ubuntu:22.04
 COPY ci/docker/python/linux/tox/apt-packages.txt /tmp/
@@ -22,6 +23,16 @@ RUN python3 -m pip install --upgrade pip && \
 ARG PIP_DOWNLOAD_CACHE
 RUN mkdir -p ${PIP_DOWNLOAD_CACHE} && \
     chmod -R 777 ${PIP_DOWNLOAD_CACHE}
+
+ARG PIPX_HOME
+ENV PIPX_HOME=${PIPX_HOME}
+ENV PIPX_BIN_DIR=${PIPX_HOME}/bin
+RUN pip3 install --no-cache-dir pipx && \
+    pipx ensurepath && \
+    mkdir -p $PIPX_HOME  && chmod -R 777 $PIPX_HOME
+RUN PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/usr/local/bin pipx install 'devpi-client<7.0' &&  \
+    PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/usr/local/bin pipx install pip-audit
+
 
 WORKDIR /src
 CMD tox --workdir /tmp/tox --recreate

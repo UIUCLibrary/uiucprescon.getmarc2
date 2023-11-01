@@ -1,4 +1,5 @@
 ARG PYTHON_VERSION="3.11"
+ARG PIPX_HOME=/pipx
 ARG PIP_FIND_LINKS=/wheels/
 ARG SONAR_SCANNER_VERSION=5.0.1.3006
 
@@ -61,3 +62,12 @@ COPY --from=wheel_builder ${PIP_FIND_LINKS}/* ${PIP_FIND_LINKS}/
 COPY --from=wheel_builder requirements/ /requirements
 RUN pip install --no-index --no-cache-dir --find-links=${PIP_FIND_LINKS} \
     -r /requirements/requirements-ci.txt
+
+ARG PIPX_HOME
+ENV PIPX_HOME=${PIPX_HOME}
+ENV PIPX_BIN_DIR=${PIPX_HOME}/bin
+RUN pip3 install --no-cache-dir pipx && \
+    pipx ensurepath && \
+    mkdir -p $PIPX_HOME  && chmod -R 777 $PIPX_HOME
+RUN PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/usr/local/bin pipx install 'devpi-client<7.0' &&  \
+    PIPX_HOME=/opt/pipx PIPX_BIN_DIR=/usr/local/bin pipx install pip-audit
