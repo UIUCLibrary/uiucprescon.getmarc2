@@ -171,7 +171,7 @@ def test_packages(){
             }
             architectures.each{ processorArchitecture ->
                 linuxTestStages["Linux-${processorArchitecture} - Python ${pythonVersion}: wheel"] = {
-                    packages.testPkg2(
+                    packages.testPkg(
                         agent: [
                             dockerfile: [
                                 label: "linux && docker && ${processorArchitecture}",
@@ -212,7 +212,7 @@ def test_packages(){
                     )
                 }
                 linuxTestStages["Linux-${processorArchitecture} - Python ${pythonVersion}: sdist"] = {
-                    packages.testPkg2(
+                    packages.testPkg(
                         agent: [
                             dockerfile: [
                                 label: "linux && docker && ${processorArchitecture}",
@@ -221,6 +221,7 @@ def test_packages(){
                                 args: '-v pipcache_uiucprescon_getmarc2:/.cache/pip',
                             ]
                         ],
+                        retries: 3,
                         testSetup: {
                             checkout scm
                             unstash 'PYTHON_PACKAGES'
@@ -259,8 +260,8 @@ def test_packages(){
                 architectures.add("m1")
             }
             architectures.each{ processorArchitecture ->
-                macTestStages["MacOS-${processorArchitecture} - Python ${pythonVersion}: wheel"] = {
-                    packages.testPkg2(
+                macTestStages["MacOS-${processorArchitecture} - Python ${pythonVersion}: sdist"] = {
+                    packages.testPkg(
                         agent: [
                             label: "mac && python${pythonVersion} && ${processorArchitecture}",
                         ],
@@ -269,16 +270,49 @@ def test_packages(){
                             unstash 'PYTHON_PACKAGES'
                         },
                         testCommand: {
-                            findFiles(glob: 'dist/*.whl').each{
+                            findFiles(glob: 'dist/*.tar.gz').each{
                                 sh(label: 'Running Tox',
                                    script: """python${pythonVersion} -m venv venv
-                                   . ./venv/bin/activate
-                                   python -m pip install --upgrade pip
-                                   pip install 'devpi-client<7.0' -r requirements/requirements_tox.txt
-                                   tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}"""
+                                   ./venv/bin/python -m pip install --upgrade pip
+                                   ./venv/bin/pip install -r requirements/requirements_tox.txt
+                                   ./venv/bin/tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}"""
                                 )
                             }
 
+                        },
+                        post:[
+                            cleanup: {
+                                cleanWs(
+                                    patterns: [
+                                            [pattern: 'dist/', type: 'INCLUDE'],
+                                            [pattern: 'venv/', type: 'INCLUDE'],
+                                            [pattern: '.tox/', type: 'INCLUDE'],
+                                        ],
+                                    notFailBuild: true,
+                                    deleteDirs: true
+                                )
+                            },
+                        ]
+                    )
+                }
+                macTestStages["MacOS-${processorArchitecture} - Python ${pythonVersion}: wheel"] = {
+                    packages.testPkg(
+                        agent: [
+                            label: "mac && python${pythonVersion} && ${processorArchitecture}",
+                        ],
+                        retries: 3,
+                        testCommand: {
+                            unstash 'PYTHON_PACKAGES'
+                            findFiles(glob: 'dist/*.whl').each{
+                                sh(label: 'Running Tox',
+                                   script: """python${pythonVersion} -m venv venv
+                                              . ./venv/bin/activate
+                                              python -m pip install --upgrade pip
+                                              pip install -r requirements/requirements_tox.txt
+                                              tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}
+                                           """
+                                )
+                            }
                         },
                         post:[
                             cleanup: {
@@ -298,50 +332,13 @@ def test_packages(){
                         ]
                     )
                 }
-                macTestStages["MacOS-${processorArchitecture} - Python ${pythonVersion}: sdist"] = {
-                    packages.testPkg2(
-                        agent: [
-                            label: "mac && python${pythonVersion} && ${processorArchitecture}",
-                        ],
-                        testSetup: {
-                            checkout scm
-                            unstash 'PYTHON_PACKAGES'
-                        },
-                        testCommand: {
-                            findFiles(glob: 'dist/*.tar.gz').each{
-                                sh(label: 'Running Tox',
-                                   script: """python${pythonVersion} -m venv venv
-                                              . ./venv/bin/activate
-                                              python -m pip install --upgrade pip
-                                              pip install 'devpi-client<7.0' -r requirements/requirements_tox.txt
-                                              tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')}
-                                           """
-                                )
-                            }
-
-                        },
-                        post:[
-                            cleanup: {
-                                cleanWs(
-                                    patterns: [
-                                            [pattern: 'dist/', type: 'INCLUDE'],
-                                            [pattern: 'venv/', type: 'INCLUDE'],
-                                            [pattern: '.tox/', type: 'INCLUDE'],
-                                        ],
-                                    notFailBuild: true,
-                                    deleteDirs: true
-                                )
-                            },
-                        ]
-                    )
-                }
             }
         }
         def windowsTestStages = [:]
         if(params.INCLUDE_WINDOWS_X86_64 == true){
             SUPPORTED_WINDOWS_VERSIONS.each{ pythonVersion ->
                 windowsTestStages["Windows - Python ${pythonVersion}: wheel"] = {
-                    packages.testPkg2(
+                    packages.testPkg(
                         agent: [
                             dockerfile: [
                                 label: 'windows && docker && x86',
@@ -350,7 +347,7 @@ def test_packages(){
                                 args: '-v pipcache_uiucprescon_getmarc2:c:/users/containeradministrator/appdata/local/pip',
                             ]
                         ],
-                        dockerImageName: "${currentBuild.fullProjectName}_test".replaceAll('-', '_').replaceAll('/', '_').replaceAll(' ', '').toLowerCase(),
+                        retries: 3,
                         testSetup: {
                              checkout scm
                              unstash 'PYTHON_PACKAGES'
@@ -379,7 +376,7 @@ def test_packages(){
                     )
                 }
                 windowsTestStages["Windows - Python ${pythonVersion}: sdist"] = {
-                    packages.testPkg2(
+                    packages.testPkg(
                         agent: [
                             dockerfile: [
                                 label: 'windows && docker && x86',
@@ -388,7 +385,7 @@ def test_packages(){
                                 args: '-v pipcache_uiucprescon_getmarc2:c:/users/containeradministrator/appdata/local/pip',
                             ]
                         ],
-                        dockerImageName: "${currentBuild.fullProjectName}_test".replaceAll('-', '_').replaceAll('/', '_').replaceAll(' ', '').toLowerCase(),
+                        retries: 3,
                         testSetup: {
                             checkout scm
                             unstash 'PYTHON_PACKAGES'
@@ -402,9 +399,9 @@ def test_packages(){
                             cleanup: {
                                 cleanWs(
                                     patterns: [
-                                            [pattern: 'dist/', type: 'INCLUDE'],
-                                            [pattern: '**/__pycache__/', type: 'INCLUDE'],
-                                        ],
+                                        [pattern: 'dist/', type: 'INCLUDE'],
+                                        [pattern: '**/__pycache__/', type: 'INCLUDE'],
+                                    ],
                                     notFailBuild: true,
                                     deleteDirs: true
                                 )
