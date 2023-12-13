@@ -1049,16 +1049,15 @@ pipeline {
                                     linuxPackages = [:]
                                     if(params.INCLUDE_LINUX_X86_64 == true){
                                         SUPPORTED_LINUX_VERSIONS.each{pythonVersion ->
-                                            linuxPackages["Linux - Python ${pythonVersion}: sdist "] = {
+                                            linuxPackages["Linux - Python ${pythonVersion}: sdist"] = {
                                                 devpi.testDevpiPackage(
                                                     agent: [
-                                                        dockerfile: [
-                                                            filename: 'ci/docker/python/linux/tox/Dockerfile',
-                                                            additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg PIP_DOWNLOAD_CACHE=/.cache/pip',
-                                                            label: 'linux && docker && x86 && devpi-access'
-                                                        ]
-                                                    ],
-                                                    retryTimes: 3,
+                                                         dockerfile: [
+                                                             filename: 'ci/docker/python/linux/tox/Dockerfile',
+                                                             additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg PIP_DOWNLOAD_CACHE=/.cache/pip',
+                                                             label: 'linux && docker && x86 && devpi-access'
+                                                         ]
+                                                     ],
                                                     devpi: [
                                                         index: DEVPI_CONFIG.stagingIndex,
                                                         server: DEVPI_CONFIG.server,
@@ -1083,7 +1082,6 @@ pipeline {
                                                             label: 'linux && docker && x86 && devpi-access'
                                                         ]
                                                     ],
-                                                    retryTimes: 3,
                                                     devpi: [
                                                         index: DEVPI_CONFIG.stagingIndex,
                                                         server: DEVPI_CONFIG.server,
@@ -1113,12 +1111,13 @@ pipeline {
                                                             label: 'windows && docker && x86 && devpi-access'
                                                         ]
                                                     ],
-                                                    retryTimes: 3,
+                                                    dockerImageName:  "${currentBuild.fullProjectName}_devpi_with_msvc".replaceAll('-', '_').replaceAll('/', '_').replaceAll(' ', '').toLowerCase(),
                                                     devpi: [
                                                         index: DEVPI_CONFIG.stagingIndex,
                                                         server: DEVPI_CONFIG.server,
                                                         credentialsId: DEVPI_CONFIG.credentialsId,
                                                     ],
+                                                    retryTimes: 3,
                                                     package:[
                                                         name: props.Name,
                                                         version: props.Version,
@@ -1126,10 +1125,7 @@ pipeline {
                                                     ],
                                                     test:[
                                                         toxEnv: "py${pythonVersion}".replace('.',''),
-                                                        teardown: {
-                                                            bat('python -m pip list')
-                                                        }
-                                                    ],
+                                                    ]
                                                 )
                                             }
                                             windowsPackages["Windows - ${pythonVersion}: wheel"] = {
@@ -1141,12 +1137,13 @@ pipeline {
                                                             label: 'windows && docker && x86 && devpi-access'
                                                         ]
                                                     ],
-                                                    retryTimes: 3,
                                                     devpi: [
                                                         index: DEVPI_CONFIG.stagingIndex,
                                                         server: DEVPI_CONFIG.server,
                                                         credentialsId: DEVPI_CONFIG.credentialsId,
                                                     ],
+                                                    dockerImageName:  "${currentBuild.fullProjectName}_devpi_without_msvc".replaceAll('-', '_').replaceAll('/', '_').replaceAll(' ', '').toLowerCase(),
+                                                    retryTimes: 3,
                                                     package:[
                                                         name: props.Name,
                                                         version: props.Version,
@@ -1154,10 +1151,7 @@ pipeline {
                                                     ],
                                                     test:[
                                                         toxEnv: "py${pythonVersion}".replace('.',''),
-                                                        teardown: {
-                                                            bat('python -m pip list')
-                                                        }
-                                                    ],
+                                                    ]
                                                 )
                                             }
                                         }
@@ -1211,7 +1205,8 @@ pipeline {
                                     if (!env.TAG_NAME?.trim()){
                                         checkout scm
                                         def devpi = load('ci/jenkins/scripts/devpi.groovy')
-                                        docker.build("getmarc:devpi",'-f ./ci/docker/python/linux/jenkins/Dockerfile --build-arg PIP_EXTRA_INDEX_URL .').inside{
+                                        def dockerImage = docker.build("getmarc:devpi",'-f ./ci/docker/python/linux/jenkins/Dockerfile --build-arg PIP_EXTRA_INDEX_URL .')
+                                        dockerImage.inside{
                                             devpi.pushPackageToIndex(
                                                 pkgName: props.Name,
                                                 pkgVersion: props.Version,
@@ -1221,6 +1216,7 @@ pipeline {
                                                 credentialsId: DEVPI_CONFIG.credentialsId
                                             )
                                         }
+                                        sh script: "docker image rm --no-prune ${dockerImage.imageName()}"
                                     }
                                }
                             }
@@ -1230,7 +1226,8 @@ pipeline {
                                script{
                                     checkout scm
                                     def devpi = load('ci/jenkins/scripts/devpi.groovy')
-                                    docker.build("getmarc:devpi",'-f ./ci/docker/python/linux/jenkins/Dockerfile --build-arg PIP_EXTRA_INDEX_URL .').inside{
+                                    def dockerImage = docker.build("getmarc:devpi",'-f ./ci/docker/python/linux/jenkins/Dockerfile --build-arg PIP_EXTRA_INDEX_URL .')
+                                    dockerImage.inside{
                                         devpi.removePackage(
                                             pkgName: props.Name,
                                             pkgVersion: props.Version,
@@ -1240,6 +1237,7 @@ pipeline {
 
                                         )
                                     }
+                                    sh script: "docker image rm --no-prune ${dockerImage.imageName()}"
                                }
                             }
                         }
