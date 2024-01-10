@@ -36,12 +36,12 @@ FROM base_image AS wheel_builder
 ARG PIP_EXTRA_INDEX_URL
 ARG PIP_TRUSTED_HOST
 
-COPY requirements-ci.txt /requirements/
+COPY requirements-dev.txt /requirements/
 COPY requirements/ /requirements/requirements/
 
 ARG PIP_FIND_LINKS
 RUN mkdir -p ${PIP_FIND_LINKS} &&  \
-    pip wheel --wheel-dir=${PIP_FIND_LINKS} --no-cache-dir -r /requirements/requirements-ci.txt
+    pip wheel --wheel-dir=${PIP_FIND_LINKS} --no-cache-dir -r /requirements/requirements-dev.txt
 
 FROM base_image
 
@@ -61,7 +61,7 @@ ARG PIP_TRUSTED_HOST
 COPY --from=wheel_builder ${PIP_FIND_LINKS}/* ${PIP_FIND_LINKS}/
 COPY --from=wheel_builder requirements/ /requirements
 RUN pip install --no-index --no-cache-dir --find-links=${PIP_FIND_LINKS} \
-    -r /requirements/requirements-ci.txt
+    -r /requirements/requirements-dev.txt
 
 ARG PIPX_HOME
 ENV PIPX_HOME=${PIPX_HOME}
