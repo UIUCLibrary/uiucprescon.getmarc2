@@ -1,0 +1,14 @@
+bandit
+build
+coverage
+flake8
+mypy
+paramiko
+pep517
+pydocstyle
+pylint
+pytest
+types-requests
+sphinx
+lxml<5.1.0; sys_platform == 'darwin' and python_version == '3.8' and platform_machine == 'arm64'
+lxml; sys_platform != 'darwin' or python_version != '3.8' or platform_machine != 'arm64'
