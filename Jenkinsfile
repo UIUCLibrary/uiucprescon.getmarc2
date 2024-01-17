@@ -415,32 +415,34 @@ def test_packages(){
 }
 def startup(){
     stage('Getting Distribution Info'){
-        node('linux && docker') {
-            ws{
-                checkout scm
-                try{
-                    docker.image('python').inside {
-                        timeout(2){
-                            withEnv(['PIP_NO_CACHE_DIR=off']) {
-                                sh(
-                                   label: 'Running setup.py with dist_info',
-                                   script: '''python --version
-                                              python setup.py dist_info
-                                           '''
-                                )
+        retry(3){
+            node('linux && docker') {
+                ws{
+                    checkout scm
+                    try{
+                        docker.image('python').inside {
+                            timeout(2){
+                                withEnv(['PIP_NO_CACHE_DIR=off']) {
+                                    sh(
+                                       label: 'Running setup.py with dist_info',
+                                       script: '''python --version
+                                                  python setup.py dist_info
+                                               '''
+                                    )
+                                }
+                                stash includes: '*.dist-info/**', name: 'DIST-INFO'
+                                archiveArtifacts artifacts: '*.dist-info/**'
                             }
-                            stash includes: '*.dist-info/**', name: 'DIST-INFO'
-                            archiveArtifacts artifacts: '*.dist-info/**'
                         }
+                    } finally{
+                        cleanWs(
+                            deleteDirs: true,
+                            patterns: [
+                                [pattern: '*.dist-info/', type: 'INCLUDE'],
+                                [pattern: '**/__pycache__', type: 'INCLUDE'],
+                            ]
+                        )
                     }
-                } finally{
-                    cleanWs(
-                        deleteDirs: true,
-                        patterns: [
-                            [pattern: '*.dist-info/', type: 'INCLUDE'],
-                            [pattern: '**/__pycache__', type: 'INCLUDE'],
-                        ]
-                    )
                 }
             }
         }
@@ -977,6 +979,14 @@ pipeline {
             }
         }
         stage('Deploy'){
+            when{
+                anyOf{
+                    equals expected: true, actual: params.DEPLOY_DEVPI
+                    equals expected: true, actual: params.DEPLOY_DEVPI_PRODUCTION
+                    equals expected: true, actual: params.DEPLOY_CHOCOLATEY
+                    equals expected: true, actual: params.DEPLOY_DOCS
+                }
+            }
             stages{
                 stage('Devpi'){
                     when {
@@ -1223,6 +1233,12 @@ pipeline {
                     }
                 }
                 stage('Deploy Additional') {
+                    when{
+                        anyOf{
+                            equals expected: true, actual: params.DEPLOY_CHOCOLATEY
+                            equals expected: true, actual: params.DEPLOY_DOCS
+                        }
+                    }
                     parallel{
                         stage('Deploy to Chocolatey') {
                             when{

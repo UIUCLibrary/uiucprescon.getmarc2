@@ -90,7 +90,8 @@ def run(args: Optional[argparse.Namespace] = None) -> None:
             encoding="utf-8"
         )
     except ValueError as error:
-        sys.exit(error)
+        print(error, file=sys.stderr)
+        sys.exit(1)
 
     xml_result = fix_up_xml(xml_result, bibid=args.identifier)
 
