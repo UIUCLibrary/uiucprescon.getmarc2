@@ -979,6 +979,14 @@ pipeline {
             }
         }
         stage('Deploy'){
+            when{
+                anyOf{
+                    equals expected: true, actual: params.DEPLOY_DEVPI
+                    equals expected: true, actual: params.DEPLOY_DEVPI_PRODUCTION
+                    equals expected: true, actual: params.DEPLOY_CHOCOLATEY
+                    equals expected: true, actual: params.DEPLOY_DOCS
+                }
+            }
             stages{
                 stage('Devpi'){
                     when {
@@ -1225,6 +1233,12 @@ pipeline {
                     }
                 }
                 stage('Deploy Additional') {
+                    when{
+                        anyOf{
+                            equals expected: true, actual: params.DEPLOY_CHOCOLATEY
+                            equals expected: true, actual: params.DEPLOY_DOCS
+                        }
+                    }
                     parallel{
                         stage('Deploy to Chocolatey') {
                             when{
