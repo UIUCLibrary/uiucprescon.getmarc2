@@ -415,32 +415,34 @@ def test_packages(){
 }
 def startup(){
     stage('Getting Distribution Info'){
-        node('linux && docker') {
-            ws{
-                checkout scm
-                try{
-                    docker.image('python').inside {
-                        timeout(2){
-                            withEnv(['PIP_NO_CACHE_DIR=off']) {
-                                sh(
-                                   label: 'Running setup.py with dist_info',
-                                   script: '''python --version
-                                              python setup.py dist_info
-                                           '''
-                                )
+        retry(3){
+            node('linux && docker') {
+                ws{
+                    checkout scm
+                    try{
+                        docker.image('python').inside {
+                            timeout(2){
+                                withEnv(['PIP_NO_CACHE_DIR=off']) {
+                                    sh(
+                                       label: 'Running setup.py with dist_info',
+                                       script: '''python --version
+                                                  python setup.py dist_info
+                                               '''
+                                    )
+                                }
+                                stash includes: '*.dist-info/**', name: 'DIST-INFO'
+                                archiveArtifacts artifacts: '*.dist-info/**'
                             }
-                            stash includes: '*.dist-info/**', name: 'DIST-INFO'
-                            archiveArtifacts artifacts: '*.dist-info/**'
                         }
+                    } finally{
+                        cleanWs(
+                            deleteDirs: true,
+                            patterns: [
+                                [pattern: '*.dist-info/', type: 'INCLUDE'],
+                                [pattern: '**/__pycache__', type: 'INCLUDE'],
+                            ]
+                        )
                     }
-                } finally{
-                    cleanWs(
-                        deleteDirs: true,
-                        patterns: [
-                            [pattern: '*.dist-info/', type: 'INCLUDE'],
-                            [pattern: '**/__pycache__', type: 'INCLUDE'],
-                        ]
-                    )
                 }
             }
         }
