@@ -82,7 +82,7 @@ def get_mac_devpi_stages(packageName, packageVersion, devpiServer, devpiCredenti
                         agent: [
                             label: "mac && python${pythonVersion} && devpi-access && ${processorArchitecture}"
                         ],
-                        retryTimes: 2,
+                        retries: 2,
                         devpi: [
                             index: stagingIndex,
                             server: devpiServer,
@@ -123,7 +123,7 @@ def get_mac_devpi_stages(packageName, packageVersion, devpiServer, devpiCredenti
                         agent: [
                             label: "mac && python${pythonVersion} && devpi-access && ${processorArchitecture}"
                         ],
-                        retryTimes: 2,
+                        retries: 2,
                         devpi: [
                             index: stagingIndex,
                             server: devpiServer,
@@ -1048,7 +1048,7 @@ pipeline {
                                                         label: 'linux && docker && x86 && devpi-access'
                                                     ]
                                                 ],
-                                                retryTimes: 3,
+                                                retries: 3,
                                                 devpi: [
                                                     index: DEVPI_CONFIG.stagingIndex,
                                                     server: DEVPI_CONFIG.server,
@@ -1073,7 +1073,7 @@ pipeline {
                                                         label: 'linux && docker && x86 && devpi-access'
                                                     ]
                                                 ],
-                                                retryTimes: 3,
+                                                retries: 3,
                                                 devpi: [
                                                     index: DEVPI_CONFIG.stagingIndex,
                                                     server: DEVPI_CONFIG.server,
@@ -1101,7 +1101,7 @@ pipeline {
                                                         label: 'windows && docker && x86 && devpi-access'
                                                     ]
                                                 ],
-                                                retryTimes: 3,
+                                                retries: 3,
                                                 devpi: [
                                                     index: DEVPI_CONFIG.stagingIndex,
                                                     server: DEVPI_CONFIG.server,
@@ -1129,7 +1129,7 @@ pipeline {
                                                         label: 'windows && docker && x86 && devpi-access'
                                                     ]
                                                 ],
-                                                retryTimes: 3,
+                                                retries: 3,
                                                 devpi: [
                                                     index: DEVPI_CONFIG.stagingIndex,
                                                     server: DEVPI_CONFIG.server,
