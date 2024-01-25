@@ -262,6 +262,7 @@ def test_packages(){
                         agent: [
                             label: "mac && python${pythonVersion} && ${processorArchitecture}",
                         ],
+                        retries: 3,
                         testSetup: {
                             checkout scm
                             unstash 'PYTHON_PACKAGES'
@@ -301,6 +302,7 @@ def test_packages(){
                         agent: [
                             label: "mac && python${pythonVersion} && ${processorArchitecture}",
                         ],
+                        retries: 3,
                         testSetup: {
                             checkout scm
                             unstash 'PYTHON_PACKAGES'
