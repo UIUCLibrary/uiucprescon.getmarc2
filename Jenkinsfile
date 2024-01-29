@@ -178,6 +178,7 @@ def test_packages(){
                                 args: '-v pipcache_uiucprescon_getmarc2:/.cache/pip',
                             ]
                         ],
+                        retries: 2,
                         testSetup: {
                             checkout scm
                             unstash 'PYTHON_PACKAGES'
@@ -219,6 +220,7 @@ def test_packages(){
                                 args: '-v pipcache_uiucprescon_getmarc2:/.cache/pip',
                             ]
                         ],
+                        retries: 2,
                         testSetup: {
                             checkout scm
                             unstash 'PYTHON_PACKAGES'
