@@ -352,6 +352,7 @@ def test_packages(){
                             dockerImageName: "${currentBuild.fullProjectName}_test".replaceAll('-', '_').replaceAll('/', '_').replaceAll(' ', '').toLowerCase(),
                         ]
                     ],
+                    retries: 3,
                     testSetup: {
                          checkout scm
                          unstash 'PYTHON_PACKAGES'
@@ -390,6 +391,7 @@ def test_packages(){
                             dockerImageName: "${currentBuild.fullProjectName}_test".replaceAll('-', '_').replaceAll('/', '_').replaceAll(' ', '').toLowerCase(),
                         ]
                     ],
+                    retries: 3,
                     testSetup: {
                         checkout scm
                         unstash 'PYTHON_PACKAGES'
