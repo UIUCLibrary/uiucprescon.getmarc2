@@ -866,6 +866,9 @@ pipeline {
                             additionalBuildArgs '--build-arg PIP_EXTRA_INDEX_URL'
                         }
                     }
+                    options {
+                        retry(3)
+                    }
                     steps {
                         sh(label: 'Building python distribution packages', script: 'python -m build')
                     }
