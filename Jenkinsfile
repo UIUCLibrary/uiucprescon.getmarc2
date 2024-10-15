@@ -686,6 +686,9 @@ pipeline {
                             }
                             parallel{
                                 stage('Linux') {
+                                    when{
+                                        expression {return nodesByLabel('linux && docker').size() > 0}
+                                    }
                                     steps {
                                         script{
                                             parallel(
@@ -702,6 +705,9 @@ pipeline {
                                     }
                                 }
                                 stage('Windows') {
+                                    when{
+                                        expression {return nodesByLabel('windows && docker && x86').size() > 0}
+                                    }
                                     steps {
                                         script{
                                             parallel(
