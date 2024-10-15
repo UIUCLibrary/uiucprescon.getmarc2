@@ -300,70 +300,6 @@ def test_packages(){
         parallel(windowsTestStages + linuxTestStages + macTestStages)
     }
 }
-def startup(){
-    stage('Getting Distribution Info'){
-        retry(3){
-            node('linux && docker') {
-                ws{
-                    checkout scm
-                    try{
-                        docker.image('python').inside {
-                            timeout(2){
-                                withEnv(['PIP_NO_CACHE_DIR=off']) {
-                                    sh(
-                                       label: 'Running setup.py with dist_info',
-                                       script: '''python --version
-                                                  python setup.py dist_info
-                                               '''
-                                    )
-                                }
-                                stash includes: '*.dist-info/**', name: 'DIST-INFO'
-                                archiveArtifacts artifacts: '*.dist-info/**'
-                            }
-                        }
-                    } finally{
-                        cleanWs(
-                            deleteDirs: true,
-                            patterns: [
-                                [pattern: '*.dist-info/', type: 'INCLUDE'],
-                                [pattern: '**/__pycache__', type: 'INCLUDE'],
-                            ]
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-def get_props(){
-    stage('Reading Package Metadata'){
-        node() {
-            try{
-                unstash 'DIST-INFO'
-                def metadataFile = findFiles(excludes: '', glob: '*.dist-info/METADATA')[0]
-                def package_metadata = readProperties interpolate: true, file: metadataFile.path
-                echo """Metadata:
-
-    Name      ${package_metadata.Name}
-    Version   ${package_metadata.Version}
-    """
-                return package_metadata
-            } finally {
-                cleanWs(
-                    patterns: [
-                            [pattern: '*.dist-info/**', type: 'INCLUDE'],
-                        ],
-                    notFailBuild: true,
-                    deleteDirs: true
-                )
-            }
-        }
-    }
-}
-
-startup()
-props = get_props()
 
 pipeline {
     agent none
@@ -423,7 +359,8 @@ pipeline {
                         success{
                             publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
                             script{
-                                zip archive: true, dir: 'build/docs/html', glob: '', zipFile: "dist/${props.Name}-${props.Version}.doc.zip"
+                                def props = readTOML( file: 'pyproject.toml')['project']
+                                zip archive: true, dir: 'build/docs/html', glob: '', zipFile: "dist/${props.name}-${props.version}.doc.zip"
                                 stash includes: "dist/*.doc.zip,build/docs/html/**", name: 'DOCS_ARCHIVE'
                             }
 
@@ -623,16 +560,17 @@ pipeline {
                                     }
                                     steps{
                                         script{
+                                            def props = readTOML( file: 'pyproject.toml')['project']
                                             withSonarQubeEnv(installationName:'sonarcloud', credentialsId: 'sonarcloud_token') {
                                                 if (env.CHANGE_ID){
                                                     sh(
                                                         label: 'Running Sonar Scanner',
-                                                        script:"sonar-scanner -Dsonar.projectVersion=${props.Version} -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.pullrequest.key=${env.CHANGE_ID} -Dsonar.pullrequest.base=${env.CHANGE_TARGET}"
+                                                        script:"sonar-scanner -Dsonar.projectVersion=${props.version} -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.pullrequest.key=${env.CHANGE_ID} -Dsonar.pullrequest.base=${env.CHANGE_TARGET}"
                                                         )
                                                 } else {
                                                     sh(
                                                         label: 'Running Sonar Scanner',
-                                                        script: "sonar-scanner -Dsonar.projectVersion=${props.Version} -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.branch.name=${env.BRANCH_NAME}"
+                                                        script: "sonar-scanner -Dsonar.projectVersion=${props.version} -Dsonar.buildString=\"${env.BUILD_TAG}\" -Dsonar.branch.name=${env.BRANCH_NAME}"
                                                         )
                                                 }
                                             }
@@ -686,6 +624,9 @@ pipeline {
                             }
                             parallel{
                                 stage('Linux') {
+                                    when{
+                                        expression {return nodesByLabel('linux && docker').size() > 0}
+                                    }
                                     steps {
                                         script{
                                             parallel(
@@ -702,6 +643,9 @@ pipeline {
                                     }
                                 }
                                 stage('Windows') {
+                                    when{
+                                        expression {return nodesByLabel('windows && docker && x86').size() > 0}
+                                    }
                                     steps {
                                         script{
                                             parallel(
@@ -795,11 +739,12 @@ pipeline {
                                 script {
                                     unstash 'PYTHON_PACKAGES'
                                     findFiles(glob: 'dist/*.whl').each{
-                                        def sanitized_packageversion=sanitize_chocolatey_version(props.Version)
+                                    def props = readTOML( file: 'pyproject.toml')['project']
+                                        def sanitized_packageversion=sanitize_chocolatey_version(props.version)
                                         powershell(
                                             label: 'Configuring new package for Chocolatey',
                                             script: """\$ErrorActionPreference = 'Stop'; # stop on all errors
-                                                       choco new getmarc packageversion=${sanitized_packageversion} PythonSummary="${props.Summary}" InstallerFile=${it.path} MaintainerName="${props.Maintainer}" -t pythonscript --outputdirectory packages
+                                                       choco new getmarc packageversion=${sanitized_packageversion} PythonSummary="${props.description}" InstallerFile=${it.path} MaintainerName="${props.maintainers[0].name}" -t pythonscript --outputdirectory packages
                                                        New-Item -ItemType File -Path ".\\packages\\getmarc\\${it.path}" -Force | Out-Null
                                                        Move-Item -Path "${it.path}"  -Destination "./packages/getmarc/${it.path}"  -Force | Out-Null
                                                        choco pack .\\packages\\getmarc\\getmarc.nuspec --outputdirectory .\\packages
@@ -826,7 +771,8 @@ pipeline {
                             steps{
                                 unstash 'CHOCOLATEY_PACKAGE'
                                 script{
-                                    def sanitized_packageversion=sanitize_chocolatey_version(props.Version)
+                                    def props = readTOML( file: 'pyproject.toml')['project']
+                                    def sanitized_packageversion=sanitize_chocolatey_version(props.version)
                                     powershell(
                                         label: 'Installing Chocolatey Package',
                                         script:"""\$ErrorActionPreference = 'Stop'; # stop on all errors
