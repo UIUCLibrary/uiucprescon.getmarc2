@@ -2,6 +2,43 @@
 requires = ["setuptools>=40.8.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
+[project]
+name = "uiucprescon.getmarc2"
+version = "0.1.4.dev0"
+dependencies = [
+    "lxml<5.1.0; sys_platform == 'darwin' and python_version == '3.8' and platform_machine == 'arm64'",
+    "lxml; sys_platform != 'darwin' or python_version != '3.8' or platform_machine != 'arm64'",
+    'importlib-metadata;python_version<"3.8"',
+    'importlib-resources;python_version<"3.9"',
+    "requests",
+]
+readme = "README.md"
+license = {text = "University of Illinois/NCSA Open Source License"}
+authors = [
+    {name = "University Library at The University of Illinois at Urbana Champaign: Preservation Services", email = "prescons@library.illinois.edu"},
+]
+maintainers = [
+    {name = "Henry Borchers", email = "hborcher@illinois.edu"}
+]
+description = "Uses the Get Bib Record Web Service to get marc data from the Alma catalog"
+
+[tool.setuptools]
+zip-safe = true
+
+[tool.setuptools.packages.find]
+where = ["uiucprescon"]
+
+[tool.setuptools.package-data]
+"uiucprescon.getmarc2" = [
+    "MARC21slim.xsd",
+    "955_template.xml",
+    "py.typed"
+]
+
+[project.scripts]
+getmarc = "uiucprescon.getmarc2.__main__:main"
+
+
 [tool.coverage.run]
 branch = true
 source = ["uiucprescon"]
@@ -21,3 +58,11 @@ module = [
     "importlib_metadata"
 ]
 ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+addopts = "--verbose -s --doctest-modules"
+testpaths = [
+    "tests",
+    "uiucprescon"
+]
+junit_family = "xunit2"

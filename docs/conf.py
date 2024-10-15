@@ -15,17 +15,15 @@
 import os
 import re
 import sys
-try:
-    from setuptools.config.setupcfg import read_configuration
-except ImportError:
-    from setuptools.config import read_configuration
+import tomllib
 
 sys.path.insert(0, os.path.abspath('..'))
 
 
 def get_project_metadata():
-    path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../setup.cfg"))
-    return read_configuration(path)["metadata"]
+    path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../pyproject.toml"))
+    with open(path, "rb") as f:
+        return tomllib.load(f)['project']
 
 
 metadata = get_project_metadata()
@@ -33,8 +31,8 @@ metadata = get_project_metadata()
 # -- Project information -----------------------------------------------------
 
 project = metadata['name']
-copyright = '2020, {}'.format(metadata['author'])
-author = metadata['author']
+copyright = '2020, {}'.format(metadata['authors'][0]['name'])
+author = metadata['authors'][0]['name']
 
 # The short X.Y version
 version_extractor = re.compile(r"\d+[.]\d+[.]\d+")
