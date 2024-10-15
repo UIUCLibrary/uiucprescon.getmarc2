@@ -221,80 +221,82 @@ def test_packages(){
             }
         }
         def windowsTestStages = [:]
-        SUPPORTED_WINDOWS_VERSIONS.each{ pythonVersion ->
-            windowsTestStages["Windows - Python ${pythonVersion}: wheel"] = {
-                testPythonPkg(
-                    agent: [
-                        dockerfile: [
-                            label: 'windows && docker && x86',
-                            filename: 'ci/docker/python/windows/tox/Dockerfile',
-                            additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip',
-                            args: '-v pipcache_uiucprescon_getmarc2:c:/users/containeradministrator/appdata/local/pip',
-                            dockerImageName: "${currentBuild.fullProjectName}_test".replaceAll('-', '_').replaceAll('/', '_').replaceAll(' ', '').toLowerCase(),
-                        ]
-                    ],
-                    retries: 3,
-                    testSetup: {
-                         checkout scm
-                         unstash 'PYTHON_PACKAGES'
-                    },
-                    testCommand: {
-                         findFiles(glob: 'dist/*.whl').each{
-                             powershell(label: 'Running Tox', script: "tox --installpkg ${it.path} --workdir \$env:TEMP\\tox  -e py${pythonVersion.replace('.', '')}")
-                         }
+        if(params.INCLUDE_WINDOWS_X86_64 == true){
+            SUPPORTED_WINDOWS_VERSIONS.each{ pythonVersion ->
+                windowsTestStages["Windows - Python ${pythonVersion}: wheel"] = {
+                    testPythonPkg(
+                        agent: [
+                            dockerfile: [
+                                label: 'windows && docker && x86',
+                                filename: 'ci/docker/python/windows/tox/Dockerfile',
+                                additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip',
+                                args: '-v pipcache_uiucprescon_getmarc2:c:/users/containeradministrator/appdata/local/pip',
+                                dockerImageName: "${currentBuild.fullProjectName}_test".replaceAll('-', '_').replaceAll('/', '_').replaceAll(' ', '').toLowerCase(),
+                            ]
+                        ],
+                        retries: 3,
+                        testSetup: {
+                             checkout scm
+                             unstash 'PYTHON_PACKAGES'
+                        },
+                        testCommand: {
+                             findFiles(glob: 'dist/*.whl').each{
+                                 powershell(label: 'Running Tox', script: "tox --installpkg ${it.path} --workdir \$env:TEMP\\tox  -e py${pythonVersion.replace('.', '')}")
+                             }
 
-                    },
-                    post:[
-                        cleanup: {
-                            cleanWs(
-                                patterns: [
-                                        [pattern: 'dist/', type: 'INCLUDE'],
-                                        [pattern: '**/__pycache__/', type: 'INCLUDE'],
-                                    ],
-                                notFailBuild: true,
-                                deleteDirs: true
-                            )
                         },
-                        success: {
-                            archiveArtifacts artifacts: 'dist/*.whl'
-                        }
-                    ]
-                )
-            }
-            windowsTestStages["Windows - Python ${pythonVersion}: sdist"] = {
-                testPythonPkg(
-                    agent: [
-                        dockerfile: [
-                            label: 'windows && docker && x86',
-                            filename: 'ci/docker/python/windows/tox/Dockerfile',
-                            additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip',
-                            args: '-v pipcache_uiucprescon_getmarc2:c:/users/containeradministrator/appdata/local/pip',
-                            dockerImageName: "${currentBuild.fullProjectName}_test".replaceAll('-', '_').replaceAll('/', '_').replaceAll(' ', '').toLowerCase(),
+                        post:[
+                            cleanup: {
+                                cleanWs(
+                                    patterns: [
+                                            [pattern: 'dist/', type: 'INCLUDE'],
+                                            [pattern: '**/__pycache__/', type: 'INCLUDE'],
+                                        ],
+                                    notFailBuild: true,
+                                    deleteDirs: true
+                                )
+                            },
+                            success: {
+                                archiveArtifacts artifacts: 'dist/*.whl'
+                            }
                         ]
-                    ],
-                    retries: 3,
-                    testSetup: {
-                        checkout scm
-                        unstash 'PYTHON_PACKAGES'
-                    },
-                    testCommand: {
-                        findFiles(glob: 'dist/*.tar.gz').each{
-                            bat(label: 'Running Tox', script: "tox --workdir %TEMP%\\tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')} -v")
-                        }
-                    },
-                    post:[
-                        cleanup: {
-                            cleanWs(
-                                patterns: [
-                                        [pattern: 'dist/', type: 'INCLUDE'],
-                                        [pattern: '**/__pycache__/', type: 'INCLUDE'],
-                                    ],
-                                notFailBuild: true,
-                                deleteDirs: true
-                            )
+                    )
+                }
+                windowsTestStages["Windows - Python ${pythonVersion}: sdist"] = {
+                    testPythonPkg(
+                        agent: [
+                            dockerfile: [
+                                label: 'windows && docker && x86',
+                                filename: 'ci/docker/python/windows/tox/Dockerfile',
+                                additionalBuildArgs: '--build-arg PIP_EXTRA_INDEX_URL --build-arg PIP_INDEX_URL --build-arg CHOCOLATEY_SOURCE --build-arg PIP_DOWNLOAD_CACHE=c:/users/containeradministrator/appdata/local/pip',
+                                args: '-v pipcache_uiucprescon_getmarc2:c:/users/containeradministrator/appdata/local/pip',
+                                dockerImageName: "${currentBuild.fullProjectName}_test".replaceAll('-', '_').replaceAll('/', '_').replaceAll(' ', '').toLowerCase(),
+                            ]
+                        ],
+                        retries: 3,
+                        testSetup: {
+                            checkout scm
+                            unstash 'PYTHON_PACKAGES'
                         },
-                    ]
-                )
+                        testCommand: {
+                            findFiles(glob: 'dist/*.tar.gz').each{
+                                bat(label: 'Running Tox', script: "tox --workdir %TEMP%\\tox --installpkg ${it.path} -e py${pythonVersion.replace('.', '')} -v")
+                            }
+                        },
+                        post:[
+                            cleanup: {
+                                cleanWs(
+                                    patterns: [
+                                            [pattern: 'dist/', type: 'INCLUDE'],
+                                            [pattern: '**/__pycache__/', type: 'INCLUDE'],
+                                        ],
+                                    notFailBuild: true,
+                                    deleteDirs: true
+                                )
+                            },
+                        ]
+                    )
+                }
             }
         }
         parallel(windowsTestStages + linuxTestStages + macTestStages)
@@ -313,6 +315,7 @@ pipeline {
         booleanParam(name: 'INCLUDE_ARM_MACOS', defaultValue: false, description: 'Include ARM(m1) architecture for Mac')
         booleanParam(name: 'INCLUDE_X86_64_MACOS', defaultValue: false, description: 'Include x86_64 architecture for Mac')
         booleanParam(name: 'INCLUDE_ARM_LINUX', defaultValue: false, description: 'Include ARM architecture for Linux')
+        booleanParam(name: 'INCLUDE_WINDOWS_X86_64', defaultValue: true, description: 'Include x86_64 architecture for Windows')
         booleanParam(name: 'DEPLOY_CHOCOLATEY', defaultValue: false, description: 'Deploy to Chocolatey repository')
         booleanParam(name: 'DEPLOY_DOCS', defaultValue: false, description: '')
     }
