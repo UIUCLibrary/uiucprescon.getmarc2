@@ -23,10 +23,10 @@ maintainers = [
 description = "Uses the Get Bib Record Web Service to get marc data from the Alma catalog"
 
 [tool.setuptools]
+packages = [
+    "uiucprescon.getmarc2",
+]
 zip-safe = true
-
-[tool.setuptools.packages.find]
-where = ["uiucprescon"]
 
 [tool.setuptools.package-data]
 "uiucprescon.getmarc2" = [
