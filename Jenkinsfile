@@ -463,6 +463,8 @@ pipeline {
                                                                                        . ./venv/bin/activate
                                                                                        uv python install cpython-${version}
                                                                                        uvx -p ${version} --with tox-uv tox run -e ${toxEnv}
+                                                                                       rm -rf ./.tox
+                                                                                       rm -rf ./venv
                                                                                     """
                                                                             )
                                                                     } catch(e) {
@@ -534,14 +536,14 @@ pipeline {
                                                                 docker.image('python').inside('--mount source=python-tmp-uiucprescon_getmarc,target=C:\\Users\\ContainerUser\\Documents'){
                                                                     checkout scm
                                                                     try{
-                                                                        bat(label: 'Install uv',
-                                                                            script: 'python -m venv venv && venv\\Scripts\\pip install uv'
-                                                                        )
                                                                         retry(3){
                                                                             bat(label: 'Running Tox',
-                                                                                script: """call venv\\Scripts\\activate.bat
+                                                                                script: """python -m venv venv && venv\\Scripts\\pip install uv
+                                                                                       call venv\\Scripts\\activate.bat
                                                                                        uv python install cpython-${version}
                                                                                        uvx -p ${version} --with tox-uv tox run -e ${toxEnv}
+                                                                                       rmdir /S /Q .tox
+                                                                                       rmdir /S /Q venv
                                                                                     """
                                                                             )
                                                                         }
