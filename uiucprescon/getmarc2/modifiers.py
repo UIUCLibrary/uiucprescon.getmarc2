@@ -7,9 +7,9 @@ from xml.dom import minidom  # nosec
 from xml.etree import ElementTree as ET  # nosec
 
 try:
-    from importlib.resources import read_text  # type: ignore
+    from importlib.resources import files  # type: ignore
 except ModuleNotFoundError:
-    from importlib_resources import read_text  # type: ignore
+    from importlib_resources import files  # type: ignore
 
 
 class AbsEnrichment(metaclass=abc.ABCMeta):
@@ -38,7 +38,8 @@ class Add955(AbsEnrichment):
     """
 
     questNS = "http://www.loc.gov/MARC21/slim"
-    template_955 = read_text("uiucprescon.getmarc2", "955_template.xml")
+    template_955 =\
+        files("uiucprescon.getmarc2").joinpath("955_template.xml").read_text()
 
     def __init__(self) -> None:
         """Modify 955 fields."""
