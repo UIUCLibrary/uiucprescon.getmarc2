@@ -1,5 +1,6 @@
 bandit
 build
+commitizen
 coverage
 flake8
 mypy

@@ -2,6 +2,8 @@
 #    uv pip compile --universal --python 3.9 pyproject.toml requirements/requirements-dev.txt
 alabaster==0.7.16
     # via sphinx
+argcomplete==3.5.3
+    # via commitizen
 astroid==3.3.8
     # via pylint
 babel==2.17.0
@@ -23,19 +25,26 @@ cffi==1.17.1
 chardet==5.2.0
     # via tox
 charset-normalizer==3.4.1
-    # via requests
+    # via
+    #   commitizen
+    #   requests
 colorama==0.4.6
     # via
     #   bandit
     #   build
+    #   commitizen
     #   pylint
     #   pytest
     #   sphinx
     #   tox
+commitizen==4.4.1
+    # via -r requirements/requirements-dev.txt
 coverage==7.6.12
     # via -r requirements/requirements-dev.txt
 cryptography==44.0.2
     # via paramiko
+decli==0.6.2
+    # via commitizen
 dill==0.3.9
     # via pylint
 distlib==0.3.9
@@ -58,13 +67,16 @@ importlib-metadata==8.6.1 ; python_full_version < '3.10.2'
     # via
     #   uiucprescon-getmarc2 (pyproject.toml)
     #   build
+    #   commitizen
     #   sphinx
 iniconfig==2.0.0
     # via pytest
 isort==6.0.1
     # via pylint
 jinja2==3.1.5
-    # via sphinx
+    # via
+    #   commitizen
+    #   sphinx
 lxml==5.3.1
     # via
     #   -r requirements/requirements-dev.txt
@@ -86,6 +98,7 @@ mypy-extensions==1.0.0
 packaging==24.2
     # via
     #   build
+    #   commitizen
     #   pyproject-api
     #   pytest
     #   sphinx
@@ -105,6 +118,8 @@ pluggy==1.5.0
     # via
     #   pytest
     #   tox
+prompt-toolkit==3.0.50
+    # via questionary
 pycodestyle==2.12.1
     # via flake8
 pycparser==2.22
@@ -128,7 +143,11 @@ pyproject-hooks==1.2.0
 pytest==8.3.5
     # via -r requirements/requirements-dev.txt
 pyyaml==6.0.2
-    # via bandit
+    # via
+    #   bandit
+    #   commitizen
+questionary==2.1.0
+    # via commitizen
 requests==2.32.3
     # via
     #   uiucprescon-getmarc2 (pyproject.toml)
@@ -157,6 +176,8 @@ sphinxcontrib-serializinghtml==2.0.0
     # via sphinx
 stevedore==5.4.1
     # via bandit
+termcolor==2.5.0
+    # via commitizen
 tomli==2.2.1 ; python_full_version < '3.11'
     # via
     #   build
@@ -168,7 +189,9 @@ tomli==2.2.1 ; python_full_version < '3.11'
     #   sphinx
     #   tox
 tomlkit==0.13.2
-    # via pylint
+    # via
+    #   commitizen
+    #   pylint
 tox==4.24.1
     # via -r requirements/requirements-dev.txt
 types-requests==2.32.0.20250301
@@ -176,6 +199,7 @@ types-requests==2.32.0.20250301
 typing-extensions==4.12.2
     # via
     #   astroid
+    #   commitizen
     #   mypy
     #   pylint
     #   rich
@@ -186,5 +210,7 @@ urllib3==2.3.0
     #   types-requests
 virtualenv==20.29.2
     # via tox
+wcwidth==0.2.13
+    # via prompt-toolkit
 zipp==3.21.0 ; python_full_version < '3.10.2'
     # via importlib-metadata
