@@ -763,7 +763,7 @@ def call(){
                                     dockerfile {
                                         filename 'ci/docker/chocolatey_package/Dockerfile'
                                         label 'windows && docker && x86'
-                                        additionalBuildArgs '--build-arg CHOCOLATEY_SOURCE'
+                                        additionalBuildArgs '--build-arg CHOCOLATEY_SOURCE --build-arg FROM_IMAGE=%DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE%'
                                       }
                                 }
                                 steps{
@@ -796,7 +796,7 @@ def call(){
                                     dockerfile {
                                         filename 'ci/docker/chocolatey_package/Dockerfile'
                                         label 'windows && docker && x86'
-                                        additionalBuildArgs '--build-arg CHOCOLATEY_SOURCE'
+                                        additionalBuildArgs '--build-arg CHOCOLATEY_SOURCE --build-arg FROM_IMAGE=%DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE%'
                                       }
                                 }
                                 steps{
