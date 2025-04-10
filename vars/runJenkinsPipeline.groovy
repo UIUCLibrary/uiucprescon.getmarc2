@@ -46,14 +46,12 @@ def call(){
             booleanParam(name: 'TEST_RUN_TOX', defaultValue: false, description: 'Run Tox Tests')
             booleanParam(name: 'USE_SONARQUBE', defaultValue: true, description: 'Send data test data to SonarQube')
             booleanParam(name: 'BUILD_PACKAGES', defaultValue: false, description: 'Build Python packages')
-            booleanParam(name: 'BUILD_CHOCOLATEY_PACKAGE', defaultValue: false, description: 'Build package for chocolatey package manager')
             booleanParam(name: 'TEST_PACKAGES', defaultValue: true, description: 'Test Python packages by installing them and running tests on the installed package')
             booleanParam(name: 'INCLUDE_MACOS-ARM64', defaultValue: false, description: 'Include ARM(m1) architecture for Mac')
             booleanParam(name: 'INCLUDE_MACOS-X86_64', defaultValue: false, description: 'Include x86_64 architecture for Mac')
             booleanParam(name: 'INCLUDE_LINUX-ARM64', defaultValue: false, description: 'Include ARM architecture for Linux')
             booleanParam(name: 'INCLUDE_LINUX-X86_64', defaultValue: true, description: 'Include x86_64 architecture for Linux')
             booleanParam(name: 'INCLUDE_WINDOWS-X86_64', defaultValue: true, description: 'Include x86_64 architecture for Windows')
-            booleanParam(name: 'DEPLOY_CHOCOLATEY', defaultValue: false, description: 'Deploy to Chocolatey repository')
             booleanParam(name: 'DEPLOY_DOCS', defaultValue: false, description: '')
         }
         options {
@@ -579,8 +577,6 @@ def call(){
                 when{
                     anyOf{
                         equals expected: true, actual: params.BUILD_PACKAGES
-                        equals expected: true, actual: params.BUILD_CHOCOLATEY_PACKAGE
-                        equals expected: true, actual: params.DEPLOY_CHOCOLATEY
                     }
                     beforeAgent true
                 }
@@ -749,220 +745,67 @@ def call(){
                             )
                         }
                     }
-                    stage('Chocolatey'){
-                        when{
-                            anyOf{
-                                equals expected: true, actual: params.DEPLOY_CHOCOLATEY
-                                equals expected: true, actual: params.BUILD_CHOCOLATEY_PACKAGE
-                            }
-                            beforeInput true
-                        }
-                        stages{
-                            stage('Package for Chocolatey'){
-                                agent {
-                                    dockerfile {
-                                        filename 'ci/docker/chocolatey_package/Dockerfile'
-                                        label 'windows && docker && x86'
-                                        additionalBuildArgs '--build-arg CHOCOLATEY_SOURCE --build-arg FROM_IMAGE=%DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE%'
-                                      }
-                                }
-                                steps{
-                                    script {
-                                        unstash 'PYTHON_PACKAGES'
-                                        findFiles(glob: 'dist/*.whl').each{
-                                        def props = readTOML( file: 'pyproject.toml')['project']
-                                            def sanitized_packageversion=sanitize_chocolatey_version(props.version)
-                                            powershell(
-                                                label: 'Configuring new package for Chocolatey',
-                                                script: """\$ErrorActionPreference = 'Stop'; # stop on all errors
-                                                           choco new getmarc packageversion=${sanitized_packageversion} PythonSummary="${props.description}" InstallerFile=${it.path} MaintainerName="${props.maintainers[0].name}" -t pythonscript --outputdirectory packages
-                                                           New-Item -ItemType File -Path ".\\packages\\getmarc\\${it.path}" -Force | Out-Null
-                                                           Move-Item -Path "${it.path}"  -Destination "./packages/getmarc/${it.path}"  -Force | Out-Null
-                                                           choco pack .\\packages\\getmarc\\getmarc.nuspec --outputdirectory .\\packages
-                                                           """
-                                            )
-                                        }
-                                    }
-                                }
-                                post{
-                                    always{
-                                        archiveArtifacts artifacts: 'packages/**/*.nuspec'
-                                        stash includes: 'packages/*.nupkg', name: 'CHOCOLATEY_PACKAGE'
-                                    }
-                                }
-                            }
-                            stage('Testing Chocolatey Package'){
-                                agent {
-                                    dockerfile {
-                                        filename 'ci/docker/chocolatey_package/Dockerfile'
-                                        label 'windows && docker && x86'
-                                        additionalBuildArgs '--build-arg CHOCOLATEY_SOURCE --build-arg FROM_IMAGE=%DEFAULT_DOCKER_DOTNET_SDK_BASE_IMAGE%'
-                                      }
-                                }
-                                steps{
-                                    unstash 'CHOCOLATEY_PACKAGE'
-                                    script{
-                                        def props = readTOML( file: 'pyproject.toml')['project']
-                                        def sanitized_packageversion=sanitize_chocolatey_version(props.version)
-                                        powershell(
-                                            label: 'Installing Chocolatey Package',
-                                            script:"""\$ErrorActionPreference = 'Stop'; # stop on all errors
-                                                      choco install getmarc -y -dv  --version=${sanitized_packageversion} -s './packages/;CHOCOLATEY_SOURCE;chocolatey' --no-progress
-                                                      """
-                                        )
-                                    }
-                                    bat 'getmarc --help'
-
-                                }
-                                post{
-                                    success{
-                                        archiveArtifacts artifacts: 'packages/*.nupkg', fingerprint: true
-                                    }
-                                    cleanup{
-                                        cleanWs(
-                                            notFailBuild: true,
-                                            deleteDirs: true,
-                                            patterns: [
-                                                [pattern: 'packages/', type: 'INCLUDE'],
-                                                [pattern: 'uiucprescon.getmarc2.dist-info/', type: 'INCLUDE'],
-                                            ]
-                                        )
-                                    }
-                                    failure{
-                                        powershell('Get-ChildItem -Path C:\\ProgramData\\chocolatey\\logs -Recurse -Include chocolatey.log | Copy-Item -Destination $ENV:WORKSPACE')
-                                        archiveArtifacts artifacts: 'chocolatey.log', allowEmptyArchive: true
-                                        echo 'Check chocolatey.log for more details on failure'
-                                    }
-                                }
-                            }
-                        }
-                    }
                 }
             }
             stage('Deploy'){
                 when{
                     anyOf{
-                        equals expected: true, actual: params.DEPLOY_CHOCOLATEY
                         equals expected: true, actual: params.DEPLOY_DOCS
                     }
                 }
-                stages{
-                    stage('Deploy Additional') {
+                parallel{
+                    stage('Deploy Online Documentation') {
                         when{
-                            anyOf{
-                                equals expected: true, actual: params.DEPLOY_CHOCOLATEY
-                                equals expected: true, actual: params.DEPLOY_DOCS
+                            equals expected: true, actual: params.DEPLOY_DOCS
+                            beforeAgent true
+                            beforeInput true
+                        }
+                        environment{
+                            PIP_CACHE_DIR='/tmp/pipcache'
+                            UV_INDEX_STRATEGY='unsafe-best-match'
+                            UV_TOOL_DIR='/tmp/uvtools'
+                            UV_PYTHON_INSTALL_DIR='/tmp/uvpython'
+                            UV_CACHE_DIR='/tmp/uvcache'
+                        }
+                        agent {
+                            docker{
+                                image 'python'
+                                label 'docker && linux'
+                                args '--mount source=python-tmp-uiucprescon_getmarc,target=/tmp'
                             }
                         }
-                        parallel{
-                            stage('Deploy to Chocolatey') {
-                                when{
-                                    equals expected: true, actual: params.DEPLOY_CHOCOLATEY
-                                    beforeInput true
-                                    beforeAgent true
-                                }
-                                agent {
-                                    dockerfile {
-                                        filename 'ci/docker/chocolatey_package/Dockerfile'
-                                        label 'windows && docker && x86'
-                                        additionalBuildArgs '--build-arg CHOCOLATEY_SOURCE'
-                                      }
-                                }
-                                options{
-                                    timeout(time: 1, unit: 'DAYS')
-                                    retry(3)
-                                }
-                                input {
-                                    message 'Deploy to Chocolatey server'
-                                    id 'CHOCOLATEY_DEPLOYMENT'
-                                    parameters {
-                                        choice(
-                                            choices: [
-                                                'https://jenkins.library.illinois.edu/nexus/repository/chocolatey-hosted-beta/',
-                                                'https://jenkins.library.illinois.edu/nexus/repository/chocolatey-hosted-public/'
-                                            ],
-                                            description: 'Chocolatey Server to deploy to',
-                                            name: 'CHOCOLATEY_SERVER'
-                                        )
-                                    }
-                                }
-                                steps{
-                                    unstash 'CHOCOLATEY_PACKAGE'
-                                    script{
-                                        def pkgs = []
-                                        findFiles(glob: 'packages/*.nupkg').each{
-                                            pkgs << it.path
-                                        }
-                                        def deployment_options = input(
-                                            message: 'Chocolatey server',
-                                            parameters: [
-                                                credentials(
-                                                    credentialType: 'org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl',
-                                                    defaultValue: 'NEXUS_NUGET_API_KEY',
-                                                    description: 'Nuget API key for Chocolatey',
-                                                    name: 'CHOCO_REPO_KEY',
-                                                    required: true
-                                                ),
-                                                choice(
-                                                    choices: pkgs,
-                                                    description: 'Package to use',
-                                                    name: 'NUPKG'
-                                                ),
-                                            ]
-                                        )
-                                        withCredentials([string(credentialsId: deployment_options['CHOCO_REPO_KEY'], variable: 'KEY')]) {
-                                            bat(
-                                                label: "Deploying ${deployment_options['NUPKG']} to Chocolatey",
-                                                script: "choco push ${deployment_options['NUPKG']} -s ${CHOCOLATEY_SERVER} -k %KEY%"
-                                            )
-                                        }
-                                    }
-                                }
+                        options{
+                            timeout(time: 1, unit: 'DAYS')
+                        }
+                        input {
+                            message 'Update project documentation?'
+                        }
+                        steps{
+                            unstash 'DOCS_ARCHIVE'
+                            withCredentials([usernamePassword(credentialsId: 'dccdocs-server', passwordVariable: 'docsPassword', usernameVariable: 'docsUsername')]) {
+                                sh 'python utils/upload_docs.py --username=$docsUsername --password=$docsPassword --subroute=getmarc2 build/docs/html apache-ns.library.illinois.edu'
                             }
-                            stage('Deploy Online Documentation') {
-                                when{
-                                    equals expected: true, actual: params.DEPLOY_DOCS
-                                    beforeAgent true
-                                    beforeInput true
-                                }
-                                environment{
-                                    PIP_CACHE_DIR='/tmp/pipcache'
-                                    UV_INDEX_STRATEGY='unsafe-best-match'
-                                    UV_TOOL_DIR='/tmp/uvtools'
-                                    UV_PYTHON_INSTALL_DIR='/tmp/uvpython'
-                                    UV_CACHE_DIR='/tmp/uvcache'
-                                }
-                                agent {
-                                    docker{
-                                        image 'python'
-                                        label 'docker && linux'
-                                        args '--mount source=python-tmp-uiucprescon_getmarc,target=/tmp'
-                                    }
-                                }
-                                options{
-                                    timeout(time: 1, unit: 'DAYS')
-                                }
-                                input {
-                                    message 'Update project documentation?'
-                                }
-                                steps{
-                                    unstash 'DOCS_ARCHIVE'
-                                    withCredentials([usernamePassword(credentialsId: 'dccdocs-server', passwordVariable: 'docsPassword', usernameVariable: 'docsUsername')]) {
-                                        sh 'python utils/upload_docs.py --username=$docsUsername --password=$docsPassword --subroute=getmarc2 build/docs/html apache-ns.library.illinois.edu'
-                                    }
-                                }
-                                post{
-                                    cleanup{
-                                        cleanWs(
-                                            deleteDirs: true,
-                                            patterns: [
-                                                [pattern: 'build/', type: 'INCLUDE'],
-                                                [pattern: 'dist/', type: 'INCLUDE'],
-                                            ]
-                                        )
-                                    }
-                                }
+                        }
+                        post{
+                            cleanup{
+                                cleanWs(
+                                    deleteDirs: true,
+                                    patterns: [
+                                        [pattern: 'build/', type: 'INCLUDE'],
+                                        [pattern: 'dist/', type: 'INCLUDE'],
+                                    ]
+                                )
                             }
+                        }
+                    }
+                }
+//                 stages{
+//                     stage('Deploy Additional') {
+//                         when{
+//                             anyOf{
+//                                 equals expected: true, actual: params.DEPLOY_DOCS
+//                             }
+//                         }
     //                         stage('Deploy Documentation'){
     //                             when{
     //                                 equals expected: true, actual: params.DEPLOY_DOCS
@@ -1017,9 +860,9 @@ def call(){
     //                                 }
     //                             }
     //                         }
-                        }
-                    }
-                }
+    //                     }
+    //                }
+    //             }
             }
         }
     }
