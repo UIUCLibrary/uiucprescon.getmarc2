@@ -31,7 +31,7 @@ def get_sonarqube_unresolved_issues(report_task_file){
 
 def call(){
     library(
-        identifier: 'JenkinsPythonHelperLibrary@2024.12.0',
+        identifier: 'JenkinsPythonHelperLibrary@2025.5.0',
         retriever: modernSCM(
             [
                 $class: 'GitSCMSource',
