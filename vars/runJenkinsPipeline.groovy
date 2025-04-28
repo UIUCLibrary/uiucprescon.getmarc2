@@ -535,28 +535,22 @@ def call(){
                                                             "Tox Environment: ${toxEnv}",
                                                             {
                                                                 node('docker && windows'){
-                                                                    docker.image(env.DEFAULT_PYTHON_DOCKER_IMAGE ? env.DEFAULT_PYTHON_DOCKER_IMAGE: 'python').inside("--mount type=volume,source=uv_python_install_dir,target=${env.UV_PYTHON_INSTALL_DIR}"){
-                                                                        checkout scm
-                                                                        try{
-                                                                            retry(3){
+                                                                    retry(3){
+                                                                        try{    
+                                                                            docker.image(env.DEFAULT_PYTHON_DOCKER_IMAGE ? env.DEFAULT_PYTHON_DOCKER_IMAGE: 'python').inside("--mount type=volume,source=uv_python_install_dir,target=${env.UV_PYTHON_INSTALL_DIR}"){
+                                                                                checkout scm
                                                                                 bat(label: 'Running Tox',
                                                                                     script: """python -m venv venv && venv\\Scripts\\pip install --disable-pip-version-check uv
-                                                                                           call venv\\Scripts\\activate.bat
-                                                                                           uv python install cpython-${version}
-                                                                                           uvx -p ${version} --with tox-uv tox run -e ${toxEnv}
-                                                                                           rmdir /S /Q .tox
-                                                                                           rmdir /S /Q venv
+                                                                                        call venv\\Scripts\\activate.bat
+                                                                                        uv python install cpython-${version}
+                                                                                        uvx -p ${version} --with tox-uv tox run -e ${toxEnv}
+                                                                                        rmdir /S /Q .tox
+                                                                                        rmdir /S /Q venv
                                                                                         """
                                                                                 )
                                                                             }
                                                                         } finally{
-                                                                            cleanWs(
-                                                                                patterns: [
-                                                                                    [pattern: 'venv/', type: 'INCLUDE'],
-                                                                                    [pattern: '.tox', type: 'INCLUDE'],
-                                                                                    [pattern: '**/__pycache__/', type: 'INCLUDE'],
-                                                                                ]
-                                                                            )
+                                                                             bat "${tool(name: 'Default', type: 'git')} clean -dfx"
                                                                         }
                                                                     }
                                                                 }
