@@ -17,13 +17,17 @@ def sanitize_chocolatey_version(version){
         return new_version
     }
 }
+
 def get_sonarqube_unresolved_issues(report_task_file){
     script{
-        if (! fileExists(report_task_file)){
-            error "File not found ${report_task_file}"
+        if(! fileExists(report_task_file)){
+            error "Could not find ${report_task_file}"
         }
         def props = readProperties  file: report_task_file
-        def response = httpRequest url : props['serverUrl'] + "/api/issues/search?componentKeys=" + props['projectKey'] + "&resolved=no"
+        if(! props['serverUrl'] || ! props['projectKey']){
+            error "Could not find serverUrl or projectKey in ${report_task_file}"
+        }
+        def response = httpRequest url : props['serverUrl'] + '/api/issues/search?componentKeys=' + props['projectKey'] + '&resolved=no'
         def outstandingIssues = readJSON text: response.content
         return outstandingIssues
     }
@@ -45,6 +49,7 @@ def call(){
             booleanParam(name: 'RUN_CHECKS', defaultValue: true, description: 'Run checks on code')
             booleanParam(name: 'TEST_RUN_TOX', defaultValue: false, description: 'Run Tox Tests')
             booleanParam(name: 'USE_SONARQUBE', defaultValue: true, description: 'Send data test data to SonarQube')
+            credentials(name: 'SONARCLOUD_TOKEN', credentialType: 'org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl', defaultValue: 'sonarcloud_token', required: false)
             booleanParam(name: 'BUILD_PACKAGES', defaultValue: false, description: 'Build Python packages')
             booleanParam(name: 'TEST_PACKAGES', defaultValue: true, description: 'Test Python packages by installing them and running tests on the installed package')
             booleanParam(name: 'INCLUDE_MACOS-ARM64', defaultValue: false, description: 'Include ARM(m1) architecture for Mac')
@@ -350,41 +355,34 @@ def call(){
                                             SONAR_USER_HOME='/tmp/sonar'
                                         }
                                         steps{
-                                            script{
-                                                withSonarQubeEnv(installationName:'sonarcloud', credentialsId: params.SONARCLOUD_TOKEN) {
-                                                    def sourceInstruction
-                                                    if (env.CHANGE_ID){
-                                                        sourceInstruction = '-Dsonar.pullrequest.key=$CHANGE_ID -Dsonar.pullrequest.base=$BRANCH_NAME'
-                                                    } else{
-                                                        sourceInstruction = '-Dsonar.branch.name=$BRANCH_NAME'
+                                            withSonarQubeEnv(installationName: 'sonarcloud', credentialsId: params.SONARCLOUD_TOKEN) {
+                                                withCredentials([string(credentialsId: params.SONARCLOUD_TOKEN, variable: 'token')]) {
+                                                    script{
+                                                        def sourceInstruction
+                                                        if (env.CHANGE_ID){
+                                                            sourceInstruction = '-Dsonar.pullrequest.key=$CHANGE_ID -Dsonar.pullrequest.base=$BRANCH_NAME'
+                                                        } else{
+                                                            sourceInstruction = '-Dsonar.branch.name=$BRANCH_NAME'
+                                                        }
+                                                        sh(
+                                                            label: 'Running Sonar Scanner',
+                                                            script: "./venv/bin/uv tool run pysonar -t \$token -Dsonar.projectVersion=$VERSION -Dsonar.buildString=\"$BUILD_TAG\" ${sourceInstruction}",
+                                                        )
                                                     }
-                                                    sh(
-                                                        label: 'Running Sonar Scanner',
-                                                        script: """. ./venv/bin/activate
-                                                                    uv tool run pysonar-scanner -Dsonar.projectVersion=$VERSION -Dsonar.buildString=\"$BUILD_TAG\" ${sourceInstruction}
-                                                                """
-                                                    )
                                                 }
+                                            }
+                                            script{
                                                 timeout(time: 1, unit: 'HOURS') {
                                                     def sonarqube_result = waitForQualityGate(abortPipeline: false)
                                                     if (sonarqube_result.status != 'OK') {
                                                         unstable "SonarQube quality gate: ${sonarqube_result.status}"
                                                     }
-                                                    def outstandingIssues = get_sonarqube_unresolved_issues('.scannerwork/report-task.txt')
-                                                    writeJSON file: 'reports/sonar-report.json', json: outstandingIssues
-                                                }
-                                                milestone label: 'sonarcloud'
-                                            }
-                                        }
-                                        post {
-                                            always{
-                                                script{
-                                                    if(fileExists('reports/sonar-report.json')){
-                                                        stash includes: 'reports/sonar-report.json', name: 'SONAR_REPORT'
-                                                        archiveArtifacts allowEmptyArchive: true, artifacts: 'reports/sonar-report.json'
-                                                        recordIssues(tools: [sonarQube(pattern: 'reports/sonar-report.json')])
+                                                    if(env.BRANCH_IS_PRIMARY){
+                                                       writeJSON file: 'reports/sonar-report.json', json: get_sonarqube_unresolved_issues('.sonar/report-task.txt')
+                                                       recordIssues(tools: [sonarQube(pattern: 'reports/sonar-report.json')])
                                                     }
                                                 }
+                                                milestone label: 'sonarcloud'
                                             }
                                         }
                                     }
