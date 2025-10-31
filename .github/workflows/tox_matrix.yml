@@ -22,9 +22,8 @@ jobs:
           cache: 'pip' # caching pip dependencies
       - name: Install requirements
         run: |
-          pip install wheel
-          pip install tox
+          pip install uv
       - name: Run tox
-        run: tox -e py -vvv
+        run: uv run --only-group tox --with tox-uv --frozen tox -e py -vvv
         env:
           PIP_EXTRA_INDEX_URL: ${{vars.PIP_EXTRA_INDEX_URL}}

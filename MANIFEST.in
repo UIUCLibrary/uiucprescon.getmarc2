@@ -4,8 +4,6 @@
 # README and the files it references
 include README.md
 
-# Running requirements
-include requirements.txt
 
 # Tox configuration setting
 include tox.ini
