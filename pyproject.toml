@@ -5,11 +5,9 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "uiucprescon.getmarc2"
 version = "0.1.4.dev0"
+requires-python = ">= 3.10"
 dependencies = [
-    "lxml<5.1.0; sys_platform == 'darwin' and python_version == '3.8' and platform_machine == 'arm64'",
-    "lxml; sys_platform != 'darwin' or python_version != '3.8' or platform_machine != 'arm64'",
-    'importlib-metadata;python_version<"3.8"',
-    'importlib-resources;python_version<"3.9"',
+    "lxml",
     "requests",
 ]
 readme = "README.md"
@@ -21,11 +19,40 @@ maintainers = [
     {name = "Henry Borchers", email = "hborcher@illinois.edu"}
 ]
 description = "Uses the Get Bib Record Web Service to get marc data from the Alma catalog"
-
+[dependency-groups]
+test = ["pytest", "coverage"]
+docs = ["sphinx"]
+type_checking = [
+    "types-requests",
+    "lxml",
+    "mypy",
+]
+lint = [
+    "bandit",
+    "flake8",
+    "pydocstyle",
+    "pylint",
+    {include-group = "type_checking"},
+]
+tox = ['tox']
+dev = [
+    "commitizen",
+    {include-group = "docs"},
+    {include-group = "lint"},
+    {include-group = "tox"},
+    {include-group = "test"},
+]
+release = ['twine']
+ci = [
+    "pysonar",
+    {include-group = "release"},
+    {include-group = "dev"},
+]
 [tool.setuptools]
 packages = [
     "uiucprescon.getmarc2",
 ]
+package-dir = {"uiucprescon.getmarc2" = "src/uiucprescon/getmarc2"}
 zip-safe = true
 
 [tool.setuptools.package-data]
@@ -59,6 +86,10 @@ source = ["uiucprescon"]
 exclude_lines =[
     "if TYPE_CHECKING:"
 ]
+
+[tool.mypy]
+mypy_path = "src"
+
 
 [[tool.mypy.overrides]]
 module = [

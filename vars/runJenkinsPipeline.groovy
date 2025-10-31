@@ -17,13 +17,17 @@ def sanitize_chocolatey_version(version){
         return new_version
     }
 }
+
 def get_sonarqube_unresolved_issues(report_task_file){
     script{
-        if (! fileExists(report_task_file)){
-            error "File not found ${report_task_file}"
+        if(! fileExists(report_task_file)){
+            error "Could not find ${report_task_file}"
         }
         def props = readProperties  file: report_task_file
-        def response = httpRequest url : props['serverUrl'] + "/api/issues/search?componentKeys=" + props['projectKey'] + "&resolved=no"
+        if(! props['serverUrl'] || ! props['projectKey']){
+            error "Could not find serverUrl or projectKey in ${report_task_file}"
+        }
+        def response = httpRequest url : props['serverUrl'] + '/api/issues/search?componentKeys=' + props['projectKey'] + '&resolved=no'
         def outstandingIssues = readJSON text: response.content
         return outstandingIssues
     }
@@ -45,6 +49,7 @@ def call(){
             booleanParam(name: 'RUN_CHECKS', defaultValue: true, description: 'Run checks on code')
             booleanParam(name: 'TEST_RUN_TOX', defaultValue: false, description: 'Run Tox Tests')
             booleanParam(name: 'USE_SONARQUBE', defaultValue: true, description: 'Send data test data to SonarQube')
+            credentials(name: 'SONARCLOUD_TOKEN', credentialType: 'org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl', defaultValue: 'sonarcloud_token', required: false)
             booleanParam(name: 'BUILD_PACKAGES', defaultValue: false, description: 'Build Python packages')
             booleanParam(name: 'TEST_PACKAGES', defaultValue: true, description: 'Test Python packages by installing them and running tests on the installed package')
             booleanParam(name: 'INCLUDE_MACOS-ARM64', defaultValue: false, description: 'Include ARM(m1) architecture for Mac')
@@ -96,24 +101,20 @@ def call(){
                                 script: '''python3 -m venv venv
                                            trap "rm -rf venv" EXIT
                                            venv/bin/pip install --disable-pip-version-check uv
-                                           . ./venv/bin/activate
                                            mkdir -p logs
-                                           uvx --from sphinx --with-editable . --with-requirements requirements-dev.txt sphinx-build docs build/docs/html -d build/docs/.doctrees -w logs/build_sphinx.log
+                                           ./venv/bin/uv run --group docs --no-dev sphinx-build docs build/docs/html -d build/docs/.doctrees -w logs/build_sphinx.log
                                         '''
                             )
+                            publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
+                            script{
+                                def props = readTOML( file: 'pyproject.toml')['project']
+                                zip archive: true, dir: 'build/docs/html', glob: '', zipFile: "dist/${props.name}-${props.version}.doc.zip"
+                                stash includes: "dist/*.doc.zip,build/docs/html/**", name: 'DOCS_ARCHIVE'
+                            }
                         }
                         post{
                             always {
                                 recordIssues(tools: [sphinxBuild(pattern: 'logs/build_sphinx.log')])
-                            }
-                            success{
-                                publishHTML([allowMissing: true, alwaysLinkToLastBuild: false, keepAll: false, reportDir: 'build/docs/html', reportFiles: 'index.html', reportName: 'Documentation', reportTitles: ''])
-                                script{
-                                    def props = readTOML( file: 'pyproject.toml')['project']
-                                    zip archive: true, dir: 'build/docs/html', glob: '', zipFile: "dist/${props.name}-${props.version}.doc.zip"
-                                    stash includes: "dist/*.doc.zip,build/docs/html/**", name: 'DOCS_ARCHIVE'
-                                }
-
                             }
                             cleanup{
                                 cleanWs(
@@ -147,27 +148,21 @@ def call(){
                                     UV_PYTHON_INSTALL_DIR='/tmp/uvpython'
                                     UV_CACHE_DIR='/tmp/uvcache'
                                     UV_PYTHON = '3.12'
+                                    UV_PROJECT_ENVIRONMENT="${WORKSPACE}/venv"
                                 }
                                 stages{
                                     stage('Configuring Testing Environment'){
                                         steps{
                                             sh(
-                                                label: 'Create virtual environment',
+                                                label: 'Create virtual environment with packaging in development mode',
                                                 script: '''python3 -m venv bootstrap_uv
                                                            bootstrap_uv/bin/pip install --disable-pip-version-check uv
                                                            bootstrap_uv/bin/uv venv venv
-                                                           . ./venv/bin/activate
-                                                           bootstrap_uv/bin/uv pip install uv
+                                                           UV_PROJECT_ENVIRONMENT=./venv bootstrap_uv/bin/uv sync --frozen --group ci
+                                                           bootstrap_uv/bin/uv pip install --python=./venv/bin/python uv
                                                            rm -rf bootstrap_uv
-                                                           uv pip install -r requirements-dev.txt
-                                                           '''
-                                                       )
-                                            sh(
-                                                label: 'Install package in development mode',
-                                                script: '''. ./venv/bin/activate
-                                                           uv pip install -e .
                                                         '''
-                                                )
+                                           )
                                             sh(
                                                 label: 'Creating logging and report directories',
                                                 script: 'mkdir -p logs'
@@ -178,9 +173,7 @@ def call(){
                                         parallel {
                                             stage('PyTest'){
                                                 steps{
-                                                    sh '''. ./venv/bin/activate
-                                                            coverage run --parallel-mode --source uiucprescon -m pytest --junitxml=reports/pytest/junit-pytest.xml
-                                                            '''
+                                                    sh './venv/bin/uv run coverage run --parallel-mode --source src -m pytest --junitxml=reports/pytest/junit-pytest.xml'
                                                 }
                                                 post {
                                                     always {
@@ -192,10 +185,9 @@ def call(){
                                                 steps {
                                                     sh(
                                                         label:'Running doctest',
-                                                        script: '''. ./venv/bin/activate
-                                                                   mkdir -p reports/doctests
-                                                                   coverage run --parallel-mode --source uiucprescon -m sphinx -b doctest -d build/docs/doctrees docs reports/doctest -w logs/doctest.log
-                                                                   '''
+                                                        script: '''mkdir -p reports/doctests
+                                                                   ./venv/bin/uv run coverage run --parallel-mode --source src -m sphinx -b doctest -d build/docs/doctrees docs reports/doctest -w logs/doctest.log
+                                                                '''
                                                     )
                                                 }
                                                 post{
@@ -210,10 +202,9 @@ def call(){
                                                     catchError(buildResult: 'SUCCESS', message: 'Did not pass all pyDocStyle tests', stageResult: 'UNSTABLE') {
                                                         sh(
                                                             label: 'Run pydocstyle',
-                                                            script: '''. ./venv/bin/activate
-                                                                       mkdir -p reports
-                                                                       pydocstyle uiucprescon > reports/pydocstyle-report.txt
-                                                                       '''
+                                                            script: '''mkdir -p reports
+                                                                       ./venv/bin/uv run pydocstyle src > reports/pydocstyle-report.txt
+                                                                    '''
                                                         )
                                                     }
                                                 }
@@ -225,7 +216,7 @@ def call(){
                                             }
                                             stage('Task Scanner'){
                                                 steps{
-                                                    recordIssues(tools: [taskScanner(highTags: 'FIXME', includePattern: 'uiucprescon/**/*.py', normalTags: 'TODO')])
+                                                    recordIssues(tools: [taskScanner(highTags: 'FIXME', includePattern: 'src/**/*.py', normalTags: 'TODO')])
                                                 }
                                             }
                                             stage('MyPy') {
@@ -234,9 +225,8 @@ def call(){
                                                         tee('logs/mypy.log'){
                                                             sh(
                                                                 label: 'Run mypy',
-                                                                script: '''. ./venv/bin/activate
-                                                                           mkdir -p reports/mypy/html
-                                                                           mypy -p uiucprescon.getmarc2 --namespace-packages --html-report reports/mypy/html/
+                                                                script: '''mkdir -p reports/mypy/html
+                                                                           ./venv/bin/uv run mypy -p uiucprescon.getmarc2 --namespace-packages --html-report reports/mypy/html/
                                                                         '''
                                                             )
                                                         }
@@ -254,9 +244,7 @@ def call(){
                                                     catchError(buildResult: 'SUCCESS', message: 'Bandit found issues', stageResult: 'UNSTABLE') {
                                                         sh(
                                                             label: 'Running bandit',
-                                                            script: '''. ./venv/bin/activate
-                                                                       bandit --format json --output reports/bandit-report.json --recursive uiucprescon || bandit -f html --recursive uiucprescon --output reports/bandit-report.html
-                                                                    '''
+                                                            script: './venv/bin/uv run bandit --format json --output reports/bandit-report.json --recursive src || ./venv/bin/uv run bandit -f html --recursive src --output reports/bandit-report.html'
                                                         )
                                                     }
                                                 }
@@ -283,17 +271,13 @@ def call(){
                                                         catchError(buildResult: 'SUCCESS', message: 'Pylint found issues', stageResult: 'UNSTABLE') {
                                                             tee('reports/pylint.txt'){
                                                                 sh(
-                                                                    script: '''. ./venv/bin/activate
-                                                                               pylint uiucprescon.getmarc2 -r n --persistent=n --verbose --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}"
-                                                                            ''',
+                                                                    script: './venv/bin/uv run pylint src -r n --persistent=n --verbose --msg-template="{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}"',
                                                                     label: 'Running pylint'
                                                                 )
                                                             }
                                                         }
                                                         sh(
-                                                            script: '''. ./venv/bin/activate
-                                                                       pylint uiucprescon.getmarc2 -r n --persistent=n --msg-template="{path}:{module}:{line}: [{msg_id}({symbol}), {obj}] {msg}" > reports/pylint_issues.txt
-                                                                    ''',
+                                                            script: './venv/bin/uv run pylint src -r n --persistent=n --msg-template="{path}:{module}:{line}: [{msg_id}({symbol}), {obj}] {msg}" > reports/pylint_issues.txt',
                                                             label: 'Running pylint for sonarqube',
                                                             returnStatus: true
                                                         )
@@ -309,9 +293,8 @@ def call(){
                                                 steps{
                                                     catchError(buildResult: 'SUCCESS', message: 'Flake8 found issues', stageResult: 'UNSTABLE') {
                                                         sh(label: 'Running Flake8',
-                                                           script: '''. ./venv/bin/activate
-                                                                      mkdir -p logs
-                                                                      flake8 uiucprescon --tee --output-file=logs/flake8.log
+                                                           script: '''mkdir -p logs
+                                                                      ./venv/bin/uv run flake8 src --tee --output-file=logs/flake8.log
                                                                    '''
                                                            )
                                                     }
@@ -327,10 +310,10 @@ def call(){
                                             always{
                                                 sh(
                                                     label: 'Combine Coverage data and generate a report',
-                                                    script: '''. ./venv/bin/activate
-                                                              mkdir -p reports/coverage
-                                                              coverage combine && coverage xml -o reports/coverage.xml
-                                                              '''
+                                                    script: '''mkdir -p reports/coverage
+                                                               ./venv/bin/uv run coverage combine
+                                                               ./venv/bin/uv run coverage xml -o reports/coverage.xml
+                                                            '''
                                                 )
                                                 recordCoverage(tools: [[parser: 'COBERTURA', pattern: 'reports/coverage.xml']])
                                             }
@@ -350,41 +333,34 @@ def call(){
                                             SONAR_USER_HOME='/tmp/sonar'
                                         }
                                         steps{
-                                            script{
-                                                withSonarQubeEnv(installationName:'sonarcloud', credentialsId: params.SONARCLOUD_TOKEN) {
-                                                    def sourceInstruction
-                                                    if (env.CHANGE_ID){
-                                                        sourceInstruction = '-Dsonar.pullrequest.key=$CHANGE_ID -Dsonar.pullrequest.base=$BRANCH_NAME'
-                                                    } else{
-                                                        sourceInstruction = '-Dsonar.branch.name=$BRANCH_NAME'
+                                            withSonarQubeEnv(installationName: 'sonarcloud', credentialsId: params.SONARCLOUD_TOKEN) {
+                                                withCredentials([string(credentialsId: params.SONARCLOUD_TOKEN, variable: 'token')]) {
+                                                    script{
+                                                        def sourceInstruction
+                                                        if (env.CHANGE_ID){
+                                                            sourceInstruction = '-Dsonar.pullrequest.key=$CHANGE_ID -Dsonar.pullrequest.base=$BRANCH_NAME'
+                                                        } else{
+                                                            sourceInstruction = '-Dsonar.branch.name=$BRANCH_NAME'
+                                                        }
+                                                        sh(
+                                                            label: 'Running Sonar Scanner',
+                                                            script: "./venv/bin/uv run pysonar -t \$token -Dsonar.projectVersion=$VERSION -Dsonar.buildString=\"$BUILD_TAG\" ${sourceInstruction}",
+                                                        )
                                                     }
-                                                    sh(
-                                                        label: 'Running Sonar Scanner',
-                                                        script: """. ./venv/bin/activate
-                                                                    uv tool run pysonar-scanner -Dsonar.projectVersion=$VERSION -Dsonar.buildString=\"$BUILD_TAG\" ${sourceInstruction}
-                                                                """
-                                                    )
                                                 }
+                                            }
+                                            script{
                                                 timeout(time: 1, unit: 'HOURS') {
                                                     def sonarqube_result = waitForQualityGate(abortPipeline: false)
                                                     if (sonarqube_result.status != 'OK') {
                                                         unstable "SonarQube quality gate: ${sonarqube_result.status}"
                                                     }
-                                                    def outstandingIssues = get_sonarqube_unresolved_issues('.scannerwork/report-task.txt')
-                                                    writeJSON file: 'reports/sonar-report.json', json: outstandingIssues
-                                                }
-                                                milestone label: 'sonarcloud'
-                                            }
-                                        }
-                                        post {
-                                            always{
-                                                script{
-                                                    if(fileExists('reports/sonar-report.json')){
-                                                        stash includes: 'reports/sonar-report.json', name: 'SONAR_REPORT'
-                                                        archiveArtifacts allowEmptyArchive: true, artifacts: 'reports/sonar-report.json'
-                                                        recordIssues(tools: [sonarQube(pattern: 'reports/sonar-report.json')])
+                                                    if(env.BRANCH_IS_PRIMARY){
+                                                       writeJSON file: 'reports/sonar-report.json', json: get_sonarqube_unresolved_issues('.sonar/report-task.txt')
+                                                       recordIssues(tools: [sonarQube(pattern: 'reports/sonar-report.json')])
                                                     }
                                                 }
+                                                milestone label: 'sonarcloud'
                                             }
                                         }
                                     }
@@ -436,7 +412,7 @@ def call(){
                                                             sh(script: 'python3 -m venv venv && venv/bin/pip install --disable-pip-version-check uv')
                                                             envs = sh(
                                                                 label: 'Get tox environments',
-                                                                script: './venv/bin/uvx --quiet --with tox-uv tox list -d --no-desc',
+                                                                script: './venv/bin/uv run --quiet --only-group tox --with tox-uv --frozen tox list -d --no-desc',
                                                                 returnStdout: true,
                                                             ).trim().split('\n')
                                                         } finally{
@@ -462,18 +438,14 @@ def call(){
                                                                         try{
                                                                             sh( label: 'Running Tox',
                                                                                 script: """python3 -m venv venv && venv/bin/pip install --disable-pip-version-check uv
-                                                                                           . ./venv/bin/activate
-                                                                                           uv python install cpython-${version}
-                                                                                           uvx -p ${version} --with tox-uv tox run -e ${toxEnv}
+                                                                                           ./venv/bin/uv python install cpython-${version}
+                                                                                           ./venv/bin/uv run --only-group tox --with tox-uv --frozen tox run -e ${toxEnv}
                                                                                            rm -rf ./.tox
                                                                                            rm -rf ./venv
                                                                                         """
                                                                                 )
                                                                         } catch(e) {
-                                                                            sh(script: '''. ./venv/bin/activate
-                                                                                  uv python list
-                                                                                  '''
-                                                                                    )
+                                                                            sh(script: './venv/bin/uv python list')
                                                                             throw e
                                                                         } finally{
                                                                             cleanWs(
@@ -514,7 +486,7 @@ def call(){
                                                             bat(script: 'python -m venv venv && venv\\Scripts\\pip install --disable-pip-version-check uv')
                                                             envs = bat(
                                                                 label: 'Get tox environments',
-                                                                script: '@.\\venv\\Scripts\\uvx --quiet --with tox-uv tox list -d --no-desc',
+                                                                script: '@.\\venv\\Scripts\\uv run --quiet --only-group tox --with tox-uv --frozen tox list -d --no-desc',
                                                                 returnStdout: true,
                                                             ).trim().split('\r\n')
                                                         } finally{
@@ -541,9 +513,8 @@ def call(){
                                                                                 checkout scm
                                                                                 bat(label: 'Running Tox',
                                                                                     script: """python -m venv venv && venv\\Scripts\\pip install --disable-pip-version-check uv
-                                                                                        call venv\\Scripts\\activate.bat
-                                                                                        uv python install cpython-${version}
-                                                                                        uvx -p ${version} --with tox-uv tox run -e ${toxEnv}
+                                                                                        venv\\Scripts\\uv python install cpython-${version}
+                                                                                        venv\\Scripts\\uv run --only-group tox --with tox-uv --frozen tox run -e ${toxEnv}
                                                                                         rmdir /S /Q .tox
                                                                                         rmdir /S /Q venv
                                                                                         """
@@ -634,7 +605,7 @@ def call(){
                                 axes: [
                                     [
                                         name: 'PYTHON_VERSION',
-                                        values: ['3.9', '3.10', '3.11', '3.12','3.13']
+                                        values: ['3.10', '3.11', '3.12','3.13']
                                     ],
                                     [
                                         name: 'OS',
@@ -683,7 +654,7 @@ def call(){
                                                                         script: """python3 -m venv venv
                                                                                    ./venv/bin/pip install --disable-pip-version-check uv
                                                                                    ./venv/bin/uv python install cpython-${entry.PYTHON_VERSION}
-                                                                                   ./venv/bin/uvx --with tox-uv tox --installpkg ${findFiles(glob: entry.PACKAGE_TYPE == 'wheel' ? 'dist/*.whl' : 'dist/*.tar.gz')[0].path} -e py${entry.PYTHON_VERSION.replace('.', '')}
+                                                                                   ./venv/bin/uv run --only-group tox --with tox-uv --frozen tox --installpkg ${findFiles(glob: entry.PACKAGE_TYPE == 'wheel' ? 'dist/*.whl' : 'dist/*.tar.gz')[0].path} -e py${entry.PYTHON_VERSION.replace('.', '')}
                                                                                 """
                                                                     )
                                                                 }
@@ -699,7 +670,7 @@ def call(){
                                                                         script: """python -m venv venv
                                                                                    .\\venv\\Scripts\\pip install --disable-pip-version-check uv
                                                                                    .\\venv\\Scripts\\uv python install cpython-${entry.PYTHON_VERSION}
-                                                                                   .\\venv\\Scripts\\uvx --with tox-uv tox --installpkg ${findFiles(glob: entry.PACKAGE_TYPE == 'wheel' ? 'dist/*.whl' : 'dist/*.tar.gz')[0].path} -e py${entry.PYTHON_VERSION.replace('.', '')}
+                                                                                   .\\venv\\Scripts\\uv run --only-group tox --with tox-uv --frozen tox --installpkg ${findFiles(glob: entry.PACKAGE_TYPE == 'wheel' ? 'dist/*.whl' : 'dist/*.tar.gz')[0].path} -e py${entry.PYTHON_VERSION.replace('.', '')}
                                                                                 """
                                                                     )
                                                                 }
@@ -711,7 +682,7 @@ def call(){
                                                                 label: 'Testing with tox',
                                                                 script: """python3 -m venv venv
                                                                            ./venv/bin/pip install --disable-pip-version-check uv
-                                                                           ./venv/bin/uvx --with tox-uv tox --installpkg ${findFiles(glob: entry.PACKAGE_TYPE == 'wheel' ? 'dist/*.whl' : 'dist/*.tar.gz')[0].path} -e py${entry.PYTHON_VERSION.replace('.', '')}
+                                                                           ./venv/bin/uv run --only-group tox --with tox-uv --frozen tox --installpkg ${findFiles(glob: entry.PACKAGE_TYPE == 'wheel' ? 'dist/*.whl' : 'dist/*.tar.gz')[0].path} -e py${entry.PYTHON_VERSION.replace('.', '')}
                                                                         """
                                                             )
                                                         } else {
@@ -720,7 +691,7 @@ def call(){
                                                                 script: """python -m venv venv
                                                                            .\\venv\\Scripts\\pip install --disable-pip-version-check uv
                                                                            .\\venv\\Scripts\\uv python install cpython-${entry.PYTHON_VERSION}
-                                                                           .\\venv\\Scripts\\uvx --with tox-uv tox --installpkg ${findFiles(glob: entry.PACKAGE_TYPE == 'wheel' ? 'dist/*.whl' : 'dist/*.tar.gz')[0].path} -e py${entry.PYTHON_VERSION.replace('.', '')}
+                                                                           .\\venv\\Scripts\\uv run --only-group tox --with tox-uv --frozen tox --installpkg ${findFiles(glob: entry.PACKAGE_TYPE == 'wheel' ? 'dist/*.whl' : 'dist/*.tar.gz')[0].path} -e py${entry.PYTHON_VERSION.replace('.', '')}
                                                                         """
                                                             )
                                                         }
