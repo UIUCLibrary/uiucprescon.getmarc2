@@ -445,7 +445,9 @@ def call(){
                                                                                         """
                                                                                 )
                                                                         } catch(e) {
-                                                                            sh(script: './venv/bin/uv python list')
+                                                                            if (fileExists('venv/bin/uv')){
+                                                                                sh(script: './venv/bin/uv python list')
+                                                                            }
                                                                             throw e
                                                                         } finally{
                                                                             cleanWs(
