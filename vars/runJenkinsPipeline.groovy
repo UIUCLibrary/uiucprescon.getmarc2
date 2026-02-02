@@ -1,23 +1,3 @@
-def sanitize_chocolatey_version(version){
-    script{
-        def dot_to_slash_pattern = '(?<=\\d)\\.?(?=(dev|b|a|rc)(\\d)?)'
-
-        def dashed_version = version.replaceFirst(dot_to_slash_pattern, '-')
-
-        def beta_pattern = "(?<=\\d(\\.?))b((?=\\d)?)"
-        if(dashed_version.matches(beta_pattern)){
-            return dashed_version.replaceFirst(beta_pattern, 'beta')
-        }
-
-        def alpha_pattern = "(?<=\\d(\\.?))a((?=\\d)?)"
-        if(dashed_version.matches(alpha_pattern)){
-            return dashed_version.replaceFirst(alpha_pattern, 'alpha')
-        }
-        return dashed_version
-        return new_version
-    }
-}
-
 def get_sonarqube_unresolved_issues(report_task_file){
     script{
         if(! fileExists(report_task_file)){
