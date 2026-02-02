@@ -22,6 +22,7 @@ description = "Uses the Get Bib Record Web Service to get marc data from the Alm
 [dependency-groups]
 test = ["pytest", "coverage"]
 docs = ["sphinx"]
+audit-dependencies = ['uv-secure']
 type_checking = [
     "types-requests",
     "lxml",
@@ -41,6 +42,7 @@ dev = [
     {include-group = "lint"},
     {include-group = "tox"},
     {include-group = "test"},
+    {include-group = "audit-dependencies"},
 ]
 release = ['twine']
 ci = [
