@@ -12,6 +12,45 @@ def get_sonarqube_unresolved_issues(report_task_file){
         return outstandingIssues
     }
 }
+def createGitHubRelease(apiUrl, filesGlob, message){
+    withCredentials([string(credentialsId: GITHUB_CREDENTIALS_ID, variable: 'GITHUB_TOKEN')]) {
+        def requestBody = JsonOutput.toJson([
+            tag_name: env.BRANCH_NAME,
+            name: message,
+            generate_release_notes: false,
+            draft: false,
+            prerelease: false
+        ])
+        def createReleaseResponse = httpRequest(
+            httpMode: 'POST',
+            contentType: 'APPLICATION_JSON',
+            url: apiUrl,
+            customHeaders: [
+                [name: 'Authorization', value: "token ${GITHUB_TOKEN}"]
+            ],
+            requestBody: requestBody,
+            validResponseCodes: '201' // Expect a 201 Created status code
+            )
+        def artifactFiles = findFiles(glob: filesGlob)
+        if(archiveArtifacts.size() > 0){
+            def releaseData = readJSON text: createReleaseResponse.content
+            artifactFiles.each{
+                def uploadResponse = httpRequest(
+                    url: "${releaseData.upload_url.replace('{?name,label}', '')}?name=${it.name}",
+                    httpMode: 'POST',
+                    uploadFile: it.path,
+                    customHeaders: [[name: 'Authorization', value: "token ${GITHUB_TOKEN}"]],
+                    wrapAsMultipart: false
+                )
+                if (uploadResponse.status >= 200 && uploadResponse.status < 300) {
+                    echo "File uploaded successfully to GitHub release."
+                } else {
+                    error "Failed to upload file: ${uploadResponse.status} - ${uploadResponse.content}"
+                }
+            }
+        }
+    }
+}
 
 def call(){
     library(
@@ -38,6 +77,7 @@ def call(){
             booleanParam(name: 'INCLUDE_LINUX-X86_64', defaultValue: true, description: 'Include x86_64 architecture for Linux')
             booleanParam(name: 'INCLUDE_WINDOWS-X86_64', defaultValue: true, description: 'Include x86_64 architecture for Windows')
             booleanParam(name: 'DEPLOY_DOCS', defaultValue: false, description: '')
+            booleanParam(name: 'CREATE_GITHUB_RELEASE', defaultValue: false, description: 'Deploy to Github Release. Requires the current commit to be tagged. Note: This is experimental')
         }
         options {
             timeout(time: 1, unit: 'DAYS')
@@ -698,9 +738,60 @@ def call(){
                 when{
                     anyOf{
                         equals expected: true, actual: params.DEPLOY_DOCS
+                        equals expected: true, actual: params.CREATE_GITHUB_RELEASE
                     }
                 }
                 parallel{
+                    stage('GitHub Release'){
+                        agent any
+                        when{
+                            beforeInput true
+                            beforeAgent true
+                            beforeOptions true
+                            allOf{
+                              equals expected: true, actual: params.CREATE_GITHUB_RELEASE
+                              tag '*'
+                            }
+                        }
+                        input {
+                            message 'Create GitHub Release'
+                            id 'GITHUB_DEPLOYMENT'
+                            parameters {
+                                credentials(
+                                    credentialType: 'org.jenkinsci.plugins.plaincredentials.impl.StringCredentialsImpl',
+                                    description: 'GitHub credential Id',
+                                    name: 'GITHUB_CREDENTIALS_ID',
+                                    required: true
+                                )
+                            }
+                        }
+                        environment{
+                            GITHUB_REPO='UIUCLibrary/uiucprescon.getmarc2'
+                        }
+                        options{
+                            lock("${env.JOB_NAME}")
+                        }
+                        steps{
+                            script {
+                                if (params.BUILD_PACKAGES){
+                                    unstash 'PYTHON_PACKAGES'
+                                }
+                                def projectMetadata = readTOML( file: 'pyproject.toml')['project']
+                                createGitHubRelease("https://api.github.com/repos/UIUCLibrary/uiucprescon.getmarc2/releases", 'dist/*', "Version ${projectMetadata.version}")
+                            }
+                        }
+                        post{
+                            cleanup{
+                                script{
+                                    if(isUnix()){
+                                        sh "${tool(name: 'Default', type: 'git')} clean -dfx"
+                                    } else {
+                                        bat "${tool(name: 'Default', type: 'git')} clean -dfx"
+                                    }
+                                }
+                            }
+                        }
+                    }
                     stage('Deploy Online Documentation') {
                         when{
                             equals expected: true, actual: params.DEPLOY_DOCS
