@@ -1,3 +1,5 @@
+import groovy.json.JsonOutput
+
 def get_sonarqube_unresolved_issues(report_task_file){
     script{
         if(! fileExists(report_task_file)){
