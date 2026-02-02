@@ -192,7 +192,7 @@ def call(){
                                                     sh(
                                                         label:'Running doctest',
                                                         script: '''mkdir -p reports/doctests
-                                                                   ./venv/bin/uv run coverage run --parallel-mode --source src -m sphinx -b doctest -d build/docs/doctrees docs reports/doctest -w logs/doctest.log
+                                                                   uv run coverage run --parallel-mode --source src -m sphinx -b doctest -d build/docs/doctrees docs reports/doctest -w logs/doctest.log
                                                                 '''
                                                     )
                                                 }
@@ -308,6 +308,19 @@ def call(){
                                                 post {
                                                     always {
                                                         recordIssues(tools: [flake8(name: 'Flake8', pattern: 'logs/flake8.log')])
+                                                    }
+                                                }
+                                            }
+                                            stage('Audit uv.lock File'){
+                                                options{
+                                                    timeout(5)
+                                                }
+                                                steps{
+                                                    catchError(buildResult: 'SUCCESS', message: 'uv-secure found issues', stageResult: 'UNSTABLE') {
+                                                        sh '''unset UV_INDEX_URL
+                                                              unset UV_EXTRA_INDEX_URL
+                                                              uv run --only-group=audit-dependencies --isolated uv-secure --disable-cache uv.lock
+                                                           '''
                                                     }
                                                 }
                                             }
