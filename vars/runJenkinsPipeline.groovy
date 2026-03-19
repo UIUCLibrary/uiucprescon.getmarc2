@@ -105,7 +105,7 @@ def call(){
                         environment{
                             PIP_CACHE_DIR='/tmp/pipcache'
                             UV_TOOL_DIR='/tmp/uvtools'
-                            UV_PYTHON_INSTALL_DIR='/tmp/uvpython'
+                            UV_PYTHON_CACHE_DIR='/tmp/uvpython'
                             UV_CACHE_DIR='/tmp/uvcache'
                         }
                         when{
@@ -159,7 +159,7 @@ def call(){
                                 environment{
                                     PIP_CACHE_DIR='/tmp/pipcache'
                                     UV_TOOL_DIR='/tmp/uvtools'
-                                    UV_PYTHON_INSTALL_DIR='/tmp/uvpython'
+                                    UV_PYTHON_CACHE_DIR='/tmp/uvpython'
                                     UV_CACHE_DIR='/tmp/uvcache'
                                     UV_PROJECT_ENVIRONMENT="${WORKSPACE}/venv"
                                     UV_FROZEN='1'
@@ -419,7 +419,7 @@ def call(){
                                         environment{
                                             PIP_CACHE_DIR='/tmp/pipcache'
                                             UV_TOOL_DIR='/tmp/uvtools'
-                                            UV_PYTHON_INSTALL_DIR='/tmp/uvpython'
+                                            UV_PYTHON_CACHE_DIR='/tmp/uvpython'
                                             UV_CACHE_DIR='/tmp/uvcache'
                                         }
                                         steps{
@@ -452,7 +452,7 @@ def call(){
                                                             "Tox Environment: ${toxEnv}",
                                                             {
                                                                 node('docker && linux'){
-                                                                    docker.image('ghcr.io/astral-sh/uv:debian').inside('--mount source=python-tmp-uiucprescon_getmarc,target=/tmp'){
+                                                                    docker.image('ghcr.io/astral-sh/uv:debian').inside('--mount source=python-tmp-uiucprescon_getmarc,target=/tmp --tmpfs /.local/share:exec --tmpfs /.local/bin:exec'){
                                                                         checkout scm
                                                                         try{
                                                                             sh( label: 'Running Tox',
@@ -492,14 +492,14 @@ def call(){
                                         environment{
                                              PIP_CACHE_DIR='C:\\Users\\ContainerUser\\Documents\\pipcache'
                                              UV_TOOL_DIR='C:\\Users\\ContainerUser\\Documents\\uvtools'
-                                             UV_PYTHON_INSTALL_DIR='C:\\Users\\ContainerUser\\Documents\\uvpython'
+                                             UV_PYTHON_CACHE_DIR='C:\\Users\\ContainerUser\\Documents\\uvpython'
                                              UV_CACHE_DIR='C:\\Users\\ContainerUser\\Documents\\uvcache'
                                         }
                                         steps{
                                             script{
                                                 def envs = []
                                                 node('docker && windows'){
-                                                    docker.image(env.DEFAULT_PYTHON_DOCKER_IMAGE ? env.DEFAULT_PYTHON_DOCKER_IMAGE: 'python').inside("--mount type=volume,source=uv_python_install_dir,target=${env.UV_PYTHON_INSTALL_DIR}"){
+                                                    docker.image(env.DEFAULT_PYTHON_DOCKER_IMAGE ? env.DEFAULT_PYTHON_DOCKER_IMAGE: 'python').inside("--mount type=volume,source=uv_python_cache_dir,target=${env.UV_PYTHON_CACHE_DIR}"){
                                                         try{
                                                             checkout scm
                                                             bat(script: 'python -m venv venv && venv\\Scripts\\pip install --disable-pip-version-check uv')
@@ -528,7 +528,7 @@ def call(){
                                                                 node('docker && windows'){
                                                                     retry(3){
                                                                         try{    
-                                                                            docker.image(env.DEFAULT_PYTHON_DOCKER_IMAGE ? env.DEFAULT_PYTHON_DOCKER_IMAGE: 'python').inside("--mount type=volume,source=uv_python_install_dir,target=${env.UV_PYTHON_INSTALL_DIR}"){
+                                                                            docker.image(env.DEFAULT_PYTHON_DOCKER_IMAGE ? env.DEFAULT_PYTHON_DOCKER_IMAGE: 'python').inside("--mount type=volume,source=uv_python_cache_dir,target=${env.UV_PYTHON_CACHE_DIR}"){
                                                                                 checkout scm
                                                                                 bat(label: 'Running Tox',
                                                                                     script: """python -m venv venv && venv\\Scripts\\pip install --disable-pip-version-check uv
@@ -652,12 +652,16 @@ def call(){
                                                     checkout scm
                                                     unstash 'PYTHON_PACKAGES'
                                                     if(['linux', 'windows'].contains(entry.OS) && params.containsKey("INCLUDE_${entry.OS}-${entry.ARCHITECTURE}".toUpperCase()) && params["INCLUDE_${entry.OS}-${entry.ARCHITECTURE}".toUpperCase()]){
-                                                        docker.image(env.DEFAULT_PYTHON_DOCKER_IMAGE ? env.DEFAULT_PYTHON_DOCKER_IMAGE: (isUnix() ? 'ghcr.io/astral-sh/uv:debian': 'python')).inside(isUnix() ? '': "--mount type=volume,source=uv_python_install_dir,target=C:\\Users\\ContainerUser\\Documents\\uvpython"){
+                                                        docker.image(
+                                                            env.DEFAULT_PYTHON_DOCKER_IMAGE ? env.DEFAULT_PYTHON_DOCKER_IMAGE: (isUnix() ? 'ghcr.io/astral-sh/uv:debian': 'python')
+                                                        ).inside(
+                                                            isUnix() ? '--tmpfs /.local/share:exec': "--mount type=volume,source=uv_python_cache_dir,target=C:\\Users\\ContainerUser\\Documents\\uvpython"
+                                                        ){
                                                              if(isUnix()){
                                                                 withEnv([
                                                                     'PIP_CACHE_DIR=/tmp/pipcache',
                                                                     'UV_TOOL_DIR=/tmp/uvtools',
-                                                                    'UV_PYTHON_INSTALL_DIR=/tmp/uvpython',
+                                                                    'UV_PYTHON_CACHE_DIR=/tmp/uvpython',
                                                                     'UV_CACHE_DIR=/tmp/uvcache',
                                                                 ]){
                                                                      sh(
@@ -671,7 +675,7 @@ def call(){
                                                                 withEnv([
                                                                     'PIP_CACHE_DIR=C:\\Users\\ContainerUser\\Documents\\pipcache',
                                                                     'UV_TOOL_DIR=C:\\Users\\ContainerUser\\Documents\\uvtools',
-                                                                    'UV_PYTHON_INSTALL_DIR=C:\\Users\\ContainerUser\\Documents\\uvpython',
+                                                                    'UV_PYTHON_CACHE_DIR=C:\\Users\\ContainerUser\\Documents\\uvpython',
                                                                     'UV_CACHE_DIR=C:\\Users\\ContainerUser\\Documents\\uvcache',
                                                                 ]){
                                                                     bat(
@@ -788,7 +792,7 @@ def call(){
                         environment{
                             PIP_CACHE_DIR='/tmp/pipcache'
                             UV_TOOL_DIR='/tmp/uvtools'
-                            UV_PYTHON_INSTALL_DIR='/tmp/uvpython'
+                            UV_PYTHON_CACHE_DIR='/tmp/uvpython'
                             UV_CACHE_DIR='/tmp/uvcache'
                         }
                         agent {
