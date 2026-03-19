@@ -457,7 +457,7 @@ def call(){
                                                                         try{
                                                                             sh( label: 'Running Tox',
                                                                                 script: """uv python install cpython-${version}
-                                                                                           uv run --only-group=tox-uv --frozen tox run -e ${toxEnv}
+                                                                                           uv run --only-group=tox-uv --frozen tox run --runner uv-venv-lock-runner -e ${toxEnv}
                                                                                            rm -rf ./.tox
                                                                                            rm -rf ./venv
                                                                                         """
@@ -534,7 +534,7 @@ def call(){
                                                                                     bat(label: 'Running Tox',
                                                                                         script: """python -m venv venv && venv\\Scripts\\pip install --disable-pip-version-check uv
                                                                                             venv\\Scripts\\uv python install cpython-${version}
-                                                                                            venv\\Scripts\\uv run --only-group=tox-uv --frozen tox run -e ${toxEnv}
+                                                                                            venv\\Scripts\\uv run --only-group=tox-uv --frozen tox run --runner uv-venv-lock-runner -e ${toxEnv}
                                                                                             rmdir /S /Q .tox
                                                                                             rmdir /S /Q venv
                                                                                             """
