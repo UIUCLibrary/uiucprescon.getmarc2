@@ -283,7 +283,7 @@ def call(){
                                                     catchError(buildResult: 'SUCCESS', message: 'Bandit found issues', stageResult: 'UNSTABLE') {
                                                         sh(
                                                             label: 'Running bandit',
-                                                            script: 'uv run bandit --format json --output reports/bandit-report.json --recursive src || ./venv/bin/uv run bandit -f html --recursive src --output reports/bandit-report.html'
+                                                            script: 'uv run bandit --format json --output reports/bandit-report.json --recursive src || uv run bandit -f html --recursive src --output reports/bandit-report.html'
                                                         )
                                                     }
                                                 }
