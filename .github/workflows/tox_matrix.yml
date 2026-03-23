@@ -48,7 +48,7 @@ jobs:
         run: |
           pip install uv
       - name: Run tox
-        run: uv run --only-group=tox-uv --frozen tox -e py -vvv
+        run: uv run --only-group=tox-uv --frozen tox -e py --runner uv-venv-lock-runner
   lint:
     needs: setup
     runs-on: ubuntu-latest
@@ -67,4 +67,4 @@ jobs:
         run: |
           pip install uv
       - name: Run tox
-        run: uv run --only-group=tox-uv --frozen tox -e ${{ matrix.lint-environment }}
+        run: uv run --only-group=tox-uv --frozen tox -e ${{ matrix.lint-environment }} --runner uv-venv-lock-runner
