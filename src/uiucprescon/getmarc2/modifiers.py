@@ -12,7 +12,7 @@ except ModuleNotFoundError:
     from importlib_resources import files  # type: ignore
 
 
-class AbsEnrichment(metaclass=abc.ABCMeta):
+class AbsEnrichment(abc.ABC):  # pylint: disable=too-few-public-methods
     """Base class to enhance a string."""
 
     @abc.abstractmethod
@@ -28,7 +28,7 @@ class AbsEnrichment(metaclass=abc.ABCMeta):
         """
 
 
-class Add955(AbsEnrichment):
+class Add955(AbsEnrichment):  # pylint: disable=too-few-public-methods
     """Add the 955 field values.
 
     Attributes:
@@ -79,7 +79,7 @@ class Add955(AbsEnrichment):
         return ET.tostring(element, encoding="unicode")
 
 
-class Reflow(AbsEnrichment):
+class Reflow(AbsEnrichment):  # pylint: disable=too-few-public-methods
     """Parses and re-renders the xml text.
 
     Useful for cleaning up after using modifiers.
