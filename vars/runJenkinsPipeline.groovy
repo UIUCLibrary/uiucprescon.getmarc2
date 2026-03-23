@@ -299,6 +299,8 @@ def call(){
                                                                     reportFiles: 'bandit-report.html',
                                                                     reportName: 'Bandit Report', reportTitles: ''
                                                                     ])
+                                                            } else {
+                                                                echo 'Bandit did not produce an HTML report. Please check the console output for details.'
                                                             }
                                                         }
                                                     }
