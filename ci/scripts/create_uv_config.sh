@@ -16,13 +16,15 @@ echo "url = \"https://pypi.org/simple\"" >> $GLOBAL_CONFIG_FILE
 echo 'default = true' >> $GLOBAL_CONFIG_FILE
 echo "cache-control = { api = \"max-age=$MAX_AGE_API\", files = \"max-age=$MAX_AGE_FILES, immutable\" }" >> $GLOBAL_CONFIG_FILE
 
+index=1
 for arg in "$@"; do
     echo '' >> $GLOBAL_CONFIG_FILE
     echo '[[index]]' >> $GLOBAL_CONFIG_FILE
+    echo "name = \"extra-index-$index\"" >> $GLOBAL_CONFIG_FILE
     echo "url = \"$arg\"" >> $GLOBAL_CONFIG_FILE
     echo "cache-control = { api = \"max-age=$MAX_AGE_API\", files = \"max-age=$MAX_AGE_FILES, immutable\" }" >> $GLOBAL_CONFIG_FILE
     echo "explicit = true" >> $GLOBAL_CONFIG_FILE
-
+    index=$((index + 1))
 done
 
 echo "$(realpath $GLOBAL_CONFIG_FILE)"
