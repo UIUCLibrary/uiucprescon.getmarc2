@@ -351,7 +351,7 @@ def call(){
                                                     timeout(5)
                                                 }
                                                 steps{
-                                                    catchError(buildResult: 'SUCCESS', message: 'uv-secure found issues', stageResult: 'UNSTABLE') {
+                                                    catchError(buildResult: 'UNSTABLE', message: 'uv-secure found issues', stageResult: 'UNSTABLE') {
                                                         sh '''unset UV_INDEX_URL
                                                               unset UV_EXTRA_INDEX_URL
                                                               uv run --only-group=audit-dependencies --isolated uv-secure --disable-cache uv.lock
