@@ -20,9 +20,8 @@ maintainers = [
 ]
 description = "Uses the Get Bib Record Web Service to get marc data from the Alma catalog"
 [dependency-groups]
-test = ["pytest", "coverage"]
+test = ["pytest"]
 docs = ["sphinx"]
-audit-dependencies = ['uv-secure']
 type_checking = [
     "types-requests",
     "lxml",
@@ -42,11 +41,11 @@ tox-uv = [
 ]
 dev = [
     "commitizen",
+    "coverage",
     {include-group = "docs"},
     {include-group = "lint"},
     {include-group = "tox"},
     {include-group = "test"},
-    {include-group = "audit-dependencies"},
 ]
 release = ['twine']
 ci = [
