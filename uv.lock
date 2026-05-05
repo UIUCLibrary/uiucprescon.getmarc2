@@ -1895,7 +1895,6 @@ release = [
     { name = "twine" },
 ]
 test = [
-    { name = "coverage" },
     { name = "pytest" },
 ]
 tox = [
@@ -1959,10 +1958,7 @@ lint = [
     { name = "types-requests" },
 ]
 release = [{ name = "twine" }]
-test = [
-    { name = "coverage" },
-    { name = "pytest" },
-]
+test = [{ name = "pytest" }]
 tox = [{ name = "tox" }]
 tox-uv = [
     { name = "tox" },
